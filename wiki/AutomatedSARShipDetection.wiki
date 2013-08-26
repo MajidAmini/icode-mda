@@ -59,8 +59,43 @@ Figure 3: Ships detected in the Gulf of Guinea.
 https://icode-mda.googlecode.com/svn/wiki/images/Ship03.png<br>
 Figure 4: Ships detected of the east coast of South Africa.
 
+= Synthetic Aperture Radar Imagery =
+
+Synthetic Aperture Radar (SAR) is an active remote sensing method which transmits and receives electromagnetic (EM) waves in order to observe an environment. The EM waves are transmitted as pules and objects within an environment scatter these pulses. The returned pulses (echoes) are recorded and used to place objects relative to one another and the sensor. SAR can be implemented using either an airborne or spaceborne platform.
+
+SAR allows for high-resolution imagine of broad areas of the Earth’s surface and can do so at any time during all weather conditions. SAR is able to do this because it is a self-illuminating (active) sensor and therefore can be designed to transmit EM waves at specific frequencies that do not interact with obstacles such as clouds. 
+There have been a number of SAR satellites since the first one, SEASAT, was launched in 1978. In the time since then a number of countries have become involved in SAR satellites missions including most of Europe, Canada, USA and Japan.  
+
+One of the major recent SAR satellites launched is the Environmental Satellite (ENVISAT). The satellite operated from March 2002 until April 2012 operating 5 years longer than its planned lifetime. The satellite had a number of onboard instruments and one of them was the Advanced SAR (ASAR) sensor which was used to observe the entire globe with a revisit time of 35 days. 
+
+An example of a typical ENVISAT ASAR image can be seen to the left. The image to the left shows a Wide Swath Medium (WSM) resolution ENVISAT ASAR image. It has a horizontal resolution of 150m x 150m and covers the coast of South Africa from before Mossel Bay (Lat:-34.456, Long: 21.044) to Port Elizabeth (Lat:-33.8213, Long: 25.6901).
+
+https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/ASARWSMImage.png<br>
+
+The following image shows two ENVISAT ASAR WSM with an outline of South Africa’s coast superimposed. It shows the extent of how much of the Earth’s surface can be observed by SAR satellite images. The cost of monitoring this vast area would be prohibitive for any other monitoring method. 
+
+https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/SARExtent.png<br>
+
+= Constant False Alarm Rate =
+
+Due to their high backscatter compared to the ocean, ships appear as bright spots within a SAR image. Two examples of ships (circled in red) within a SAR image can be seen in the following image: 
+
+https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/Vessels.png<br>
+
+Constant False Alarm Rate is an algorithm that can be used to highlight bright pixels within a SAR image.  This allows the detection of bright ship pixels against the dark sea within a SAR image.  The basic principle of CFAR is that it uses a single pixel and a neighbourhood around that pixel to determine if it is significantly brighter than its neighbours. The CFAR algorithm calculates the mean value of a target pixel’s neighbours and then checks whether the pixel is t times brighter than its neighbours. 
+
+A target pixel is marked as a bright pixel when 
+
+https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/CFARText.png<br>
+
+The pixels directly adjacent to the target pixel are called the guard pixels and form a guard window around the target. These pixels are not used to determine the mean of the background because they are pixels most similar to the target pixel. The next window of pixels is referred to as the background window which contains the background pixels. These pixels are used to determine the mean background value against which the target pixel is compared.  An example of each of the windows is given in the following figure
+
+https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/CFAR.png<br>
+
+The CFAR algorithm can be implemented in OSSIM by starting an OSSIM image processing chain and then attaching the CFAR algorithm (as a filter). The filter uses OpenCV to process each pixel within the SAR image to determine where the bright (ship) pixels are. OpenCV is an advanced computer vision library that affords additional flexibility so that more advanced image processing techniques can be also be used if necessary for the detection of ships at sea within SAR images. For the sake of completeness the CFAR algorithm can be tested using either the above discussed OSSIM filtering method or a MATLAB script. Both is included in the source (which can be checked out from this page).
+
 = Page information =
 
-Last updated: Wednesday, 16 May 2012
+Last updated: Monday, 26 August 2013
 
-Proposed date for next update of website: Monday, 23 April 2012
+Proposed date for next update of website: Monday, 26 September 2013
