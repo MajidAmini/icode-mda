@@ -92,6 +92,8 @@ The pixels directly adjacent to the target pixel are called the guard pixels and
 
 https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/CFAR.png<br>
 
+== CFAR in Code ==
+
 The CFAR algorithm can be implemented in OSSIM by starting an OSSIM image processing chain and then attaching the CFAR algorithm (as a filter). The filter uses OpenCV to process each pixel within the SAR image to determine where the bright (ship) pixels are. OpenCV is an advanced computer vision library that affords additional flexibility so that more advanced image processing techniques can be also be used if necessary for the detection of ships at sea within SAR images. For the sake of completeness the CFAR algorithm can be tested using either the above discussed OSSIM filtering method or a MATLAB script. Both are included in the source (which can be checked out from <a href="http://code.google.com/p/icode-mda/source/checkout">this page</a>
 
 = Page information =
