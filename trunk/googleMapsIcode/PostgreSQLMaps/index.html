@@ -308,7 +308,7 @@
               <h3>Other Options</h3>
               <div>
                  <form id="distancetoolform" >
-                    <input class="inputfilebutton" type="button" onClick="addDistanceTool();" value="Enable distance tool">
+                    <input class="inputfilebutton" id="distancetooltoggle" type="button" onClick="toggleDistanceTool();" value="Enable distance tool">
                  </form>
 
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
@@ -330,7 +330,7 @@
      </div>
 
 
-
+     <!--
      <div id="results_list">
         <b>
            <table border=0>
@@ -349,6 +349,7 @@
         <ol id="selectable">
         </ol>        
      </div>
+      -->
      
 
      <div id="busy_indicator"><div style="width: 32px; height: 32px;"></div></div>
@@ -359,9 +360,11 @@
      <div id="latlong">
      </div>
 
+     <!--
      <div id="status-msg">
         Currently showing RADAR and raw full AIS for 2013-05-21
      </div>
+     -->
 
   </body>
 </html>
