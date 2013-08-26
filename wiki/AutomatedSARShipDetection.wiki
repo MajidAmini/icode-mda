@@ -68,7 +68,7 @@ There have been a number of SAR satellites since the first one, SEASAT, was laun
 
 One of the major recent SAR satellites launched is the Environmental Satellite (ENVISAT). The satellite operated from March 2002 until April 2012 operating 5 years longer than its planned lifetime. The satellite had a number of onboard instruments and one of them was the Advanced SAR (ASAR) sensor which was used to observe the entire globe with a revisit time of 35 days. 
 
-An example of a typical ENVISAT ASAR image can be seen to the left. The image to the left shows a Wide Swath Medium (WSM) resolution ENVISAT ASAR image. It has a horizontal resolution of 150m x 150m and covers the coast of South Africa from before Mossel Bay (Lat:-34.456, Long: 21.044) to Port Elizabeth (Lat:-33.8213, Long: 25.6901).
+An example of a typical ENVISAT ASAR image can be seen below. The image shows a Wide Swath Medium (WSM) resolution ENVISAT ASAR image. It has a horizontal resolution of 150m x 150m and covers the coast of South Africa from before Mossel Bay (Lat:-34.456, Long: 21.044) to Port Elizabeth (Lat:-33.8213, Long: 25.6901).
 
 https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/ASARWSMImage.png<br>
 
