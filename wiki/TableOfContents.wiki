@@ -42,7 +42,7 @@
   * [SmallVesselDetectioninCoastalRadarData Small Vessel Detection in Coastal Radar Data]
   * [TrackStitchingUsingGraphicalModelsAndMessagePassing Track Stitching Using Graphical Models and Message Passing]
   * [ContextualBehaviouralModellingandClassificationOfVesselsInAMaritimePirateSituation]
-  * [ICODE-MDA Development Mapping Tool]
+  * [ICODEMDADevelopmentMappingTool]
 
 * [JobsList List of Related Careers]
  
