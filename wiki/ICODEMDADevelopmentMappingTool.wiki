@@ -1,13 +1,16 @@
-#summary One-sentence summary of this page.
+#summary Developer's mapping tool to display various data/information in a map environment for testing and research purposes
 
 = Introduction =
 
-Add your content here.
+The ICODE-MDA Maps tool allows for developers to display various types of geo-located data on a map.
 
 
 = Details =
 
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+Code is written in HTML, PHP, and JavaScript languages.  The tool should be adaptable to read data from various sources of data stored in a database (i.e. MySQL, PostgreSQL, etc.) and display various information of that data, including geolocation of targets and other pertinent information.
+
+= Setup Instructions =
+
+Setup instructions will be provided in the following set of slides:
+
+[link to slides here]
