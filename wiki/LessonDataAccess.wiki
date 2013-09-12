@@ -12,6 +12,8 @@ This page provides a number of sources of satellite imagery, both free and for p
 || Landsat || NASA/USGS || http://earthexplorer.usgs.gov/ ||
 || COSMO-Skymed || e-GEOS || ftp://ftp.e-geos.it/ ||
 || GeoEye-1 and IKONOS || GeoEye || http://www.geoeye.com/CorpSite/resource/sample_imagery.aspx || 
+|| Landsat || Global Land Cover Facility || http://landcover.org ||
+|| CBERS/Landsat || National Institute for Space Research || http://www.inpe.br ||
 
 Some data requires applying online.  In particular, both ESA and DLR (TerraSAR-X) provide data at reduced costs for research.  
 
