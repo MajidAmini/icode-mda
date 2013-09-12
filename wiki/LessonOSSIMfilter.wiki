@@ -3,6 +3,6 @@
 = Introduction =
 
 = Presentations =
-[https://icode-mda.googlecode.com/svn/wiki/5.1_changeOssimTileToIplFilter.pdf Changing ossimTileToIplFilter (code example)]
+[https://icode-mda.googlecode.com/svn/wiki/5.1_Change_OssimTileToIplFilter.pdf Changing ossimTileToIplFilter (code example)]
 
 [https://icode-mda.googlecode.com/svn/wiki/6.1_componentsOfAnOSSIMFilter.pdf Components of an OSSIM Filter]
