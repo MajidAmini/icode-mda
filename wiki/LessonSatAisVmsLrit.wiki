@@ -5,7 +5,7 @@
 
 <br><br>
 == Presentations ==
-[https://icode-mda.googlecode.com/svn/wiki/18.1_AisVmsLrit.pdf AIS, VMS and LRIT]
+[https://icode-mda.googlecode.com/svn/wiki/9.4_AisVmsLrit.pdf AIS, VMS and LRIT]
 
 <br><br>
 == Code ==
