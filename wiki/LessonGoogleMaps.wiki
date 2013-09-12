@@ -9,7 +9,7 @@ This page contains information for using the Google Maps JavaScript API to creat
 
 <br><br>
 == Code ==
-The code for the presentation can be found on the SVN server [http://icode-mda.googlecode.com/svn/trunk/googleMapsIcode here]. 
+The code for the presentation can be found on the SVN server [http://icode-mda.googlecode.com/svn/trunk/googleMapsIcode/MySQLMaps/ here]. 
 <br><br>
 == External Links ==
  
