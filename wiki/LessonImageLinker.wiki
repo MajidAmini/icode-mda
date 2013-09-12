@@ -6,9 +6,9 @@ Here you will find information on Image Linker, as well as some examples of how 
 
 <br><br>
 == Presentations ==
-*[https://icode-mda.googlecode.com/svn/wiki/2.1_ImageLinker.pdf Image Linker Overview and Examples]
+*[https://icode-mda.googlecode.com/svn/wiki/2.1_ImageLinker.pdf Overview of OSSIM and Image Linker]
 
-*[https://icode-mda.googlecode.com/svn/wiki/2.1_ImageLinker_Tutorial.pdf Image Linker Overview and Examples]
+*[https://icode-mda.googlecode.com/svn/wiki/2.1_ImageLinker_Tutorial.pdf ImageLinker Tutorial]
 
 *[https://icode-mda.googlecode.com/svn/wiki/2.2_ossimPlanet_tutorial.pdf OSSIM Planet Overview]
 
