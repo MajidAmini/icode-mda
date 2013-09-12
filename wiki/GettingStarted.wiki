@@ -3,7 +3,7 @@
 = Welcome =
 Welcome to ICODE-MDA. We're glad that you're interested in helping to develop open-source tools for enhanced maritime domain awareness (MDA) to share with our international community. This page contains information that you will need to begin developing code for our project.
 
-We've identified [http://opencv.willowgarage.com/wiki/ OpenCV (Open Source Computer Vision)] and [http://trac.osgeo.org/ossim/ OSSIM (Open Source Software Image Map)] as open-source tools that are very useful for creating applications dealing with MDA.
+We've identified [http://opencv.org/ OpenCV (Open Source Computer Vision)] and [http://trac.osgeo.org/ossim/ OSSIM (Open Source Software Image Map)] as open-source tools that are very useful for creating applications dealing with MDA.
 
 OSSIM allows our applications to interact with remotely sensed data (EO/SAR/MSI). Some of the abilities that OSSIM enables in an application are listed below:
   * Parallel processing capabilities with mpi libraries
