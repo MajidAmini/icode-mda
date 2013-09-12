@@ -20,7 +20,7 @@ Orbcomm Satellites and SSC#s<br>
 
 <br><br>
 == Presentations ==
-[https://icode-mda.googlecode.com/svn/wiki/12.1_Introduction_To_AIS.pdf Introduction to AIS]
+[https://icode-mda.googlecode.com/svn/wiki/9.1_Introduction_To_AIS.pdf Introduction to AIS]
 
 <br><br>
 == Code ==
