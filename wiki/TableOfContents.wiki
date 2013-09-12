@@ -16,7 +16,7 @@
   * [LessonNDVI Introduction to NDVI]
   * [LessonAIS Introduction to AIS]
   * [LessonKernelProcessing Kernel Based Image Processing]
-  * [LessonSatAisVmsLrit S-AIS, VMS, and LRIT. What are the differences?]
+  * [LessonSatAisVmsLrit SatAIS, VMS, and LRIT differences]
   * [LessonGoogleMaps Google Maps with MySQL and PHP]
 
 * Working with OSSIM
