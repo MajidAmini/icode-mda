@@ -5,7 +5,7 @@
 
 <br><br>
 == Presentations ==
-[https://icode-mda.googlecode.com/svn/wiki/17.1_kernelPtn.pdf Kernel Based Image Processing]
+[https://icode-mda.googlecode.com/svn/wiki/12.1_kernelPtn.pdf Kernel Based Image Processing]
 
 <br><br>
 == Code ==
