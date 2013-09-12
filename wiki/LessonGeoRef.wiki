@@ -4,4 +4,4 @@
 
 
 
-[https://icode-mda.googlecode.com/svn/wiki/16.1_georeferenceAnImage.pdf How to Georeference an Image]
+[https://code.google.com/p/icode-mda/source/browse/wiki/2.3_Georeferencing.pdf How to Georeference an Image]
