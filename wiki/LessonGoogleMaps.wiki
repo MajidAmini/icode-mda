@@ -5,7 +5,7 @@ This page contains information for using the Google Maps JavaScript API to creat
 
 <br><br>
 == Presentations ==
-[https://icode-mda.googlecode.com/svn/wiki/GoogleMapsWithMySQL.pdf Google Maps with MySQL and PHP]
+[https://icode-mda.googlecode.com/svn/wiki/9.5_GoogleMapsWithMySQL.pdf Google Maps with MySQL and PHP]
 
 <br><br>
 == Code ==
