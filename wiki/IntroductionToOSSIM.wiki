@@ -13,7 +13,7 @@ OSSIM is a high performance software system for remote sensing, image processing
 
 [https://icode-mda.googlecode.com/svn/wiki/6.2_addingToShipDetectionExample.pdf Adding to the Ship Detection Application (code example)]
 
-[https://icode-mda.googlecode.com/svn/wiki/6.3_shipDetectionMap.pdf A Conceptual Map of the Ship Detection Code]
+[https://icode-mda.googlecode.com/svn/wiki/6.3_Ship_Detection.pdf A Conceptual Map of the Ship Detection Code]
 
 
 
