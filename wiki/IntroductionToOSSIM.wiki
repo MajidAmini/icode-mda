@@ -3,11 +3,11 @@ OSSIM is a high performance software system for remote sensing, image processing
 
 <br><br>
 ==Presentations==
-[https://icode-mda.googlecode.com/svn/wiki/4.0_buildOSSIM_lin.pdf Building OSSIM (Linux)]
+[https://icode-mda.googlecode.com/svn/wiki/4.0_Build_OSSIM_lin.pdf Building OSSIM (Linux)]
 
-[https://icode-mda.googlecode.com/svn/wiki/4.1_buildOSSIM_win.pdf Building OSSIM (Windows)]
+[https://icode-mda.googlecode.com/svn/wiki/4.1_Build_OSSIM_win.pdf Building OSSIM (Windows)]
 
-[https://icode-mda.googlecode.com/svn/wiki/5.1_changeOssimTileToIplFilter.pdf Changing ossimTileToIplFilter (code example)]
+[https://icode-mda.googlecode.com/svn/wiki/5.1_Change_OssimTileToIplFilter.pdf Changing ossimTileToIplFilter (code example)]
 
 [https://icode-mda.googlecode.com/svn/wiki/6.1_componentsOfAnOSSIMFilter.pdf Components of an OSSIM Filter]
 
