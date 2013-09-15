@@ -1,0 +1,11 @@
+Install Instructions for Windows
+(tested on Windows 7, 64-bit)
+
+- Install WampServer (http://www.wampserver.com/en/)
+  - requires administrative account or administrative priviledges
+  - This installs Apache, PHP, and MySQL in one package
+- Copy all files in this directory into your www directory
+- Open phpMyAdmin to add a MySQL database/table
+- run the script from SetupDBForICODE.sql
+  - copy and paste the script into phpMyAdmin to set the database up
+- Open a web browser and go to http://localhost/index.html
