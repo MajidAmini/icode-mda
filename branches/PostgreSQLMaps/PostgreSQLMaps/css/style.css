@@ -1,0 +1,250 @@
+  html { 
+     height:       100%;
+  }
+  body {
+     height:       100%; 
+     width:        100%;
+     margin:       0px;
+     padding:      0px;
+     overflow:     hidden;
+     font:         12px/1.7 Verdana,'Lucida Grande', Arial, "Trebuchet MS", Helvetica, sans-serif;
+  }
+  table {
+     margin:       0;
+     padding:      0;
+     border:       0px solid black;
+     width:        100%;
+  }
+  .width10 {
+     width:        10%;
+  }
+  .width20 {
+     width:        20%;
+  }
+  #panel_top {
+     background:   #333333;
+     height:       60px;
+     color:        #ffffff;
+     position:     relative;
+     top:          0;
+     margin:       0;
+     z-index:      2;
+     box-shadow:   0px 3px 5px #888888;
+  }
+  #logo {
+     position:     absolute;
+     border:       0px solid red;
+     top:          0px;
+     left:         0px;
+     height:       58px;
+     width:        250px;
+     margin:       0;
+     padding:      0;
+     line-height:  20px;
+     vertical-align:middle;
+     text-align:   center;
+     font-size:    18px;
+     text-shadow:  gray 2px 2px 1px;
+  }
+  #top_nav {
+     position:     absolute;
+     height:       60px;
+     width:        -webkit-calc(100% - (400px));
+     width:        calc(100% - (400px));
+     line-height:  58px;
+     top:          4px;
+     left:         253px;
+     vertical-align:middle;
+     text-align:   left;
+     border:       0px solid red;
+  }
+  #stats_nav {
+     position:     absolute;
+     height:       40px;
+     width:        130px;
+     top:          12px;
+     right:        0px;
+     line-height:  20px;
+     vertical-align:middle;
+     text-align:   left;
+     border:       0px solid blue;
+  }
+  #busy_indicator{
+     width:        32px; 
+     position:     absolute; 
+     top:          16px;
+     right:        90px;
+     border:       0px red solid;
+     z-index:      2;
+     visibility:   visible;
+  }
+  #container {
+     overflow:     hidden;
+     position:     absolute;
+     padding:      0px;
+     border:       0px solid gray;
+     width:        100%;
+     height:       -webkit-calc(100% - (60px));
+     height:       calc(100% - (60px));
+     margin:       0 0 0 0;
+  }
+  #panel {
+     position:     absolute;
+     border:       0px solid red;
+     margin:       0;
+     padding:      0px 0px;
+     width:        290px;
+     height:       80%;
+     top:          60px;
+     right:        14px;
+     z-index:      3;
+     box-shadow:   -5px 5px 5px #888888;
+     background-color: rgb(255, 255, 255);
+  }
+  #results_list {
+     position:     absolute;
+     border:       0px solid red;
+     margin:       0px;
+     padding:      0px 0px;
+     width:        100%;
+     /*height:       300px;*/
+     max-height:   400px;
+     bottom:       0px;
+     left:         0px;
+     z-index:      1;
+     overflow-y:   scroll;
+     line-height:  10px;
+     vertical-align:middle;
+     background-color: rgb(255, 255, 255);
+  }
+  #map_canvas { 
+     border:       0px solid transparent; 
+     position:     relative;
+     height:       100%;
+     width:        -webkit-calc(100% - (14px));
+     width:        calc(100% - (14px));
+     top:          0px;
+     left:         0px;
+     overflow:     hidden;
+     background-color: rgb(229, 227, 223); 
+  }
+  #showpanel {
+     position:     absolute;
+     top:          0px;
+     right:        0px;
+     height:       100%;
+     width:        14px;
+     padding:      0px;
+     border:       0px solid white;
+     background:   #333333;
+     color:        white;
+     font-weight:  bold;
+     visibility:   visible;
+     z-index:      2;
+     box-shadow:   -4px 0px 5px #888888;
+  }
+  #content {
+     font-size:    10px;
+     min-width:    350px;
+     padding:      0;
+  }
+  #content b {
+     color:        #205c6f;
+  }
+  #content-left {
+     float:        left;
+     display: inline-block;
+  }
+  #content-right {
+     float:        right;
+     width:        160px;
+     border:       0px solid #cccccc;
+     padding:      2px;
+  }
+  #content-sub {
+     border:       1px solid #cccccc;
+     padding:      2px;
+  }
+  #shipdetails {
+     float:        left;
+     position:     absolute;
+     border:       1px solid gray;
+     margin:       0px;
+     padding:      5px;
+     /*width:        370px;*/
+     /*height:       300px;*/
+     bottom:       38px;
+     left:         5px;
+     z-index:      3;
+     font-size:    10px;
+     background:   rgba(255,255,255,1);
+     visibility:   hidden;
+  }
+  #vessellist {
+     /*
+     float:        left;
+     border:       0px solid gray;
+     margin:       0px;
+     padding:      0px;
+     */
+     font-size:    10px;
+     /*
+     width:        244px;
+     min-height:   100px;
+     max-height:   400px;
+     */
+     overflow-y:   scroll;
+  }
+  #vessellist a {
+     color:        #000000;           
+  }
+  #status-msg {
+     position:     absolute;
+     top:          68px;
+     left:         -webkit-calc(100%/3);
+     left:         calc(100%/3);
+     width:        700px;
+     height:       20px;
+     line-height:  20px;
+     vertical-align:middle;
+     display:      block;
+     padding:      0px 100px 0px 100px;
+     border:       0px solid transparent;
+     background:   yellow;
+     opacity:      1;
+     text-align:   center;
+     font-size:    14px;
+     color:        #000000;
+     font-weight:  bold;
+     box-shadow:   4px 4px 5px #888888;
+     visibility:   hidden;
+  }
+  #latlong {
+     position:     absolute;
+     bottom:       20px;
+     right:        19px;
+     line-height:  12px;
+     vertical-align:middle;
+     display:      block;
+     padding:      2px;
+     border:       0px solid transparent;
+     background:   transparent;
+     opacity:      1;
+     text-align:   left;
+     font-size:    10px;
+     color:        white;
+     text-shadow:  black 2px 2px 3px;
+  }
+  #firstHeading {
+     font-size:    14px;
+  }
+  a {
+     text-decoration: none;
+     color:        #0000FF;
+  }
+  input, textarea, select {
+     font-family:  inherit;
+  }
+  input[type="text"]  {
+     height:       22px;
+  }
