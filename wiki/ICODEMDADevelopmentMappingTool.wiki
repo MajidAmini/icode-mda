@@ -13,4 +13,4 @@ Code is written in HTML, PHP, and JavaScript languages.  The tool should be adap
 
 Setup instructions will be provided in the following set of slides:
 
-[link to slides here]
+[https://icode-mda.googlecode.com/svn/wiki/9.2_ICODEMDA_Maps.pdf How to setup PostgreSQL database for ICODE-MDA Maps]
