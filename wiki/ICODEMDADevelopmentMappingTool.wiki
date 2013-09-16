@@ -19,3 +19,7 @@ Setup instructions will be provided in the following set of slides:
 
  * [https://icode-mda.googlecode.com/svn/trunk/googleMapsIcode/PostgreSQLMaps/Install_Instructions_WIN-Wamp-PostgreSQL-ODBC.txt Quick Instructions to get ICODE-MDA Maps setup]
  * [https://icode-mda.googlecode.com/svn/wiki/9.2_ICODEMDA_Maps.pdf How to setup PostgreSQL database for ICODE-MDA Maps]
+
+For the *older version* of the code that uses a MySQL database, refer to:
+ * [https://icode-mda.googlecode.com/svn/wiki/9.5_GoogleMapsWithMySQL.pdf Google Maps with MySQL and PHP]
+ * [http://icode-mda.googlecode.com/svn/trunk/googleMapsIcode/MySQLMaps/ Code].
