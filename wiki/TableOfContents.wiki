@@ -17,7 +17,7 @@
   * [LessonAIS Introduction to AIS]
   * [LessonKernelProcessing Kernel Based Image Processing]
   * [LessonSatAisVmsLrit SatAIS, VMS, and LRIT differences]
-  * [LessonGoogleMaps Google Maps with MySQL and PHP]
+  * [ICODEMDADevelopmentMappingTool ICODE-MDA Maps with Google Maps]
 
 * Working with OSSIM
   * [IntroductionToOSSIM Introduction to OSSIM]
@@ -42,7 +42,7 @@
   * [SmallVesselDetectioninCoastalRadarData Small Vessel Detection in Coastal Radar Data]
   * [TrackStitchingUsingGraphicalModelsAndMessagePassing Track Stitching Using Graphical Models and Message Passing]
   * [ContextualBehaviouralModellingAndClassificationOfVesselsInAMaritimePirateSituation]
-  * [ICODEMDADevelopmentMappingTool]
+  * [ICODEMDADevelopmentMappingTool ICODE-MDA Maps with Google Maps]
 
 * [JobsList List of Related Careers]
  
