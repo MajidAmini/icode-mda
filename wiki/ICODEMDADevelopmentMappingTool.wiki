@@ -7,7 +7,7 @@ The ICODE-MDA Maps tool allows for developers to display various types of geo-lo
 
 = Details =
 
-Code is written in HTML, PHP, and JavaScript languages.  The tool should be adaptable to read data from various sources of data stored in a database (i.e. MySQL, PostgreSQL, etc.) and display various information of that data, including geolocation of targets and other pertinent information.
+Code is written in HTML, PHP, and JavaScript languages.  The tool should be adaptable to read data from various sources of data stored in a database (i.e. MySQL, PostgreSQL, etc.) and display information about that data, including geolocation of targets and other pertinent information.
 
 = Setup Instructions =
 
