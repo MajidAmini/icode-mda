@@ -52,7 +52,9 @@ if(count($_GET) > 0) {
 
 
        $sources = $_GET["sources"];
-       $fromSources = "(SELECT * FROM radar_vessels" . $sources . " UNION SELECT * FROM current_vessels" . $sources . ") VESSELS";
+       //$fromSources = "(SELECT * FROM radar_vessels" . $sources . " UNION SELECT * FROM current_vessels" . $sources . ") VESSELS";
+       $fromSources = "(SELECT * FROM radar_vessels" . $sources . " UNION SELECT * FROM current_vessels" . $sources . ") VESSELS LEFT OUTER JOIN user_ship_risk ON VESSELS.mmsi = user_ship_risk.ship_id";
+
 //    }
 }
 
@@ -157,7 +159,9 @@ while (odbc_fetch_row($result)){
                    posaccuracy=>odbc_result($result,"posaccuracy"),
                    eta=>odbc_result($result,"eta"),
                    posfixtype=>odbc_result($result,"posfixtype"),
-                   streamid=>htmlspecialchars(odbc_result($result,"streamid"))
+                   //streamid=>htmlspecialchars(odbc_result($result,"streamid"))
+                   streamid=>htmlspecialchars(odbc_result($result,"streamid")),
+                   risk_score=>odbc_result($result,"risk_score")
    );
    array_push($vesselarray, $vessel);
 }
