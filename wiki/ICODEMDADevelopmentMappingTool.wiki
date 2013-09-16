@@ -2,7 +2,9 @@
 
 = Introduction =
 
-The ICODE-MDA Maps tool allows for developers to display various types of geo-located data on a map.  The idea is to use this tool to display a large amount of geo-located information and visually represent results from algorithm development.  Usually, Google Earth would be great for this purpose via KML/KMZ files, but when the amount of data becomes too large, this method fails if the developer lacks a very high-end machine with massive amounts of memory.  The ICODE-MDA Maps approach allows the data to be stored and retrieved from a database, which is more robust in storing large amounts of data.
+The ICODE-MDA Maps tool allows for developers to display various types of geo-located data on a map.
+<p>
+The idea is to use this tool to display a large amount of geo-located information and visually represent results from algorithm development.  Usually, Google Earth would be great for this purpose via KML/KMZ files, but when the amount of data becomes too large, this method fails if the developer lacks a very high-end machine with massive amounts of memory.  The ICODE-MDA Maps approach allows the data to be stored and retrieved from a database, which is more robust in storing large amounts of data.
 
 
 = Details =
