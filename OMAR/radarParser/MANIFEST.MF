@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Ant-Version: Apache Ant 1.8.3
-Created-By: 1.7.0_05-b05 (Oracle Corporation)
-Main-Class: com.spawar.icode.xmlParser
-Class-Path: lib/JAXB2_20110601.jar lib/log4j-1.2.16.jar 
-
