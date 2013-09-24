@@ -364,6 +364,7 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
       }
       else {
          //No custom query, do default query
+         //phpWithArg = "query_current_vessels.php?" + sources + boundStr;
          phpWithArg = "query_current_vessels.php?" + sources + boundStr;
       }
    }
@@ -451,7 +452,7 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                var eta = vessel.eta;
                var posfixtype = vessel.posfixtype;
                var streamid = vessel.streamid;
-
+               var risk_score = vessel.risk_score;
                if (imo != null) {
                   imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + mmsi + '&imo=' + imo;
                }
@@ -511,6 +512,7 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                         '<b>Destination</b>: ' + destination + '<br>'+
                         '<b>ETA</b>: ' + eta + '<br>'+
                         '<b>Source</b>: ' + streamid + '<br>'+
+	                '<b>Risk</b>: ' + risk_score + '<br>'+	
                      '</div>' +
                   '</div>'+
 
@@ -520,6 +522,7 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                var html = htmlTitle + htmlLeft + htmlRight;
 
                var iconColor = getIconColor(vesseltypeint, streamid);
+               var riskColor = getRiskColor(vesseltypeint, streamid, risk_score);
 
                //Ship shape
                var vw = 3; //vesselwidth
@@ -534,8 +537,10 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                   position: point,
                   icon: {
                      path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
-                     strokeColor:  iconColor,
-                     strokeWeight: 2,
+                     //strokeColor:  iconColor,
+                     strokeColor:  riskColor,
+                     //strokeWeight: 2,
+                     strokeWeight: 3,
                      fillColor:    iconColor,
                      fillOpacity:  0.6,
                      rotation:     true_heading
@@ -1364,7 +1369,8 @@ function getTypesSelected() {
 function getIconColor(vesseltypeint, streamid) {
    var color;
    if (streamid == 'shore-radar' || (streamid == 'r166710001' && vesseltypeint != 999)) {
-      color = '#FE2E2E';
+      //color = '#FE2E2E';
+      color = '#F078FF';  //pink
       return color;
    }
          
@@ -1421,7 +1427,8 @@ function getIconColor(vesseltypeint, streamid) {
 		//return "shipicons/cyan1_90.png";
    }
    else if (vesseltypeint == 51) {
-      color = '#FF0000'; 
+      //color = '#FF0000'; 
+      color = '#BE3C14'; 
 		//return "shipicons/red1_90.png";
    }
    else if (vesseltypeint == 999) { //currently used for LAISIC outputs
@@ -1435,6 +1442,32 @@ function getIconColor(vesseltypeint, streamid) {
    }
    return color;
 }
+/* -------------------------------------------------------------------------------- */
+function getRiskColor(vesseltypeint, streamid, risk_score) {
+   var color;
+   var LOW_SCORE = 6;
+   var MEDIUM_SCORE = 16;
+   if (streamid == 'shore-radar' || (streamid == 'r166710001' && vesseltypeint != 999)) {
+      color = '#F078FF';  //pink
+      return color;
+   }
+         
+   
+   if (vesseltypeint == 999) { //currently used for LAISIC outputs
+      color = '#A901DB'; 
+   }
+   else if (risk_score <= LOW_SCORE) { // Green Outline for Vessel
+      color = '#00F014';
+   }
+   else if (risk_score >= LOW_SCORE && risk_score <= MEDIUM_SCORE) { // Yellow Outline for Vessel
+      color = '#F0FF78';
+   }
+   else if (risk_score >= MEDIUM_SCORE ) { // Red Outline for Vessel
+      color = '#FF0014';
+   }
+   return color;
+}
+
 
 /* -------------------------------------------------------------------------------- */
 //Shows any overlays currently in the array
