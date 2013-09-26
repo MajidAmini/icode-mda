@@ -456,6 +456,8 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                var eta = vessel.eta;
                var posfixtype = vessel.posfixtype;
                var streamid = vessel.streamid;
+               var safety_rating = vessel.safety_rating;
+               var security_rating = vessel.security_rating;
                var risk_score_safety = vessel.risk_score_safety;
                var risk_score_security = vessel.risk_score_security;
                if (imo != null) {
@@ -528,7 +530,7 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                var html = htmlTitle + htmlLeft + htmlRight;
 
                var iconColor = getIconColor(vesseltypeint, streamid);
-               var riskColor = getRiskColor(vesseltypeint, streamid, risk_score_safety);
+               
 
                //Ship shape
                var vw = 5; //vesselwidth
@@ -540,13 +542,15 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                //var markerpath = 'M 0,8 4,8 0,-8 -4,8 z';
                
                //Slightly different style for vessels with valid risk score
-               if (risk_score != null) {
+               if (risk_score_safety != null || risk_score_security != null) {
+                  var riskColorSafety = getRiskColor(vesseltypeint, streamid, safety_rating);
+                  var riskColorSecurity = getRiskColor(vesseltypeint, streamid, security_rating);
                   var marker = new google.maps.Marker({
                      position: point,
                      icon: {
                         path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
                         //strokeColor:  iconColor,
-                        strokeColor:  riskColor,
+                        strokeColor:  riskColorSafety,
                         strokeWeight: 3,
                         fillColor:    iconColor,
                         fillOpacity:  0.6,
@@ -1466,10 +1470,8 @@ function getIconColor(vesseltypeint, streamid) {
 }
 
 /* -------------------------------------------------------------------------------- */
-function getRiskColor(vesseltypeint, streamid, risk_score) {
+function getRiskColor(vesseltypeint, streamid, risk_rating) {
    var color;
-   var LOW_SCORE = 6;
-   var MEDIUM_SCORE = 16;
    if (streamid == 'shore-radar' || (streamid == 'r166710001' && vesseltypeint != 999)) {
       color = '#F078FF';  //pink
       return color;
@@ -1478,14 +1480,18 @@ function getRiskColor(vesseltypeint, streamid, risk_score) {
    if (vesseltypeint == 999) { //currently used for LAISIC outputs
       color = '#A901DB'; 
    }
-   else if (risk_score <= LOW_SCORE) { // Green Outline for Vessel
+   else if (risk_rating == "L") { // Green Outline for Vessel
       color = '#00F014';
    }
-   else if (risk_score >= LOW_SCORE && risk_score <= MEDIUM_SCORE) { // Yellow Outline for Vessel
+   else if (risk_rating == "M") { // Yellow Outline for Vessel
       color = '#F0FF78';
    }
-   else if (risk_score >= MEDIUM_SCORE ) { // Red Outline for Vessel
+   else if (risk_rating == "H" ) { // Red Outline for Vessel
       color = '#FF0014';
+   }
+   else
+   {
+      color = '#FFFFFF';
    }
    return color;
 }
