@@ -1,6 +1,6 @@
 /**
  * @name ICODE-MDA Maps
- * @author Sparta Cheung, Bryan Bagnall
+ * @author Sparta Cheung, Bryan Bagnall, Lynne Tablewski
  * @fileoverview
  * Uses the Google Maps API to display AIS points at their reported locations
  */
@@ -126,8 +126,8 @@ var highlightCircle = new google.maps.Circle({
 function initialize() {
    //Set up map properties
    //var centerCoord = new google.maps.LatLng(0,0);
-   var centerCoord = new google.maps.LatLng(32.72,-117.2319);   //Point Loma
-   //var centerCoord = new google.maps.LatLng(6.0,1.30);   //Lome, Togo
+   //var centerCoord = new google.maps.LatLng(32.72,-117.2319);   //Point Loma
+   var centerCoord = new google.maps.LatLng(6.0,1.30);   //Lome, Togo
    //var centerCoord = new google.maps.LatLng(-33.0, -71.6);   //Valparaiso, Chile
 
    //Detect iPhone or Android devices and set map to 100%
@@ -162,6 +162,9 @@ function initialize() {
 	};
 
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+
+   //Set default map layer
+   map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
 
    //Clear marker array
    markerArray = [];
@@ -212,9 +215,12 @@ function initialize() {
 
    //TODO: TEST WMS layers
    addWmsLayers();
-   //map.setMapTypeId('OpenLayers');
    //TEST
-   
+
+   //Check for TMACS layer toggle on load
+   toggleTMACSHeadWMSLayer();
+   toggleTMACSHistoryWMSLayer();
+
    //Cluster overlay layer
    if (CLUSTER) {
    	markerClusterer = new MarkerClusterer(map, [], mcOptions);
@@ -523,7 +529,7 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                var riskColor = getRiskColor(vesseltypeint, streamid, risk_score);
 
                //Ship shape
-               var vw = 3; //vesselwidth
+               var vw = 5; //vesselwidth
                var vl = 10; //vesselwidth
                var markerpath = 'M 0,'+vl+' '+vw+','+vl+' '+vw+',-3 0,-'+vl+' -'+vw+',-3 -'+vw+','+vl+' z';
                //Indented arrow
@@ -531,19 +537,35 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                //Arrow
                //var markerpath = 'M 0,8 4,8 0,-8 -4,8 z';
                
-               var marker = new google.maps.Marker({
-                  position: point,
-                  icon: {
-                     path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
-                     //strokeColor:  iconColor,
-                     strokeColor:  riskColor,
-                     //strokeWeight: 2,
-                     strokeWeight: 3,
-                     fillColor:    iconColor,
-                     fillOpacity:  0.6,
-                     rotation:     true_heading
-                  }
-               });
+               //Slightly different style for vessels with valid risk score
+               if (risk_score != null) {
+                  var marker = new google.maps.Marker({
+                     position: point,
+                     icon: {
+                        path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
+                        //strokeColor:  iconColor,
+                        strokeColor:  riskColor,
+                        strokeWeight: 3,
+                        fillColor:    iconColor,
+                        fillOpacity:  0.6,
+                        rotation:     true_heading
+                     }
+                  });
+               }
+               else {   //regular style for vessels with no risk info
+                  var marker = new google.maps.Marker({
+                     position: point,
+                     icon: {
+                        path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
+                        strokeColor:  iconColor,
+                        //strokeColor:  riskColor,
+                        strokeWeight: 0,
+                        fillColor:    iconColor,
+                        fillOpacity:  0.8,
+                        rotation:     true_heading
+                     }
+                  });
+               }               
 
                //Try new marker shape for LAISIC (type 999) contacts
                if (vesseltypeint == 999) {
@@ -1440,6 +1462,7 @@ function getIconColor(vesseltypeint, streamid) {
    }
    return color;
 }
+
 /* -------------------------------------------------------------------------------- */
 function getRiskColor(vesseltypeint, streamid, risk_score) {
    var color;
@@ -1449,7 +1472,6 @@ function getRiskColor(vesseltypeint, streamid, risk_score) {
       color = '#F078FF';  //pink
       return color;
    }
-         
    
    if (vesseltypeint == 999) { //currently used for LAISIC outputs
       color = '#A901DB'; 
@@ -1465,7 +1487,6 @@ function getRiskColor(vesseltypeint, streamid, risk_score) {
    }
    return color;
 }
-
 
 /* -------------------------------------------------------------------------------- */
 //Shows any overlays currently in the array
