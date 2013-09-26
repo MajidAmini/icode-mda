@@ -72,15 +72,16 @@ var cloudLayer;
 var HEATMAP = true;
 var heatmapLayer;
 //Other WMS layers
+var WMSTILESIZE = 512;
 var openlayersWMS;
-var wmsOptions = {
+var wmsOpenLayersOptions = {
       alt: "OpenLayers",
-      getTileUrl: WMSGetTileUrl,
+      getTileUrl: WMSOpenLayersGetTileUrl,
       isPng: false,
       maxZoom: 17,
       minZoom: 1,
       name: "OpenLayers",
-      tileSize: new google.maps.Size(256, 256)
+      tileSize: new google.maps.Size(WMSTILESIZE, WMSTILESIZE)
    };
 //Shape drawing objects
 var selectedShape;
@@ -125,9 +126,9 @@ var highlightCircle = new google.maps.Circle({
 function initialize() {
    //Set up map properties
    //var centerCoord = new google.maps.LatLng(0,0);
-   //var centerCoord = new google.maps.LatLng(32.72,-117.2319);   //Point Loma
-   var centerCoord = new google.maps.LatLng(6.0,1.30);   //Lome, Togo
-   //var centerCoord = new google.maps.LatLng(5.9,1.30);   //Lome, Togo
+   var centerCoord = new google.maps.LatLng(32.72,-117.2319);   //Point Loma
+   //var centerCoord = new google.maps.LatLng(6.0,1.30);   //Lome, Togo
+   //var centerCoord = new google.maps.LatLng(-33.0, -71.6);   //Valparaiso, Chile
 
    //Detect iPhone or Android devices and set map to 100%
    var controlStyle;
@@ -161,9 +162,6 @@ function initialize() {
 	};
 
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
-
-   //Set default map layer
-   map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
 
    //Clear marker array
    markerArray = [];
@@ -2011,12 +2009,12 @@ function disableDistanceTool() {
 
 /* -------------------------------------------------------------------------------- */
 function addWmsLayers() {
-   openlayersWMS = new google.maps.ImageMapType(wmsOptions);
+   openlayersWMS = new google.maps.ImageMapType(wmsOpenLayersOptions);
    map.mapTypes.set('OpenLayers', openlayersWMS);
 }
 
 /* -------------------------------------------------------------------------------- */
-function WMSGetTileUrl(tile, zoom) {
+function WMSOpenLayersGetTileUrl(tile, zoom) {
    var projection = window.map.getProjection();
    var zpow = Math.pow(2, zoom);
    var ul = new google.maps.Point(tile.x * 256.0 / zpow, (tile.y + 1) * 256.0 / zpow);
@@ -2046,80 +2044,118 @@ function WMSGetTileUrl(tile, zoom) {
    return url;
 }
 
+/* -------------------------------------------------------------------------------- */
+function toggleTMACSHeadWMSLayer() {
+   var wmsTMACSheadOptions = {
+      alt: "TMACS",
+      getTileUrl: WMSTMACSHeadGetTileUrl,
+      isPng: true,
+      maxZoom: 17,
+      minZoom: 1,
+      name: "TMACS",
+      tileSize: new google.maps.Size(WMSTILESIZE, WMSTILESIZE)
+   };
+
+   //For interval timer:
+   /*
+// set interval
+var tid = setInterval(mycode, 2000);
+function mycode() {
+  // do some stuff...
+  // no need to recall the function (it's an interval, it'll loop forever)
+}
+function abortTimer() { // to be called when you want to stop the timer
+  clearInterval(tid);
+}
+    */
+
+   //Track head
+   if (document.getElementById("TMACShead").checked) {
+      //TMACS WMS
+      tmacsHeadWMS = new google.maps.ImageMapType(wmsTMACSheadOptions);
+      map.overlayMapTypes.insertAt(0, tmacsHeadWMS);
+      //map.overlayMapTypes.push(tmacsHeadWMS);
+   }
+   else {
+      map.overlayMapTypes.setAt(0,null);
+      //map.overlayMapTypes.removeAt(0);
+   }
+}
 
 /* -------------------------------------------------------------------------------- */
-/*
-   function addWmsLayers() {
-//http://www.sumbera.com/lab/GoogleV3/tiledWMSoverlayGoogleV3.htm
-//Define OSM as base layer in addition to the default Google layers
+function toggleTMACSHistoryWMSLayer() {
+   var wmsTMACShistoryOptions = {
+      alt: "TMACS",
+      getTileUrl: WMSTMACSHistoryGetTileUrl,
+      isPng: true,
+      maxZoom: 17,
+      minZoom: 1,
+      name: "TMACS",
+      tileSize: new google.maps.Size(WMSTILESIZE, WMSTILESIZE)
+   };
 
-var osmMapType = new google.maps.ImageMapType({
-getTileUrl: function (coord, zoom) {
-return "http://tile.openstreetmap.org/" +
-zoom + "/" + coord.x + "/" + coord.y + ".png";
-},
-tileSize: new google.maps.Size(256, 256),
-isPng: true,
-alt: "OpenStreetMap",
-name: "OSM",
-maxZoom: 19
-});
-
-//Define custom WMS tiled layer
-	var SLPLayer = new google.maps.ImageMapType({
-		getTileUrl: function (coord, zoom) {
-			var proj = map.getProjection();
-			var zfactor = Math.pow(2, zoom);
-
-			// get Long Lat coordinates
-			var top = proj.fromPointToLatLng(new google.maps.Point(coord.x * 256 / zfactor, coord.y * 256 / zfactor));
-			var bot = proj.fromPointToLatLng(new google.maps.Point((coord.x + 1) * 256 / zfactor, (coord.y + 1) * 256 / zfactor));
-
-			//corrections for the slight shift of the SLP (mapserver)
-			var deltaX = 0.0013;
-			var deltaY = 0.00058;
-
-
-			//create the Bounding box string
-			var bbox = (top.lng() + deltaX) + "," +
-                    (bot.lat() + deltaY) + "," +
-                    (bot.lng() + deltaX) + "," +
-                    (top.lat() + deltaY);
-
-
-			//http://onearth.jpl.nasa.gov/wms.cgi?request=GetCapabilities
-			//base WMS URL
-			var url = "http://mapserver-slp.mendelu.cz/cgi-bin/mapserv?map=/var/local/slp/krtinyWMS.map&";
-			url += "&REQUEST=GetMap"; //WMS operation
-			url += "&SERVICE=WMS";    //WMS service
-			url += "&VERSION=1.1.1";  //WMS version  
-			url += "&LAYERS=" + "typologie,hm2003"; //WMS layers
-			url += "&FORMAT=image/png" ; //WMS format
-			url += "&BGCOLOR=0xFFFFFF";  
-			url += "&TRANSPARENT=TRUE";
-			url += "&SRS=EPSG:4326";     //set WGS84 
-			url += "&BBOX=" + bbox;      // set bounding box
-			url += "&WIDTH=256";         //tile size in google
-			url += "&HEIGHT=256";
-
-			return url;                 // return URL for the tile
-		},
-
-		tileSize: new google.maps.Size(256, 256),
-
-		isPng: true
-
-	});
-
-	map.mapTypes.set('OSM', osmMapType);
-
-	map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
-
-	//add WMS layer
-
-	map.overlayMapTypes.push(SLPLayer);
+   //Track history
+   if (document.getElementById("TMACShistory").checked) {
+      //TMACS WMS
+      tmacsHistoryWMS = new google.maps.ImageMapType(wmsTMACShistoryOptions);
+      map.overlayMapTypes.insertAt(1, tmacsHistoryWMS);
+      //map.overlayMapTypes.push(tmacsHistoryWMS);
+   }
+   else {
+      map.overlayMapTypes.setAt(1,null);
+      //map.overlayMapTypes.removeAt(0);
+   }
 }
-*/
+
+
+/* -------------------------------------------------------------------------------- */
+function WMSTMACSHeadGetTileUrl(tile, zoom) {
+   var projection = window.map.getProjection();
+   var zpow = Math.pow(2, zoom);
+   var ul = new google.maps.Point(tile.x * WMSTILESIZE / zpow, (tile.y + 1) * WMSTILESIZE / zpow);
+   var lr = new google.maps.Point((tile.x + 1) * WMSTILESIZE / zpow, (tile.y) * WMSTILESIZE / zpow);
+   var ulw = projection.fromPointToLatLng(ul);
+   var lrw = projection.fromPointToLatLng(lr);
+
+   var baseURL = "http://baseWMSurl";  //URL hidden
+   var endURL = "&LAYERS=0&STYLES=default&BGCOLOR=0xddddff&EXCEPTIONS=application/vnd.ogc.se_inimage&SYMBOLS=ntds&FONTSIZE=medium&FONTSTYLE=plain&MDP=1067&UPDATESEQUENCE=40&TRANSPARENT=true";
+   var crs = "EPSG:4326"; 
+   var bbox = ulw.lat() + "," + ulw.lng() + "," + lrw.lat() + "," + lrw.lng();
+   var width = WMSTILESIZE.toString();
+   var height = WMSTILESIZE.toString();
+   var version = "1.3.0";
+   var request = "GetMap";
+   var format = "image/png"; //type of image returned  or image/jpeg
+
+   var url = baseURL + "VERSION=" + version + "&REQUEST=" + request + "&CRS=" + crs + "&BBOX=" + bbox + "&WIDTH=" + width + "&HEIGHT=" + height + "&FORMAT=" + format + endURL;
+
+   //console.log(url);
+   return url;
+}
+
+/* -------------------------------------------------------------------------------- */
+function WMSTMACSHistoryGetTileUrl(tile, zoom) {
+   var projection = window.map.getProjection();
+   var zpow = Math.pow(2, zoom);
+   var ul = new google.maps.Point(tile.x * WMSTILESIZE / zpow, (tile.y + 1) * WMSTILESIZE / zpow);
+   var lr = new google.maps.Point((tile.x + 1) * WMSTILESIZE / zpow, (tile.y) * WMSTILESIZE / zpow);
+   var ulw = projection.fromPointToLatLng(ul);
+   var lrw = projection.fromPointToLatLng(lr);
+
+   var baseURL = "http://baseWMSurl";  //URL hidden
+   var endURL = "&LAYERS=1&STYLES=default&BGCOLOR=0xddddff&EXCEPTIONS=application/vnd.ogc.se_inimage&SYMBOLS=ntds&FONTSIZE=medium&FONTSTYLE=plain&MDP=1067&UPDATESEQUENCE=40&TRANSPARENT=true";
+   var crs = "EPSG:4326"; 
+   var bbox = ulw.lat() + "," + ulw.lng() + "," + lrw.lat() + "," + lrw.lng();
+   var width = WMSTILESIZE.toString();
+   var height = WMSTILESIZE.toString();
+   var version = "1.3.0";
+   var request = "GetMap";
+   var format = "image/png"; //type of image returned  or image/jpeg
+
+   var url = baseURL + "VERSION=" + version + "&REQUEST=" + request + "&CRS=" + crs + "&BBOX=" + bbox + "&WIDTH=" + width + "&HEIGHT=" + height + "&FORMAT=" + format + endURL;
+   console.log(url);
+   return url;
+}
 
 /* -------------------------------------------------------------------------------- */
 function microtime (get_as_float) {
