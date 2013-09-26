@@ -161,7 +161,8 @@ while (odbc_fetch_row($result)){
                    posfixtype=>odbc_result($result,"posfixtype"),
                    //streamid=>htmlspecialchars(odbc_result($result,"streamid"))
                    streamid=>htmlspecialchars(odbc_result($result,"streamid")),
-                   risk_score=>odbc_result($result,"security_score")
+                   risk_score_security=>odbc_result($result,"security_score"),
+                   risk_score_safety=>odbc_result($result,"safety_score")
    );
    array_push($vesselarray, $vessel);
 }
