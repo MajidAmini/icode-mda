@@ -456,7 +456,8 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                var eta = vessel.eta;
                var posfixtype = vessel.posfixtype;
                var streamid = vessel.streamid;
-               var risk_score = vessel.risk_score;
+               var risk_score_safety = vessel.risk_score_safety;
+               var risk_score_security = vessel.risk_score_security;
                if (imo != null) {
                   imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + mmsi + '&imo=' + imo;
                }
@@ -516,7 +517,8 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                         '<b>Destination</b>: ' + destination + '<br>'+
                         '<b>ETA</b>: ' + eta + '<br>'+
                         '<b>Source</b>: ' + streamid + '<br>'+
-	                '<b>Risk</b>: ' + risk_score + '<br>'+	
+	                '<b>Risk Security</b>: ' + risk_score_security + '<br>'+	
+	                '<b>Risk Safety</b>: ' + risk_score_safety + '<br>'+	
                      '</div>' +
                   '</div>'+
 
@@ -526,7 +528,7 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                var html = htmlTitle + htmlLeft + htmlRight;
 
                var iconColor = getIconColor(vesseltypeint, streamid);
-               var riskColor = getRiskColor(vesseltypeint, streamid, risk_score);
+               var riskColor = getRiskColor(vesseltypeint, streamid, risk_score_safety);
 
                //Ship shape
                var vw = 5; //vesselwidth
