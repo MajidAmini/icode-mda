@@ -149,7 +149,7 @@ function initialize() {
       streetViewControl: false,
       overviewMapControl:true,
       //keyboardShortcuts: false,
-      mapTypeId:         google.maps.MapTypeId.ROADMAP,
+      mapTypeId:         google.maps.MapTypeId.HYBRID,
       mapTypeControlOptions: {
          mapTypeIds: [google.maps.MapTypeId.ROADMAP, 
                          google.maps.MapTypeId.SATELLITE, 
@@ -164,7 +164,7 @@ function initialize() {
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
    //Set default map layer
-   map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
+   map.setMapTypeId(google.maps.MapTypeId.HYBRID);
 
    //Clear marker array
    markerArray = [];
@@ -225,25 +225,22 @@ function initialize() {
    if (CLUSTER) {
    	markerClusterer = new MarkerClusterer(map, [], mcOptions);
    }
+   toggleClusterLayer();
 
-   /*
+   //Radar layer
+   toggleRadarLayer();
+
    //KML overlay layer
-   if (document.getElementById("KMLLayer").checked) {
-      KML = true;
-      showKML();
-   }
-   */
+   toggleKMLLayer();
 
-   if (document.getElementById("PortLayer").checked) {
-      Ports = true;
-      showPorts();
-   }
+   //Check for port layers
+   togglePortLayer();
 
-   /*
-   $('#kmlform').change(function() { 
-      showUploadedKML(); 
-   }); 
-   */
+   //Weather
+   toggleWeatherLayer();
+
+   //Heatmap layer
+   toggleHeatmapLayer();
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -1579,12 +1576,12 @@ function toggleRadarLayer() {
 
 /* -------------------------------------------------------------------------------- */
 function toggleKMLLayer() {
-   if (document.getElementById("KMLLayer").checked) {
+   if (document.getElementById("KMLLayer") && document.getElementById("KMLLayer").checked) {
    tempKMLcount++;
       KML = true;
       showKML();
    }
-   else {
+   else if (document.getElementById("KMLLayer")){
       //Delete the KML layer
       KML = false;
       //kmlparser.hideDocument(kmlparser.docs);
@@ -1600,6 +1597,9 @@ function toggleKMLLayer() {
       //Delete the opacity slider control
       //TODO: make sure to pop the correct object
       map.controls[google.maps.ControlPosition.RIGHT_TOP].pop();
+   }
+   else {
+      //Do nothing, KMLLayer div not found
    }
 }
 
@@ -1657,7 +1657,7 @@ function showKML() {
 
 /* -------------------------------------------------------------------------------- */
 function togglePortLayer() {
-   if (document.getElementById("PortLayer").checked) {
+   if (document.getElementById("PortLayer") && document.getElementById("PortLayer").checked) {
       Ports = true;
       showPorts();
    }
@@ -1749,7 +1749,7 @@ function hidePorts() {
 
 /* -------------------------------------------------------------------------------- */
 function toggleClusterLayer() {
-   if (document.getElementById("ClusterLayer").checked) {
+   if (document.getElementById("ClusterLayer") && document.getElementById("ClusterLayer").checked) {
       clearOverlays();
       CLUSTER = true;
       markerClusterer.addMarkers(markerArray);
@@ -1763,13 +1763,18 @@ function toggleClusterLayer() {
 
 /* -------------------------------------------------------------------------------- */
 function toggleHeatmapLayer() {
-   if (document.getElementById("HeatmapLayer").checked) {
+   if (document.getElementById("HeatmapLayer") && document.getElementById("HeatmapLayer").checked) {
       markerClusterer.removeMarkers(markerArray);
       addHeatmap();
    }
+   else if (document.getElementById("HeatmapLayer")) {
+      if (typeof heatmapLayer != 'undefined' && heatmapLayer != null) {
+         heatmapLayer.setMap(null);
+         markerClusterer.addMarkers(markerArray);
+      }
+   }
    else {
-      heatmapLayer.setMap(null);
-      markerClusterer.addMarkers(markerArray);
+      //Do nothing, no heatmap div found
    }
 }
 
@@ -1792,12 +1797,17 @@ function addHeatmap() {
 
 /* -------------------------------------------------------------------------------- */
 function toggleWeatherLayer() {
-   if (document.getElementById("WeatherLayer").checked) {
+   if (document.getElementById("WeatherLayer") && document.getElementById("WeatherLayer").checked) {
       addWeatherLayer();
    }
+   else if (document.getElementById("WeatherLayer")) {
+      if (typeof weatherLayer != 'undefined' && whetherLayer != null) {
+         weatherLayer.setMap(null);
+         cloudLayer.setMap(null);
+      }
+   }
    else {
-      weatherLayer.setMap(null);
-      cloudLayer.setMap(null);
+      //Do nothing, no WeatherLayer div found
    }
 }
 
@@ -2099,7 +2109,7 @@ function abortTimer() { // to be called when you want to stop the timer
     */
 
    //Track head
-   if (document.getElementById("TMACShead").checked) {
+   if (document.getElementById("TMACShead") && document.getElementById("TMACShead").checked) {
       //TMACS WMS
       tmacsHeadWMS = new google.maps.ImageMapType(wmsTMACSheadOptions);
       map.overlayMapTypes.insertAt(0, tmacsHeadWMS);
@@ -2124,7 +2134,7 @@ function toggleTMACSHistoryWMSLayer() {
    };
 
    //Track history
-   if (document.getElementById("TMACShistory").checked) {
+   if (document.getElementById("TMACShistory") && document.getElementById("TMACShistory").checked) {
       //TMACS WMS
       tmacsHistoryWMS = new google.maps.ImageMapType(wmsTMACShistoryOptions);
       map.overlayMapTypes.insertAt(1, tmacsHistoryWMS);
