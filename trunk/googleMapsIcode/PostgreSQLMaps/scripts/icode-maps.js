@@ -1408,7 +1408,7 @@ function getIconColor(vesseltypeint, streamid) {
       color = '#01DF01'; 
       //return "shipicons/lightgreen1_90.png";
    }
-   else if (vesseltypeint == 60) {
+   else if (vesseltypeint >= 60 && vesseltypeint <= 69) {
       color = '#01DF01'; 
       //return "shipicons/lightgreen1_90.png";
    }
