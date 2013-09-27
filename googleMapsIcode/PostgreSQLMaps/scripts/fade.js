@@ -61,12 +61,16 @@ function fade(eid)
 
 
 $(document).ready(function(){
-   setTimeout(function(){
-      fade('status-msg');
+   if ($('#status-msg')) {    //check if status-msg div exists
       setTimeout(function(){
-         var div = document.getElementById('status-msg');
-         div.parentNode.removeChild(div);   
-      }, TimeToFade);
-   }, 5000);
-
+         fade('status-msg');
+         setTimeout(function(){
+            var div = document.getElementById('status-msg');
+            div.parentNode.removeChild(div);   
+         }, TimeToFade);
+      }, 3000);
+   }
+   else {
+      //Do nothing, status-msg div not found
+   }
 });
