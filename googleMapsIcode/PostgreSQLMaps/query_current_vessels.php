@@ -100,7 +100,9 @@ if(count($_GET) > 0) {
        $query = $query . " limit " . $limit;
     }
 
-    $query = $query . " order by VESSELS.mmsi";
+    if (empty($_GET["query"])) {
+       $query = $query . " order by VESSELS.mmsi";
+    }
 }
 else {
     $limit = 10;
