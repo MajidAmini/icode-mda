@@ -164,7 +164,7 @@ function initialize() {
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
    //Set default map layer
-   map.setMapTypeId(google.maps.MapTypeId.HYBRID);
+   map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
 
    //Clear marker array
    markerArray = [];
