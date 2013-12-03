@@ -18,7 +18,7 @@ cd $HOME/projects
 grails create-plugin geodata
 cd geodata
 }}}
- # Add some OMAR dependencies to your plugin. Edit your plugins `grails-app/conf/BuildConfig.groovy` and add the following to use GeoScript,  PostGIS, and OpenLayers plugins.
+ # Add some OMAR dependencies to your plugin. Edit your plugins `grails-app/conf/BuildConfig.groovy` and add the following to use GeoScript,  PostGIS, and OpenLayers plugins at the end of the config file.
     {{{
 grails.plugin.location.postgis = "${System.env['OMAR_DEV_HOME']}/plugins/postgis"
 grails.plugin.location.geoscript = "${System.env['OMAR_DEV_HOME']}/plugins/geoscript"
