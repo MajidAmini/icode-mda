@@ -227,8 +227,8 @@ InfoBubble.prototype.buildDom_ = function() {
   var contentContainer = this.contentContainer_ = document.createElement('DIV');
   //contentContainer.style['overflowX'] = 'auto';
   //contentContainer.style['overflowY'] = 'auto';
-  contentContainer.style['overflowX'] = 'hidden';
-  contentContainer.style['overflowY'] = 'hidden';
+  contentContainer.style['overflowX'] = 'visible';
+  contentContainer.style['overflowY'] = 'visible';
   contentContainer.style['cursor'] = 'default';
   contentContainer.style['clear'] = 'both';
   contentContainer.style['position'] = 'relative';
@@ -1201,7 +1201,7 @@ InfoBubble.prototype.updateContent_ = function() {
     this.content_.appendChild(content);
 
     var that = this;
-    var images = this.content_.getElementsByTagName('IMG');
+    var images = this.content_.getElementsByTagName('img');
     for (var i = 0, image; image = images[i]; i++) {
       // Because we don't know the size of an image till it loads, add a
       // listener to the image load so the marker can resize and reposition
@@ -1560,8 +1560,7 @@ InfoBubble.prototype['removeTab'] = InfoBubble.prototype.removeTab;
  * @param {number=} opt_maxHeight Optional max height of the element.
  * @return {google.maps.Size} The size of the element.
  */
-InfoBubble.prototype.getElementSize_ = function(element, opt_maxWidth,
-                                                opt_maxHeight) {
+InfoBubble.prototype.getElementSize_ = function(element, opt_maxWidth, opt_maxHeight) {
   var sizer = document.createElement('DIV');
   sizer.style['display'] = 'inline';
   sizer.style['position'] = 'absolute';
@@ -1588,6 +1587,8 @@ InfoBubble.prototype.getElementSize_ = function(element, opt_maxWidth,
     sizer.style['height'] = this.px(opt_maxHeight);
     size = new google.maps.Size(sizer.offsetWidth, sizer.offsetHeight);
   }
+
+  //console.debug(sizer.scrollHeight);
 
   document.body.removeChild(sizer);
   delete sizer;
@@ -1666,7 +1667,8 @@ InfoBubble.prototype.figureOutSize_ = function() {
         height = contentSize.height;
       }
     }
-  } else {
+  } 
+  else {
     var content = /** @type {string|Node} */ (this.get('content'));
     if (typeof content == 'string') {
       content = this.htmlToDocumentFragment_(content);

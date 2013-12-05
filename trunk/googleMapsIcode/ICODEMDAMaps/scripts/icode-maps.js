@@ -10,7 +10,8 @@
  *  Global objects 
  */
 var map;
-var markerArray;
+var markerArray = [];
+var vesselArray = [];
 var markersDisplayed = [];
 var markersQueried = [];
 //var trackArray;
@@ -18,19 +19,22 @@ var tracksDisplayedMMSI = [];    //keep track of which MMSI's track is already d
 var tracksDisplayed = [];
 var mainQuery;
 
+var clusterBoxes = [];
+var clusterBoxesLabels= [];
+
 //Viewing bounds objects
 var queryBounds;
-var expandFactor = 0.05;
+var expandFactor = 0.10;
 var boundRectangle = null;
 //Marker timing objects
 var markerMouseoutTimeout;
 var trackMouseoverTimeout;
 //Cluster objects
-var CLUSTER = true;  //toggle this for CLUSTERing
+var CLUSTER;
 var markerClusterer;
 var mcOptions = {
-               gridSize: 60, 
-               minimumClusterSize: 50, 
+               gridSize: 100, 
+               minimumClusterSize: 30, 
                averageCenter: false
             };
 //Track line options
@@ -128,6 +132,7 @@ function initialize() {
    //var centerCoord = new google.maps.LatLng(0,0);
    //var centerCoord = new google.maps.LatLng(32.72,-117.2319);   //Point Loma
    var centerCoord = new google.maps.LatLng(6.0,1.30);   //Lome, Togo
+   //var centerCoord = new google.maps.LatLng(2.0,1.30);     //GoG
    //var centerCoord = new google.maps.LatLng(-33.0, -71.6);   //Valparaiso, Chile
 
    //Detect iPhone or Android devices and set map to 100%
@@ -140,6 +145,7 @@ function initialize() {
    else {
       controlStyle = google.maps.MapTypeControlStyle.HORIZONTAL_BAR;
       defaultZoom = 11;
+      //defaultZoom = 7;
    }
       
    var mapOptions = {
@@ -168,6 +174,7 @@ function initialize() {
 
    //Clear marker array
    markerArray = [];
+   vesselArray = [];
    //trackIcons = [];
 
    //Add drawing toolbar
@@ -184,11 +191,17 @@ function initialize() {
 
             if (queryArgument != null) {
                mainQuery = queryArgument;
+
                getCurrentAISFromDB(map.getBounds(), queryArgument, null);
             }
             else {
                //Update vessels displayed
-               getCurrentAISFromDB(map.getBounds(), null, null);
+               if (map.getZoom() > 8) {
+                  getCurrentAISFromDB(map.getBounds(), null, null);
+               }
+               else {
+                  getCurrentAISCountFromDB(map.getBounds(), null, null);
+               }
             }
 
             //Update ports displayed
@@ -197,12 +210,15 @@ function initialize() {
                showPorts();
             }
          }, 
-         2000);   //milliseconds to pause after bounds change
+         1000);   //milliseconds to pause after bounds change
 
       google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
          window.clearTimeout(idleTimeout);
       });
    });
+
+   //Table click/selection events (for LAISIC debugging)
+   handleTableSelection();
 
    //Latlog indicator for current mouse position
    google.maps.event.addListener(map,'mousemove',function(event) {
@@ -252,6 +268,62 @@ function detectMobileBrowser() {
    return check; 
 }
 
+/* -------------------------------------------------------------------------------- */
+/** 
+ * Handle clicking/selection events in LAISIC table
+ */
+function handleTableSelection() {
+   //test localstorage
+   function storageEventHandler(e) {
+      if (!e) { 
+         e = window.event; 
+      }
+      tableUpdated(e);
+   }
+   if (window.addEventListener) {
+      window.addEventListener("storage", storageEventHandler, false);
+   } 
+   else {
+      window.attachEvent("onstorage", storageEventHandler);
+   };
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
+ * Handle clicking/selection events in LAISIC table
+ */
+function tableUpdated(e) {
+   key = new String(e.key);
+   value = e.newValue;
+
+   if (key == "toggle") {
+      clearOverlays();
+      clearAllTracks();
+      markersDisplayed = [];
+   }
+   if (key.indexOf("vessel-") === 0) {
+      if (value == "1") {
+         var mmsi = parseInt(key.substr(7));
+         $.grep(vesselArray, function(e, i){ 
+            if (e.mmsi == mmsi) {
+               console.log(e.mmsi);
+               console.log(i);
+               markerArray[i].setMap(map);
+            }
+         });
+      }
+      else {
+         var mmsi = parseInt(key.substr(7));
+         $.grep(vesselArray, function(e, i){ 
+            if (e.mmsi == mmsi) {
+               //console.log(e.mmsi);
+               //console.log(i);
+               markerArray[i].setMap(null);
+            }
+         });
+      }
+   }
+}
 
 /* -------------------------------------------------------------------------------- */
 /** 
@@ -272,10 +344,34 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
    var viewMinLon = sw.lng();
    var viewMaxLon = ne.lng();
 
-   var minLat = viewMinLat - latLonBuffer;
-   var maxLat = viewMaxLat + latLonBuffer;
-   var minLon = viewMinLon - latLonBuffer;
-   var maxLon = viewMaxLon + latLonBuffer;
+   var minLat = viewMinLat;// - latLonBuffer;
+   var maxLat = viewMaxLat;// + latLonBuffer;
+   var minLon = viewMinLon;// - latLonBuffer;
+   var maxLon = viewMaxLon;// + latLonBuffer;
+
+
+/*
+var testbounds = new google.maps.LatLngBounds(
+               new google.maps.LatLng(viewMinLat, viewMinLon+(viewMaxLon-viewMinLon)/3), 
+               new google.maps.LatLng(viewMaxLat, viewMaxLon-(viewMaxLon-viewMinLon)/3));
+
+console.log(viewMinLat);
+console.log(viewMaxLat);
+console.log(viewMinLon);
+console.log(viewMaxLon);
+
+var testshape = new google.maps.Rectangle({
+            strokeColor: '#FF0000',
+            strokeOpacity: 0.8,
+            strokeWeight: 1,
+            fillColor: '#FF0000',
+            fillOpacity: 0.5,
+            map: map,
+            bounds: testbounds,
+            clickable: false,
+         });
+         */
+
 
    //Set up queryBounds, which is extended initial or changed view bounds
    if (queryBounds == null) {
@@ -390,6 +486,18 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
    //Debug query output
    console.log('getCurrentAISFromDB(): ' + phpWithArg);
 
+   //Pulling out stuff from getJSON function to speed up drawing markers:
+               //Ship shape
+               var vw = 4; //vessel width
+               var vl = 10; //vessel length
+               var markerpath = 'M 0,'+vl+' '+vw+','+vl+' '+vw+',-3 0,-'+vl+' -'+vw+',-3 -'+vw+','+vl+' z';
+               //Indented arrow
+               //var markerpath = 'M 0,5 4,8 0,-8 -4,8 z';
+               //Arrow
+               //var markerpath = 'M 0,8 4,8 0,-8 -4,8 z';
+
+
+
    //Call PHP and get results as markers
    $.getJSON(
          phpWithArg, // The server URL 
@@ -399,6 +507,13 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
          console.log('getCurrentAISFromDB(): ' + response.query);
          //Show the query and put it in the form
          document.getElementById("query").value = response.query;
+
+
+         //Push query to localStorage
+         localStorage.clear();
+         localStorage.setItem('query', response.query);
+         localStorage.setItem('query-timestamp', (new Date()).getTime());
+
 
          //Vessel list window
          document.getElementById('vessellist').innerHTML = 
@@ -412,9 +527,13 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
          //Delete previous markers
          if (boundStr != null) {
             console.log('Clearing previous markers and tracks');
-            clearMarkerArray();
+            clearVesselMarkerArray();
             clearOutBoundMarkers();
             clearAllTracks();
+            for(var i=0; i < clusterBoxes.length; i++) {
+               clusterBoxes[i].setMap(null);
+               clusterBoxesLabels[i].setMap(null);
+            }
          }
 
          markersDisplayed = [];
@@ -424,134 +543,30 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
 
          //Prepare to grab PHP results as JSON objects
          $.each(response.vessels, function(key,vessel) {
-               var messagetype = vessel.messagetype;
-               var mmsi = vessel.mmsi;
-               var navstatus = vessel.navstatus;
-               var rot = vessel.rot;
-               var sog = vessel.sog;
-               var lon = vessel.lon;
-               var lat = vessel.lat;
+               //Push to localStorage for tables to know of change
+               localStorage.setItem('vessel-'+vessel.mmsi, "1");
+
+
                var point = new google.maps.LatLng(
                      parseFloat(vessel.lat),
                      parseFloat(vessel.lon));
-               var cog = vessel.cog;
-               var true_heading = vessel.true_heading;
-               var datetime = vessel.datetime;
-               var imo = vessel.imo;
-               var vesselname = vessel.vesselname;
-               var vesseltypeint = vessel.vesseltypeint;
-               var length = vessel.length;
-               var shipwidth = vessel.shipwidth;
-               var bow = vessel.bow;
-               var stern = vessel.stern;
-               var port = vessel.port;
-               var starboard = vessel.starboard;
-               var draught = vessel.draught;
-               var destination = vessel.destination;
-               var callsign = vessel.callsign;
-               var posaccuracy = vessel.posaccuracy;
-               var eta = vessel.eta;
-               var posfixtype = vessel.posfixtype;
-               var streamid = vessel.streamid;
-               var safety_rating = vessel.safety_rating;
-               var security_rating = vessel.security_rating;
-               var risk_score_safety = vessel.risk_score_safety;
-               var risk_score_security = vessel.risk_score_security;
-               if (imo != null) {
-                  imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + mmsi + '&imo=' + imo;
-               }
-               else {
-                  imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + mmsi;
-               }
 
-               var title;
-               if (vesselname != null && vesselname != '') {
-                  title = vesselname;
-               }
-               else {
-                  if (streamid == 'shore-radar' || (streamid == 'r166710001' && vesseltypeint != 999)) {
-                     title = 'Radar Track ID: ' + mmsi;
-                  }
-                  else if (vesseltypeint == 999) {
-                     title = 'LAISIC Fusion: ' + mmsi;
-                  }
-                  else {
-                     title = 'MMSI or RADAR ID: ' + mmsi;
-                  }
-               }
+               var iconColor = getIconColor(vessel.vesseltypeint, vessel.streamid);
 
-               var htmlTitle = 
-                  '<div id="content">'+
-//                  '<div id="siteNotice">'+
-//                  '</div>'+
-                  '<h2 id="firstHeading" class="firstHeading">' + title + '</h1>' +
-                  '<div id="bodyContent">';
-               var htmlLeft = 
-                  '<div id="content-left">' +
-                  '<a href="https://marinetraffic.com/ais/shipdetails.aspx?MMSI=' + mmsi + '"  target="_blank"> '+
-                  '<img width=180px src="' + imgURL + '">' + 
-                  '</a><br>' + 
-                     '<div id="content-sub" border=1>' +
-                     '<b>MMSI</b>: ' + mmsi + '<br>' +
-                     '<b>IMO</b>: ' + imo + '<br>' +
-                     '<b>Vessel Type</b>: ' + vesseltypeint + '<br>' +
-                     '<b>Last Message Type</b>: ' + messagetype + '<br>' +
-                     '</div>' +
-                     '<div>' + 
-                     '<a id="showtracklink" link="" href="javascript:void(0);" onClick="getTrack(\'' + mmsi + '\', \'' + vesseltypeint + '\', \'' + streamid + '\', \'' + datetime + '\');">Show vessel track history</a>' +
-                     '</div>' +
-                  '</div>';
-               var htmlRight = 
-                  '<div id="content-right">' +
-                     '<div id="content-sub" border=1>' +
-                        //'<b>Report Date</b>: ' + datetime + '<br>' +
-                        '<b>Report Date</b>: <br>' + toHumanTime(datetime) + '<br>' +
-                        '<b>Lat</b>: ' + lat + '<br>' +
-                        '<b>Lon</b>: ' + lon + '<br>' +
-                        '<b>Navigation Status</b>: ' + navstatus + '<br>' +
-                        '<b>Speed Over Ground</b>: ' + sog + '<br>' + 
-                        '<b>Course Over Ground</b>: ' + cog + '<br>' + 
-                        '<b>Length x Width</b>: ' + length + ' x ' + shipwidth + '<br>'+
-                        '<b>Draught</b>: ' + draught  + '<br>'+
-                        '<b>Destination</b>: ' + destination + '<br>'+
-                        '<b>ETA</b>: ' + eta + '<br>'+
-                        '<b>Source</b>: ' + streamid + '<br>'+
-	                '<b>Risk Security</b>: ' + risk_score_security + '<br>'+	
-	                '<b>Risk Safety</b>: ' + risk_score_safety + '<br>'+	
-                     '</div>' +
-                  '</div>'+
-
-                  '</div>'+
-                  '</div>';
-
-               var html = htmlTitle + htmlLeft + htmlRight;
-
-               var iconColor = getIconColor(vesseltypeint, streamid);
-               
-
-               //Ship shape
-               var vw = 5; //vesselwidth
-               var vl = 10; //vesselwidth
-               var markerpath = 'M 0,'+vl+' '+vw+','+vl+' '+vw+',-3 0,-'+vl+' -'+vw+',-3 -'+vw+','+vl+' z';
-               //Indented arrow
-               //var markerpath = 'M 0,5 4,8 0,-8 -4,8 z';
-               //Arrow
-               //var markerpath = 'M 0,8 4,8 0,-8 -4,8 z';
-               
                //Slightly different style for vessels with valid risk score
-               if (risk_score_safety != null || risk_score_security != null) {
-                  var riskColorSafety = getRiskColor(vesseltypeint, streamid, safety_rating);
-                  var riskColorSecurity = getRiskColor(vesseltypeint, streamid, security_rating);
+               if (vessel.risk_score_safety != null || vessel.risk_score_security != null) {
+                  var riskColorSafety = getRiskColor(vessel.vesseltypeint, vessel.streamid, vessel.safety_rating);
+                  var riskColorSecurity = getRiskColor(vessel.vesseltypeint, vessel.streamid, vessel.security_rating);
                   var marker = new google.maps.Marker({
                      position: point,
                      icon: {
                         path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
                         //strokeColor:  iconColor,
-                        strokeColor:  riskColorSafety,
+                        strokeColor:  vessel.riskColorSafety,
                         strokeWeight: 3,
                         fillColor:    iconColor,
                         fillOpacity:  0.6,
-                        rotation:     true_heading
+                        rotation:     vessel.true_heading
                      }
                   });
                }
@@ -560,18 +575,18 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                      position: point,
                      icon: {
                         path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
-                        strokeColor:  iconColor,
-                        //strokeColor:  riskColor,
-                        strokeWeight: 0,
+                        strokeColor:  shadeColor(iconColor,-20),
+                        //strokeColor:  vessel.riskColor,
+                        strokeWeight: 1,
                         fillColor:    iconColor,
                         fillOpacity:  0.8,
-                        rotation:     true_heading
+                        rotation:     vessel.true_heading
                      }
                   });
                }               
 
                //Try new marker shape for LAISIC (type 999) contacts
-               if (vesseltypeint == 999) {
+               if (vessel.vesseltypeint == 999) {
                   marker = new google.maps.Marker({
                      position: point,
                      icon: {
@@ -580,74 +595,83 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
                         strokeWeight: 2,
                         fillColor:    iconColor,
                         fillOpacity:  0.6,
-                        rotation:     true_heading-90 //-90 degrees to account for SVG drawing rotation
+                        rotation:     vessel.true_heading-90 //-90 degrees to account for SVG drawing rotation
                      }
                   });
                }
 
-               //Create infoBubble for marker
-               markerInfoBubble(marker, infoBubble, html, mmsi, vesselname, vesseltypeint, streamid, datetime);
+               //Listener for click on marker to display infoBubble
+               google.maps.event.addListener(marker, 'click', function () {
+                  //Associate the infoBubble to the marker
+                  //markerInfoBubble(marker, infoBubble, html, vessel.mmsi, vessel.vesselname, vessel.vesseltypeint, vessel.streamid, vessel.datetime);
+                  markerInfoBubble(marker, vessel, infoBubble);
+
+
+                  /*
+                  google.maps.event.addListener(marker, 'mouseover', function() {
+                     window.clearTimeout(markerMouseoutTimeout);
+                  });
+
+                  google.maps.event.addListener(marker, 'mouseout', function() {
+                     markerMouseoutTimeout = window.setTimeout(
+                        function closeInfoWindow() { 
+                           infoBubble.removeTab(1);
+                           infoBubble.removeTab(0);
+                           infoBubble.close(); 
+                        }, 
+                        3000);   //milliseconds
+                  });
+                  */
+
+                  //Close the infoBubble if user clicks outside of infoBubble area
+                  google.maps.event.addListenerOnce(map, 'click', function() {
+                     infoBubble.setMap(null);
+                     infoBubble.close(); 
+                  });
+               });
+
+               //Prepare data for creating marker infoWindows/infoBubbles later
                markerArray.push(marker);
+               vesselArray.push(vessel);
 
                markersDisplayed.push({
-                  mmsi: mmsi, 
-                  vesseltypeint: vesseltypeint,
-                  streamid: streamid,
-                  datetime: datetime,
-                  lat: lat,
-                  lon: lon
+                  mmsi: vessel.mmsi, 
+                  vesseltypeint: vessel.vesseltypeint,
+                  streamid: vessel.streamid,
+                  datetime: vessel.datetime,
+                  lat: vessel.lat,
+                  lon: vessel.lon
                });
 
                markersQueried.push({
-                  mmsi: mmsi, 
-                  vesseltypeint: vesseltypeint,
-                  streamid: streamid,
-                  datetime: datetime,
-                  lat: lat,
-                  lon: lon
+                  mmsi: vessel.mmsi, 
+                  vesseltypeint: vessel.vesseltypeint,
+                  streamid: vessel.streamid,
+                  datetime: vessel.datetime,
+                  lat: vessel.lat,
+                  lon: vessel.lon
                });
 
-               //Display current vessel list to vessellist div window
-               if (vesselname == '') {
-                  document.getElementById('vessellist').innerHTML += '<a onmouseover="highlightMMSI(' + mmsi + ')" onmouseout="hideHighlightMMSI()" href="#">' + mmsi + ' - (no vessel name)</a ><hr>';
+
+               if (vesselArray.length < 100) {
+                  //Display current vessel list to vessellist div window
+                  if (vessel.vesselname == '') {
+                     document.getElementById('vessellist').innerHTML += '<a onmouseover="highlightMMSI(' + vessel.mmsi + ')" onmouseout="hideHighlightMMSI()" href="#">' + vessel.mmsi + ' - (no vessel name)</a ><hr>';
+                  }
+                  else {
+                     document.getElementById('vessellist').innerHTML += '<a onmouseover="highlightMMSI(' + vessel.mmsi + ')" onmouseout="hideHighlightMMSI()" href="#">' + vessel.mmsi + ' - ' + vessel.vesselname + '</a ><hr>';
+                  }
                }
                else {
-                  document.getElementById('vessellist').innerHTML += '<a onmouseover="highlightMMSI(' + mmsi + ')" onmouseout="hideHighlightMMSI()" href="#">' + mmsi + ' - ' + vesselname + '</a ><hr>';
+                  document.getElementById('vessellist').innerHTML = 'Too many vessels to list here';
                }
 
+
                //Display current vessel to selectable results list
-//               document.getElementById('selectable').innerHTML += '<li class="ui-widget-content">' + mmsi + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + imo + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vesselname + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vesseltypeint + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + datetime + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + lat + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + lon + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + sog + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + cog + '</li>';
+               //document.getElementById('selectable').innerHTML += '<li class="ui-widget-content">' + vessel.mmsi + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.imo + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.vesselname + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.vesseltypeint + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.datetime + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.lat + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.lon + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.sog + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.cog + '</li>';
                //document.getElementById('selectable').innerHTML += '<li class="ui-widget-content"><table><col class="width20" /><col class="width20" /><col class="width40" /><col class="width20" /><td>' + mmsi + '</td><td>' + imo + '</td><td>' + vesselname + '</td><td>' + vesseltypeint + '</td></table></li>';
-               /*
-               var messagetype = vessel.messagetype;
-               var navstatus = vessel.navstatus;
-               var rot = vessel.rot;
-               var sog = vessel.sog;
-               var lon = vessel.lon;
-               var lat = vessel.lat;
-               var point = new google.maps.LatLng(
-                     parseFloat(vessel.lat),
-                     parseFloat(vessel.lon));
-               var cog = vessel.cog;
-               var true_heading = vessel.true_heading;
-               var datetime = vessel.datetime;
-               var vesselname = vessel.vesselname;
-               var vesseltypeint = vessel.vesseltypeint;
-               var length = vessel.length;
-               var shipwidth = vessel.shipwidth;
-               var bow = vessel.bow;
-               var stern = vessel.stern;
-               var port = vessel.port;
-               var starboard = vessel.starboard;
-               var draught = vessel.draught;
-               var destination = vessel.destination;
-               var callsign = vessel.callsign;
-               var posaccuracy = vessel.posaccuracy;
-               var eta = vessel.eta;
-               var posfixtype = vessel.posfixtype;
-               var streamid = vessel.streamid;
-               */
          });
+
 
          //Display the appropriate layer according to the sidebar checkboxes
          if (CLUSTER) {
@@ -680,7 +704,6 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
 
          console.log('getCurrentAISFromDB(): ' + "Total number of markers = " + markerArray.length);
 
-
          //Intended for optional callback argument (to call queryAllTracks() after displaying markers)
          if (callback && typeof(callback) === "function") {
             callback();
@@ -689,10 +712,149 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
          document.getElementById('busy_indicator').style.visibility = 'hidden';
          document.getElementById('stats_nav').innerHTML = 
             response.resultcount + " results<br>" + 
-            Math.round(response.exectime*1000)/1000 + " secs";         
+            Math.round(response.exectime*1000)/1000 + " secs";
       }) //end .done()
       .fail(function() { 
          console.log('getCurrentAISFromDB(): ' +  'No response from track query; error in php?'); 
+         document.getElementById("query").value = "ERROR IN QUERY.  PLEASE TRY AGAIN.";
+         document.getElementById('busy_indicator').style.visibility = 'hidden';
+         return; 
+      }); //end .fail()
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
+ * Get counts from clusters
+ */
+function getCurrentAISCountFromDB(bounds, customQuery, forceUpdate) {
+   console.log("Refreshing target points...");
+   document.getElementById("query").value = "QUERY RUNNING...";
+   document.getElementById('stats_nav').innerHTML = '';
+   document.getElementById('busy_indicator').style.visibility = 'visible';
+
+   //Set buffer around map bounds to expand queried area slightly outside viewable area
+   var latLonBuffer = 0.1 * map.getZoom();
+   prevZoom = map.getZoom();
+
+   var ne = bounds.getNorthEast();
+   var sw = bounds.getSouthWest();
+
+   var viewMinLat = sw.lat();
+   var viewMaxLat = ne.lat();
+   var viewMinLon = sw.lng();
+   var viewMaxLon = ne.lng();
+
+   var minLat = viewMinLat - latLonBuffer;
+   var maxLat = viewMaxLat + latLonBuffer;
+   var minLon = viewMinLon - latLonBuffer;
+   var maxLon = viewMaxLon + latLonBuffer;
+
+   //Initialize queryBounds if first time running
+   queryBounds = new google.maps.LatLngBounds(
+         new google.maps.LatLng(minLat, minLon), 
+         new google.maps.LatLng(maxLat, maxLon));
+   //Draw bounds rectangle to let user know they are zooming outside of the bounds
+   if (boundRectangle != null) {
+      boundRectangle.setMap(null);
+   }
+   boundRectangle = new google.maps.Rectangle({
+       strokeColor: '#FF0000',
+       strokeOpacity: 0.8,
+       strokeWeight: 1,
+       fillColor: '#FF0000',
+       fillOpacity: 0,
+       map: map,
+       bounds: queryBounds,
+       clickable: false,
+   });
+
+
+   var phpWithArg;
+   var boundStr = "&minlat=" + Math.round(minLat*1000)/1000 + "&maxlat=" + Math.round(maxLat*1000)/1000 + "&minlon=" + Math.round(minLon*1000)/1000 + "&maxlon=" + Math.round(maxLon*1000)/1000;
+
+   phpWithArg = "query_current_vessels_cluster.php?" + boundStr;
+
+   //Debug query output
+   console.log('getCurrentAISCountFromDB(): ' + phpWithArg);
+
+   //Call PHP and get results as markers
+   $.getJSON(
+         phpWithArg, // The server URL 
+         { }
+      ) //end .getJSON()
+      .done(function (response) {
+         console.log('getCurrentAISCountFromDB(): ' + response.query);
+         //Show the query and put it in the form
+         document.getElementById("query").value = response.query;
+
+         mainQuery = response.basequery;
+
+         console.log('Clearing previous markers and tracks');
+         clearVesselMarkerArray();
+         clearOutBoundMarkers();
+         clearAllTracks();
+         for(var i=0; i < clusterBoxes.length; i++) {
+            clusterBoxes[i].setMap(null);
+            clusterBoxesLabels[i].setMap(null);
+         }
+         markersDisplayed = [];
+         markersQueried = [];
+
+         var totalsum = 0;
+
+         $.each(response.cluster, function(key,cluster) {
+            var clusterBounds = new google.maps.LatLngBounds(
+                  new google.maps.LatLng(cluster.bottomLat, cluster.leftLon), 
+                  new google.maps.LatLng(cluster.topLat, cluster.rightLon));
+
+            var color;
+            if (cluster.clustersum < 50) {
+               color = '#00FF00';
+            }
+            else if (cluster.clustersum > 50 && cluster.clustersum < 100) {
+               color = '#FFFF00';
+            }
+            else {
+               color = '#FF0000';
+            }
+
+            var clusterBox = new google.maps.Rectangle({
+               strokeColor: color,
+               strokeOpacity: 0.8,
+               strokeWeight: 1,
+               fillColor: color,
+               fillOpacity: 0.1,
+               map: map,
+               bounds: clusterBounds,
+               clickable: false
+            });
+
+            var boxLabel = new MapLabel({
+               text: cluster.clustersum,
+               position: new google.maps.LatLng((parseFloat(cluster.bottomLat)+parseFloat(cluster.topLat))/2+15/Math.pow(2,map.getZoom()),(parseFloat(cluster.leftLon)+parseFloat(cluster.rightLon))/2),
+               map: map,
+               fontSize: 20,
+               align: 'center',
+               zIndex: 0
+            });
+
+            clusterBoxes.push(clusterBox);
+            clusterBoxesLabels.push(boxLabel);
+
+            totalsum = totalsum + parseInt(cluster.clustersum);
+         });
+
+         console.log('getCurrentAISCountFromDB(): ' + "Total number of clusters = " + response.resultcount);
+         console.log('getCurrentAISCountFromDB(): ' + "Total number of vessels = " + totalsum);
+
+
+         document.getElementById('busy_indicator').style.visibility = 'hidden';
+         document.getElementById('stats_nav').innerHTML = 
+            totalsum + " results<br>" + 
+            Math.round(response.exectime*1000)/1000 + " secs";
+      }) //end .done()
+      .fail(function() { 
+         console.log('getCurrentAISCountFromDB(): ' +  'No response from track query; error in php?'); 
          document.getElementById("query").value = "ERROR IN QUERY.  PLEASE TRY AGAIN.";
          document.getElementById('busy_indicator').style.visibility = 'hidden';
          return; 
@@ -704,50 +866,101 @@ function getCurrentAISFromDB(bounds, customQuery, forceUpdate, callback) {
  * Function to attach information associated with marker, or call track 
  * fetcher to get track line
  */
-function markerInfoBubble(marker, infoBubble, html, mmsi, vesselname, vesseltypeint, streamid, datetime) {
-   //Listener for click on marker to display infoBubble
-	google.maps.event.addListener(marker, 'click', function () {
-      infoBubble.setContent(html);
-      infoBubble.open(map, marker);
+//function markerInfoBubble(marker, infoBubble, html, mmsi, vesselname, vesseltypeint, streamid, datetime) {
+function markerInfoBubble(marker, vessel, infoBubble) {
+   //Prepare HTML for infoWindow
+   if (vessel.imo != null) {
+      imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + vessel.mmsi + '&imo=' + vessel.imo;
+   }
+   else {
+      imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + vessel.mmsi;
+   }
 
-      /*
-      google.maps.event.addListener(marker, 'mouseover', function() {
-         window.clearTimeout(markerMouseoutTimeout);
-      });
+   var title;
+   if (vessel.vesselname != null && vessel.vesselname != '') {
+      title = vessel.vesselname;
+   }
+   else {
+      if (vessel.streamid == 'shore-radar' || (vessel.streamid == 'r166710001' && vessel.vesseltypeint != 999)) {
+         title = 'Radar Track ID: ' + vessel.mmsi;
+      }
+      else if (vessel.vesseltypeint == 999) {
+         title = 'LAISIC Fusion: ' + vessel.mmsi;
+      }
+      else {
+         title = 'MMSI or RADAR ID: ' + vessel.mmsi;
+      }
+   }
 
-      google.maps.event.addListener(marker, 'mouseout', function() {
-         markerMouseoutTimeout = window.setTimeout(
-            function closeInfoWindow() { 
-               infoBubble.removeTab(1);
-               infoBubble.removeTab(0);
-               infoBubble.close(); 
-            }, 
-            3000);   //milliseconds
-      });
-      */
+   var htmlTitle = 
+      '<div id="content">'+
+      //                  '<div id="siteNotice">'+
+      //                  '</div>'+
+      '<h2 id="firstHeading" class="firstHeading">' + title + '</h1>' +
+      '<div id="bodyContent">';
+   var htmlLeft = 
+      '<div id="content-left">' +
+      '<a href="https://marinetraffic.com/ais/shipdetails.aspx?MMSI=' + vessel.mmsi + '"  target="_blank"> '+
+      '<img width=180px src="' + imgURL + '">' + 
+      '</a><br>' + 
+      '<a href="http://www.sea-web.com/lrupdate.aspx?param1=%73%70%61%73%74%61%32%35%30&param2=%37%31%34%36%38%37&script_name=authenticated/authenticated_handler.aspx&control=list&SearchString=MMSI+=+' + vessel.mmsi + '&ListType=Ships" target="_blank">Sea-Web link</a><br>' + 
+      '<div id="content-sub" border=1>' +
+      '<b>MMSI</b>: ' + vessel.mmsi + '<br>' +
+      '<b>IMO</b>: ' + vessel.imo + '<br>' +
+      '<b>Vessel Type</b>: ' + vessel.vesseltypeint + '<br>' +
+      '<b>Last Message Type</b>: ' + vessel.messagetype + '<br>' +
+      '</div>' +
+      '<div>' + 
+      '<a id="showtracklink" link="" href="javascript:void(0);" onClick="getTrack(\'' + vessel.mmsi + '\', \'' + vessel.vesseltypeint + '\', \'' + vessel.streamid + '\', \'' + vessel.datetime + '\');">Show vessel track history</a>' +
+      '</div>' +
+      '</div>';
+   var htmlRight = 
+      '<div id="content-right">' +
+      '<div id="content-sub" border=1>' +
+      //'<b>Report Date</b>: ' + datetime + '<br>' +
+      '<b>Report Date</b>: <br>' + toHumanTime(vessel.datetime) + '<br>' +
+      //TODO: change local time to be dynamic, not hard coded to Pacific Time zone
+      '<b>(local time)</b>: <br>' + toHumanTime(UTCtoSANTime(vessel.datetime)) + '<br>' +
+      '<b>Lat</b>: ' + vessel.lat + '<br>' +
+      '<b>Lon</b>: ' + vessel.lon + '<br>' +
+      '<b>Navigation Status</b>: <br>' + vessel.navstatus + '<br>' +
+      '<b>Speed Over Ground</b>: ' + vessel.sog + '<br>' + 
+      '<b>Course Over Ground</b>: ' + vessel.cog + '<br>' + 
+      '<b>Length x Width</b>: ' + vessel.length + ' x ' + vessel.shipwidth + '<br>'+
+      '<b>Draught</b>: ' + vessel.draught  + '<br>'+
+      '<b>Destination</b>: ' + vessel.destination + '<br>'+
+      '<b>ETA</b>: ' + vessel.eta + '<br>'+
+      '<b>Source</b>: ' + vessel.streamid + '<br>'+
+      '<b>Risk Security</b>: ' + vessel.risk_score_security + '<br>'+	
+      '<b>Risk Safety</b>: ' + vessel.risk_score_safety + '<br>'+	
+      '</div>' +
+      '</div>'+
 
-      //Close the infoBubble if user clicks outside of infoBubble area
-      google.maps.event.addListenerOnce(map, 'click', function() {
-         infoBubble.setMap(null);
-         infoBubble.close(); 
-      });
-   });
+      '</div>'+
+      '</div>';
+
+   var html = htmlTitle + htmlLeft + htmlRight;
+   //END Prepare HTML for infoWindow
+
+   infoBubble.setContent(html);
+   infoBubble.open(map, marker);
+
 
    //Listener for mouseover marker to display tracks
    google.maps.event.addListener(marker, 'mouseover', function() {
       //Hover display name
-      if (vesselname.length != 0 && vesselname != null) {
-         marker.setTitle(vesselname.trim());
+      if (vessel.vesselname.length != 0 && vessel.vesselname != null) {
+         marker.setTitle(vessel.vesselname.trim());
       }
       else {
-         marker.setTitle(mmsi);
+         marker.setTitle(vessel.mmsi);
       }
 
       //Display ship details in sidebar
       //var $html = $(html);
       //document.getElementById('shipdetails').innerHTML = $html.find('#content-right').html();
-      document.getElementById('shipdetails').innerHTML = html;
-      document.getElementById('shipdetails').style.visibility = 'visible';
+      //document.getElementById('shipdetails').innerHTML = html;
+      //document.getElementById('shipdetails').style.visibility = 'visible';
 
       /* MOVED GET TRACK BEHAVIOR TO A HYPERLINK INSTEAD OF HOVER TRIGGER
       //Delay, then get and display track
@@ -1198,7 +1411,7 @@ function appendLaisicView() {
 /* -------------------------------------------------------------------------------- */
 function refreshLayers() {
 	clearOverlays();
-	clearMarkerArray();
+	clearVesselMarkerArray();
    getCurrentAISFromDB(map.getBounds(), null, true);
 }
 
@@ -1512,7 +1725,7 @@ function tipDisplay(marker, info_window) {
 /* -------------------------------------------------------------------------------- */
 function clearMap() {
 	clearOverlays();
-	clearMarkerArray();
+	clearVesselMarkerArray();
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -1527,7 +1740,7 @@ function clearOverlays() {
 
 /* -------------------------------------------------------------------------------- */
 //
-function clearMarkerArray() {
+function clearVesselMarkerArray() {
 	if (markerArray) {
       if (CLUSTER) {
          markerClusterer.removeMarkers(markerArray);
@@ -1536,9 +1749,12 @@ function clearMarkerArray() {
 		for (i in markerArray) {
 			markerArray[i].setMap(null);
          markerArray[i] = null;
+         vesselArray[i] = null;
 		}
 		markerArray.length = 0;
       markerArray = [];
+      vesselArray.length = 0;
+      vesselArray = [];
 	}
 }
 
@@ -1756,8 +1972,10 @@ function toggleClusterLayer() {
    }
    else {
       CLUSTER = false;
-      markerClusterer.removeMarkers(markerArray);
-      showOverlays();   //Display the markers individually
+      if (markerClusterer) {
+         markerClusterer.removeMarkers(markerArray);
+         showOverlays();   //Display the markers individually
+      }
    }
 }
 
@@ -2224,6 +2442,12 @@ function toHumanTime(unixtime) {
 }
 
 /* -------------------------------------------------------------------------------- */
+function UTCtoSANTime(unixtime) {
+   var localunixtime= parseInt(unixtime)-28800;      //San Diego is 8hrs ahead of UTC currently
+   return localunixtime;
+}
+
+/* -------------------------------------------------------------------------------- */
 function toDate(unixtime) {
    var date = new Date(unixtime * 1000);
    var dateonly = date.getUTCFullYear() + pad(date.getUTCMonth()+1,2) + pad(date.getUTCDate(),2);
@@ -2263,3 +2487,10 @@ function pad(number, length) {
     }
 }());
 
+
+/* -------------------------------------------------------------------------------- */
+// Produce darker shade of provided HTML color code
+function shadeColor(color, percent) {   
+    var num = parseInt(color.slice(1),16), amt = Math.round(2.55 * percent), R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+}
