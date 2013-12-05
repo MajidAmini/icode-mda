@@ -5,7 +5,7 @@
      <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE9" >
      <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 
-     <link rel="stylesheet" type="text/css" href="css/style.css">
+     <link rel="stylesheet" type="text/css" href="css/mapstyle.css">
 
      <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=geometry,drawing,weather,visualization&sensor=false"> </script>
      <script type="text/javascript" src='scripts/icode-maps.js' ></script>
@@ -201,120 +201,120 @@
               <h3>Legend</h3>
               <div id="vessel_types">
                  <center><b>Vessel Types</b></center>
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#F078FF;stroke:#F078FF;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#F078FF;stroke:#bd45cc;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  Radar Vessels<br>
                  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="20" width="30" viewBox="-5 -10 20 20">
-                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#A901DB;stroke:#A901DB;stroke-width:2;fill-rule:evenodd;">Browser does not support inline SVG.
+                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#A901DB;stroke:#A901DB;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
                  </path>
                  </svg>
                  LAISIC Vessels<br>
                  <input class="checkboxallships" id="All Ships" name="All Ships" checked="false" type="checkbox" onclick="typeSelectedAllShips();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#FFFFFF;stroke:#000000;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#444444;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  All Ships<br>
                  <input class="checkboxtype" id="0-Unspecified Ships" name="0-Unspecified Ships" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#F78181;stroke:#F78181;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#F78181;stroke:#c44e4e;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  0 - Unspecified Ships<br>
                  <input class="checkboxtype" id="30-Fishing" name="30-Fishing" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#01DFD7;stroke:#01DFD7;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DFD7;stroke:#00aca4;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  30 - Fishing<br>
                  <input class="checkboxtype" id="31-Towing" name="31-Towing" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#DF7401;stroke:#DF7401;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#ac4100;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  31 - Towing<br>
                  <input class="checkboxtype" id="32-Big Tow" name="32-Big Tow" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#DF7401;stroke:#DF7401;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#ac4100;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  32 - Big Tow<br>
                  <input class="checkboxtype" id="35-Military" name="35-Military" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#0000FF;stroke:#0000FF;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#0000FF;stroke:#0000cc;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  35 - Military<br>
                  <input class="checkboxtype" id="37-Pleasure Craft" name="37-Pleasure Craft" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#8904B1;stroke:#8904B1;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#8904B1;stroke:#56007e;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  37 - Pleasure Craft<br>
                  <input class="checkboxtype" id="51-Search and Rescue" name="51-Search and Rescue" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#BE3C14;stroke:#BE3C14;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#BE3C14;stroke:#8b0900;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  51 - Search & Rescue<br>
                  <input class="checkboxtype" id="52-Tug" name="52-Tug" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#DF7401;stroke:#DF7401;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#ac4100;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  52 - Tug<br>
                  <input class="checkboxtype" id="33-Dredge" name="33-Dredge" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#DF7401;stroke:#DF7401;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#ac4100;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  33 - Dredge<br>
                  <input class="checkboxtype" id="50-Pilot" name="50-Pilot" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#DF7401;stroke:#DF7401;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#ac4100;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  50 - Pilot<br>
                  <input class="checkboxtype" id="55-Law Enforcement" name="55-Law Enforcement" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#0000FF;stroke:#0000FF;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#0000FF;stroke:#0000cc;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  55 - Law Enforcement<br>
                  <input class="checkboxtype" id="6x-Passenger Vessels" name="6x-Passenger Vessels" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#01DF01;stroke:#01DF01;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DF01;stroke:#00ac00;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  6x - Passenger Vessels<br>
                  <input class="checkboxtype" id="7x-Cargo Vessels" name="7x-Cargo Vessels" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#01DF01;stroke:#01DF01;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DF01;stroke:#00ac00;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  7x - Cargo Vessels<br>
                  <input class="checkboxtype" id="8x-Tankers" name="8x-Tankers" checked="checked"  type="checkbox" onclick="typeSelectUpdated();"> 
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#01DF01;stroke:#01DF01;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DF01;stroke:#00ac00;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  8x - Tankers<br>
                  <hr>
                  <center><b>Risk Level</b><br>(vessel outline)</center>
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#FFFFFF;stroke:#00F014;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#00F014;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  Low Risk<br>
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#FFFFFF;stroke:#F0FF78;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#F0FF78;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  Medium Risk<br>
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="15" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z" style="fill:#FFFFFF;stroke:#FF0014;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#FF0014;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  High Risk<br>
@@ -329,7 +329,7 @@
                  <hr>
                  <center><b>Other Information</b></center>
                  <!-- input class="checkbox" id="RadarLayer" name="RadarLayer" type="checkbox" checked="checked" onclick="toggleRadarLayer();"> <img align="top" src="icons/pink0.png" style="padding-bottom: 4px; vertical-align: middle;"> RADAR Contacts<br> -->
-                 <input class="checkbox" id="ClusterLayer" name="ClusterLayer" type="checkbox" checked="checked" onclick="toggleClusterLayer();"> <img align="top" width="20px" src="icons/cluster.png" style="padding-bottom: 4px; vertical-align: middle;"> Cluster Layer<br>
+                 <input class="checkbox" id="ClusterLayer" name="ClusterLayer" type="checkbox" onclick="toggleClusterLayer();"> <img align="top" width="20px" src="icons/cluster.png" style="padding-bottom: 4px; vertical-align: middle;"> Cluster Layer<br>
                  <input class="checkbox" id="HeatmapLayer" name="HeatmapLayer" type="checkbox" onclick="toggleHeatmapLayer();"> <img align="top" width="20px" src="icons/heatmap.png" style="padding-bottom: 4px; vertical-align: middle;"> Heatmap Layer<br>
                  <input class="checkbox" id="WeatherLayer" name="WeatherLayer" type="checkbox" onclick="toggleWeatherLayer();"> <img align="top" width="20px" src="icons/weather_icon.png" style="padding-bottom: 4px; vertical-align: middle;"> Weather Layer<br>
                  <!-- input class="checkbox" id="KMLLayer" name="KMLLayer" type="checkbox" onclick="toggleKMLLayer();"> <img align="top" width="20px" src="icons/kml.png" style="padding-bottom: 4px; vertical-align: middle;"> KML Layer<br> -->
@@ -445,8 +445,7 @@
         <ol id="selectable">
         </ol>        
      </div>
-      -->
-     
+     -->
 
      <div id="busy_indicator"><div style="width: 32px; height: 32px;"></div></div>
 

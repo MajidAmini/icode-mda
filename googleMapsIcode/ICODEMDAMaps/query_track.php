@@ -29,11 +29,14 @@ if (!$connection) {
 }
 
 //Query statement
+/*
 $date = "20130521";  //default date to use
 if (!empty($_GET["date"])) {
    $date = (string)$_GET["date"];
 }
+*/
 
+/*
 //if(!empty($_GET["streamid"]) and (string)$_GET["streamid"] == "Laisic_AIS_Track") {
 if(!empty($_GET["streamid"]) and (string)$_GET["streamid"] == "shore-radar") {
    $query = "SELECT mmsi, lon, lat, datetime, true_heading, sog, cog, streamid FROM radar_". $date ." A WHERE lon != -999 and mmsi=";
@@ -41,8 +44,9 @@ if(!empty($_GET["streamid"]) and (string)$_GET["streamid"] == "shore-radar") {
 else if(!empty($_GET["streamid"]) and (string)$_GET["streamid"] == "r166710001") {
    $query = "SELECT mmsi, lon, lat, datetime, true_heading, sog, cog, streamid, target_status FROM radar_". $date ." A WHERE lon != -999 and mmsi=";
 }
-else {
-   $query = "SELECT mmsi, lon, lat, datetime, true_heading, sog, cog, streamid FROM ter_". $date ." A WHERE lon != -999 and mmsi=";
+else */{
+   //$query = "SELECT mmsi, lon, lat, datetime, true_heading, sog, cog, streamid FROM ter_". $date ." A WHERE lon != -999 and mmsi=";
+   $query = "SELECT * FROM vessel_history WHERE mmsi=";
 }
 
 
@@ -66,7 +70,7 @@ if(count($_GET) > 0) {
 
     //Order track by descending time
     //$query = $query . " ORDER BY datetime DESC";
-    $query = $query . " ORDER BY datetime";
+    $query = $query . " ORDER BY TimeOfFix";
 
     //Add a limit if chosen
     if (!empty($_GET["limit"])) {
@@ -77,7 +81,7 @@ if(count($_GET) > 0) {
 else {   //This case should not happen for track fetching (user must supply MMSI for query)
     $limit = 10;
     $query = $query . " 1193046";
-    $query = $query . " ORDER BY datetime";
+    $query = $query . " ORDER BY TimeOfFix";
     $query = $query . " LIMIT " . $limit;
 }
 
@@ -108,14 +112,14 @@ while (odbc_fetch_row($result)){
    $count_results = $count_results + 1;
 
    //Output JSON object per row
-   $vessel = array(mmsi=>odbc_result($result,"mmsi"),
-                   lat=>addslashes(odbc_result($result,"lat")),
-                   lon=>addslashes(odbc_result($result,"lon")),
-                   datetime=>odbc_result($result,"datetime"),
-                   sog=>odbc_result($result,"sog"),
-                   cog=>odbc_result($result,"cog"),
-                   streamid=>odbc_result($result,"streamid"),
-                   true_heading=>odbc_result($result,"true_heading"),
+   $vessel = array(mmsi=>odbc_result($result,"MMSI"),
+                   lat=>addslashes(odbc_result($result,"Latitude")),
+                   lon=>addslashes(odbc_result($result,"Longitude")),
+                   datetime=>odbc_result($result,"TimeOfFix"),
+                   sog=>odbc_result($result,"SOG"),
+                   cog=>odbc_result($result,"COG"),
+                   streamid=>odbc_result($result,"RxStnID"),
+                   true_heading=>odbc_result($result,"Heading"),
                    target_status=>odbc_result($result,"target_status")
    );
    array_push($vesselarray, $vessel);

@@ -37,7 +37,7 @@ function createTrackTimeControl(map, initial, tracks) {
    titleDiv.innerHTML = '<b>Track Timeline</b>';
 
    var timeDiv = document.createElement('DIV');
-   timeDiv.setAttribute("style", "padding:0;margin:0;overflow-x:hidden;overflow-y:hidden;vertical-align:top;text-align:right;width:150px;height:26px;");
+   timeDiv.setAttribute("style", "padding:0;margin:0;overflow-x:hidden;overflow-y:hidden;vertical-align:top;text-align:right;width:200px;height:26px;");
    timeDiv.setAttribute("id", "currentTime");
    //timeDiv.innerHTML = '<b>Track Timeline</b>';
 
