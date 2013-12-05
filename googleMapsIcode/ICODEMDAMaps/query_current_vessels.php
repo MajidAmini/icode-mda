@@ -51,9 +51,53 @@ if(count($_GET) > 0) {
        */
 
 
+/*
        $sources = $_GET["sources"];
+       $fromSources = "(SELECT 
+`MMSI`,
+`CommsID`,
+`IMONumber`,
+`CallSign`,
+`Name`,
+`VesType`,
+`Cargo`,
+`AISClass`,
+`Length`,
+`Beam`,
+`Draft`,
+`AntOffsetBow`,
+`AntOffsetPort`,
+`Destination`,
+`ETADest`,
+`PosSource`,
+`PosQuality`,
+`FixDTG`,
+`ROT`,
+`NavStatus`,
+`Source`,
+`TimeOfFix`,
+`Latitude`,
+`Longitude`,
+`SOG`,
+`Heading`,
+`RxStnID`,
+`COG`
+ FROM vessels_memory
+WHERE (`MMSI`, `TimeOfFix`) IN
+(
+	SELECT 
+	`MMSI`,
+	max(`TimeOfFix`)
+	FROM vessels_memory
+ 	WHERE MMSI=636013848 
+	GROUP BY MMSI
+)) VESSELS";
+*/
+//$fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS";
+$fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS";
+
        //$fromSources = "(SELECT * FROM radar_vessels" . $sources . " UNION SELECT * FROM current_vessels" . $sources . ") VESSELS";
-       $fromSources = "(SELECT * FROM radar_vessels" . $sources . " UNION SELECT * FROM current_vessels" . $sources . ") VESSELS LEFT OUTER JOIN user_ship_risk ON VESSELS.mmsi = user_ship_risk.mmsi";
+       //$fromSources = "(SELECT * FROM radar_vessels" . $sources . " UNION SELECT * FROM current_vessels" . $sources . ") VESSELS LEFT OUTER JOIN user_ship_risk ON VESSELS.mmsi = user_ship_risk.mmsi";
 
 //    }
 }
@@ -72,27 +116,26 @@ if(count($_GET) > 0) {
 
     $basequery = $query;
 
-    if (strpos($query, "WHERE") !== FALSE || strpos($query, "where") !== FALSE) {
-       $query = $query . " AND";
+    if (strpos($query, "WHERE Latitude") !== FALSE) {
+       //don't add anything to query
     }
     else {
        $query = $query . " WHERE";
-    }
-
-    if (!empty($_GET["minlat"]) && !empty($_GET["minlon"]) &&
-       !empty($_GET["maxlat"]) && !empty($_GET["maxlon"])) {
-          $query = $query . " lat BETWEEN " . round($_GET["minlat"],3) . " AND " . round($_GET["maxlat"],3) . 
-                   " AND lon BETWEEN " .  round($_GET["minlon"],3) . " AND " . round($_GET["maxlon"],3);
+       if (!empty($_GET["minlat"]) && !empty($_GET["minlon"]) &&
+             !empty($_GET["maxlat"]) && !empty($_GET["maxlon"])) {
+          $query = $query . " Latitude BETWEEN " . round($_GET["minlat"],3) . " AND " . round($_GET["maxlat"],3) . 
+             " AND Longitude BETWEEN " .  round($_GET["minlon"],3) . " AND " . round($_GET["maxlon"],3);
+       }
     }
 
     if (!empty($_GET["keyword"])) {
        $keyword = $_GET["keyword"];
-       $query = $query . " AND (mmsi::varchar like ('%" . $keyword . "%') OR " . 
-                         "imo::varchar like ('%" . $keyword . "%') OR " . 
-                         "vesselname::varchar ilike ('%" . $keyword . "%') OR " . 
-                         "destination::varchar ilike ('%" . $keyword . "%') OR " . 
-                         "callsign::varchar ilike ('%" . $keyword . "%') OR " . 
-                         "streamid::varchar ilike ('%" . $keyword . "%'))";
+       $query = $query . " AND (MMSI like ('%" . $keyword . "%') OR " . 
+                         "IMONumber like ('%" . $keyword . "%') OR " . 
+                         "Name like ('%" . $keyword . "%') OR " . 
+                         "Destination like ('%" . $keyword . "%') OR " . 
+                         "CallSign like ('%" . $keyword . "%') OR " . 
+                         "RxStnID like ('%" . $keyword . "%'))";
     }
 
     if (!empty($_GET["limit"])) {
@@ -101,7 +144,7 @@ if(count($_GET) > 0) {
     }
 
     if (empty($_GET["query"])) {
-       $query = $query . " order by VESSELS.mmsi";
+       $query = $query . " ORDER BY VESSELS.MMSI";
     }
 }
 else {
@@ -136,6 +179,7 @@ while (odbc_fetch_row($result)){
    $count_results = $count_results + 1;
 
    //Output JSON object per row
+/* Old field names
    $vessel = array(messagetype=>odbc_result($result,"messagetype"),
                    mmsi=>odbc_result($result,"mmsi"),
                    navstatus=>odbc_result($result,"navstatus"),
@@ -167,11 +211,50 @@ while (odbc_fetch_row($result)){
                    safety_rating=>odbc_result($result,"safety_rating"),
                    risk_score_security=>odbc_result($result,"security_score"),
                    risk_score_safety=>odbc_result($result,"safety_score")
+   );*/
+
+   $pos = strpos(odbc_result($result,"VesType"), '-');
+   $vesseltype = substr(odbc_result($result,"VesType"), 0, $pos);
+
+   if ($vesseltype == '6' OR $vesseltype == '7' OR $vesseltype == '8' OR $vesseltype == '9')
+      $vesseltype = $vesseltype . '0';
+
+   //SeaVision field names
+   $vessel = array(mmsi=>odbc_result($result,"MMSI"),
+                   navstatus=>odbc_result($result,"NavStatus"),
+                   rot=>odbc_result($result,"ROT"),
+                   sog=>odbc_result($result,"SOG"),
+                   lon=>odbc_result($result,"Longitude"),
+                   lat=>odbc_result($result,"Latitude"),
+                   cog=>odbc_result($result,"COG"),
+                   true_heading=>odbc_result($result,"Heading"),
+                   datetime=>odbc_result($result,"TimeOfFix"),
+                   imo=>odbc_result($result,"IMONumber"),
+                   vesselname=>htmlspecialchars(odbc_result($result,"Name")),
+                   vesseltypeint=>$vesseltype,
+                   length=>odbc_result($result,"Length"),
+                   shipwidth=>odbc_result($result,"Beam"),
+                   bow=>odbc_result($result,"AntOffsetBow"),
+                   port=>odbc_result($result,"AntOffsetPort"),
+                   draught=>odbc_result($result,"Draft"),
+                   destination=>htmlspecialchars(odbc_result($result,"Destination")),
+                   callsign=>htmlspecialchars(odbc_result($result,"CallSign")),
+                   posaccuracy=>odbc_result($result,"PosQuality"),
+                   eta=>odbc_result($result,"ETADest"),
+                   posfixtype=>odbc_result($result,"PosSource"),
+                   streamid=>htmlspecialchars(odbc_result($result,"RxStnID")),
+                   //security_rating=>odbc_result($result,"security_rating"),
+                   //safety_rating=>odbc_result($result,"safety_rating"),
+                   //risk_score_security=>odbc_result($result,"security_score"),
+                   //risk_score_safety=>odbc_result($result,"safety_score")
    );
+
    array_push($vesselarray, $vessel);
 }
 
-$data = array(basequery => $basequery, query => $query, resultcount => $count_results, exectime => $totaltime, vessels => $vesselarray);
+$memused = memory_get_usage(false);
+
+$data = array(basequery => $basequery, query => $query, resultcount => $count_results, exectime => $totaltime, memused => $memused, vessels => $vesselarray);
 echo json_encode($data);
 ?>
 
