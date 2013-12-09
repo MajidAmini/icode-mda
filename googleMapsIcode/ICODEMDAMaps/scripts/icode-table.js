@@ -11,7 +11,8 @@
  */
  var vesselArray = [];
  var data;
- var table;
+ var AIStable;
+ var LAISICAIStable;
  var ais_table_index;
 
 /* -------------------------------------------------------------------------------- */
@@ -19,7 +20,10 @@
 */
 function initialize() {
    data = new google.visualization.DataTable();
-   table = new google.visualization.Table(document.getElementById('raw_ais_table'));
+   AIStable = new google.visualization.Table(document.getElementById('raw_ais_table'));
+   LAISICAIStable = new google.visualization.Table(document.getElementById('laisic_ais_track_table'));
+   LAISICRADARtable = new google.visualization.Table(document.getElementById('laisic_radar_table'));
+   LAISICAISOBStable= new google.visualization.Table(document.getElementById('laisic_ais_obs_table'));
 
    ais_table_index = 0;
 
@@ -75,7 +79,11 @@ function mapsUpdated(e) {
    
       //Clear the table display
       console.log("Clearing table.");
-      table.clearChart();
+      AIStable.clearChart();
+      LAISICAIStable.clearChart();
+      LAISICRADARtable.clearChart();
+      LAISICAISOBStable.clearChart();
+
       data.removeRows(0, data.getNumberOfRows());
       ais_table_index = 0;
 
@@ -91,7 +99,7 @@ function mapsUpdated(e) {
       data.addRows(1);
       data.setCell(ais_table_index, 0, parseInt(key.substr(7)));
       ais_table_index = ais_table_index + 1;
-      table.draw(data, {showRowNumber: true});
+      AIStable.draw(data, {showRowNumber: true});
       */
    }
 }
@@ -173,12 +181,36 @@ function drawTable() {
      ais_table_index = ais_table_index + 1;
   }
 
-  table.draw(data, {showRowNumber: true});
+  AIStable.draw(data, {showRowNumber: true});
+  LAISICAIStable.draw(data, {showRowNumber: true});
+  LAISICRADARtable.draw(data, {showRowNumber: true});
+  LAISICAISOBStable.draw(data, {showRowNumber: true});
 
-  google.visualization.events.addListener(table, 'select', function() {
-        var row = table.getSelection();
+  google.visualization.events.addListener(AIStable, 'select', function() {
+        var row = AIStable.getSelection();
         //console.log('You selected ' + data.getValue(row, 0));
         console.log('You selected ' + row.length + ' elements.');
+
+        var visible;
+        if (row.length == 0) {
+           visible = 1;
+        }
+        else {
+           visible = 0;
+        }
+
+        for (var i=0; i < localStorage.length; i++) {
+           key = localStorage.key(i);
+           if (key.indexOf("vessel-") === 0) {
+              localStorage[key] = visible;
+           }
+        }
+
+        for (var i=0; i < row.length; i++) {
+           var mmsi = data.getValue(row[i].row,0);
+           //console.log(row[i].row + ' ' + mmsi);
+           localStorage["vessel-" + mmsi] = 1;
+        }
      });
 }
 

@@ -82,57 +82,6 @@
         });
      </script>
 
-     <script>
-        $(function() {
-           /*
-           //Populate radar table list
-           var radartablelist = $("#radartablelist");
-           var getTableList = "query_radar_vessels_tablelist.php";
-
-           $.getJSON(
-           getTableList, // The server URL 
-           { }
-           ) //end .getJSON()
-           .done(function (response) {
-              $.each(response.tables, function(key,table) {
-                 radartablelist.append($("<option />").text(table));
-              });
-           });
-
-           //Populate AIS table list
-           var currenttablelist = $("#currenttablelist");
-           var getTableList = "query_current_vessels_tablelist.php";
-
-           $.getJSON(
-           getTableList, // The server URL 
-           { }
-           ) //end .getJSON()
-           .done(function (response) {
-              $.each(response.tables, function(key,table) {
-                 currenttablelist.append($("<option />").text(table));
-              });
-           });
-           */
-
-           //Populate common date table list
-           var commontablelist = $("#commondatelist");
-           var getTableList = "query_common_vessels_tablelist.php";
-
-           $.getJSON(
-           getTableList, // The server URL 
-           { }
-           ) //end .getJSON()
-           .done(function (response) {
-              $.each(response.tables, function(key,table) {
-                 commontablelist.append($("<option />").text(table));
-              });
-           });
-
-           appendLaisicView();
-        });
-     </script>
-
-
      <style>
         #feedback { font-size: 1em; }
         #selectable .ui-selecting { background: #FECA40; }
@@ -337,50 +286,9 @@
                  </p>
               </div>
               
-              <h3>Upload LAISIC bin</h3>
+              <h3>LAISIC Tables</h3>
               <div>
-                 Select a date to view data:<br />
-                 <small>(Please note LAISIC data might not match; <br />it will be whatever was uploaded)</small>
-                 <br>
-                 <select class="appendtable" id="commondatelist">
-                    <option>Select table</option>
-                 </select>
-                 <hr />
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="20" width="30" viewBox="-5 -10 20 20">
-                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#A901DB;stroke:#A901DB;stroke-width:2;fill-rule:evenodd;">Browser does not support inline SVG.
-                 </path>
-                 </svg>
-                 LAISIC contact<br /><hr />
-                 Upload LAISIC bin file: <br />
-                 <form id="laisicform" >
-                    <input class="ivnputfilebutton" type="file" name="file" size="5" />
-                    <input class="inputfilebutton" type="button" onClick="var form=this.form;$.getJSON('emptyuploadtable.php',{}).done(function (response){fileUpload(form,'laisic/laisicbinupload.php','upload');}); return false;" value="Upload">
-                 </form>
-                 <div id="uploadlaisic"></div>
-
-                 <!--
-                 <br><br>
-                 Select a radar table to append to view:
-                 <br>
-                 <select class="appendtable" id="radartablelist">
-                    <option>Select table</option>
-                 </select>
-                 <br><br>
-                 Select an AIS table to append to view:
-                 <br>
-                 <select class="appendtable" id="currenttablelist">
-                    <option>Select table</option>
-                 </select>
-                 -->
-                 <hr />
-                 <form id="overlayform" >
-                    Input an AIS MMSI:
-                    <input class="overlay" type="text" id="mmsi" /><br /><br />
-                    Input a RADAR Track ID #:
-                    <input class="overlay" type="text" id="trackid" /><br />
-                    <!-- <input class="overlay" type="button" onClick="getCurrentAISFromDB(map.getBounds(), 'SELECT * FROM (SELECT * FROM current_vessels' + sourcesDate + ' UNION SELECT messagetype, mmsi, navstatus, rot, sog, lon, lat, cog, true_heading, datetime, imo, vesselname, vesseltypeint, length, shipwidth, bow, stern, port, starboard, draught, destination, callsign, posaccuracy, eta, posfixtype, streamid FROM upload_table) VESSELS WHERE mmsi=' + $('#mmsi').val() + ' UNION SELECT * FROM radar_vessels' + sourcesDate + ' where imo=' + $('#trackid').val(), true, function(){queryAllTracks();}); return false;" value="Display Contacts and Tracks"> -->
-                    <input class="overlay" type="button" onClick="getCurrentAISFromDB(map.getBounds(), 'SELECT * FROM (SELECT * FROM current_vessels' + sourcesDate + ' UNION SELECT * FROM upload_table_view) VESSELS WHERE mmsi=' + $('#mmsi').val() + ' UNION SELECT * FROM radar_vessels' + sourcesDate + ' where imo=' + $('#trackid').val(), true, function(){queryAllTracks();}); return false;" value="Display Contacts and Tracks">
-                 </form>
+                 <center><a href="laisictables.html" target="_blank">Click here to open <br>LAISIC Tables in a new window</a></center>
               </div>
 
               <h3>Upload KMZ</h3>
@@ -398,16 +306,42 @@
                  Coming Soon...
               </div>
 
+              <!--
               <h3>Current Vessel List</h3>
               <div id="vessellist" class="vessellist"></div>
+              -->
 
               <h3>Other Options</h3>
               <div>
+                 <!--
                  <form id="distancetoolform" >
                     <input class="inputfilebutton" id="distancetooltoggle" type="button" onClick="toggleDistanceTool();" value="Enable distance tool">
                  </form>
-
+                 -->
+                 <input class="checkbox" id="distancetooltoggle" name="distancetooltoggle" type="checkbox" onclick="toggleDistanceTool();"> Enable distance tool<br>
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
+                 <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh screen (1 min)<br>
+                 <br>
+                 Only show vessels up to 
+                 <select id="vessel_age" onChange="vessel_age_changed();">
+                 <option value="nolimit">no limit</option>
+                 <option value="1">1</option>
+                 <option value="2">2</option>
+                 <option value="3">3</option>
+                 <option value="4">4</option>
+                 <option value="5">5</option>
+                 <option value="6">6</option>
+                 <option value="7">7</option>
+                 <option value="8">8</option>
+                 <option value="9">9</option>
+                 <option value="10">10</option>
+                 <option value="11">11</option>
+                 <option value="12">12</option>
+                 <option value="24">24</option>
+                 <option value="48">48</option>
+                 <option value="72">72</option>
+                 </select>
+                 hours old.<br>
               </div>
            </div>
            <!-- END ACCORDION -->
@@ -425,34 +359,16 @@
         </div>
      </div>
 
-
-     <!--
-     <div id="results_list">
-        <b>
-           <table border=0>
-              <col class="width10" />
-              <col class="width10" />
-              <col class="width10" />
-              <col class="width10" />
-              <col class="width10" />
-              <col class="width10" />
-              <col class="width10" />
-              <col class="width10" />
-              <col class="width10" />
-              <td>MMSI</td><td>IMO</td><td>Vessel Name</td><td>Vessel Type</td><td>Datetime</td><td>Lat</td><td>Lon</td><td>SOG</td><td>COG</td>
-           </table>
-        </b><br />
-        <ol id="selectable">
-        </ol>        
-     </div>
-     -->
-
      <div id="busy_indicator"><div style="width: 32px; height: 32px;"></div></div>
 
      <div id="shipdetails">
      </div>
 
      <div id="latlong">
+     </div>
+
+     <div id="lastUpdated">
+        <div id="lastUpdatedText"></div>
      </div>
 
      <div id="status-msg">
