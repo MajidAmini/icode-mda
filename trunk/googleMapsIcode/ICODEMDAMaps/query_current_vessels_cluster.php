@@ -54,6 +54,13 @@ if(count($_GET) > 0) {
       $query = "SELECT $divlon * (Longitude div $divlon) as 'leftLon', $divlon * (Longitude div $divlon) + $divlon as 'rightLon', $divlat * (Latitude div $divlat) as 'bottomLat', $divlat * (Latitude div $divlat) + $divlat as 'topLat', count(*) as clustersum FROM (SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS WHERE";
       $query = $query . " Latitude BETWEEN " . round($minlat,3) . " AND " . round($maxlat,3) . 
                " AND Longitude BETWEEN " .  round($minlon,3) . " AND " . round($maxlon,3);
+
+      //Add timestamp constraint
+      if (!empty($_GET["vessel_age"])) {
+         $vessel_age = $_GET["vessel_age"];
+         $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
+      }
+
       $query = $query . " GROUP BY $divlon*(Longitude div $divlon), $divlat*(Latitude div $divlat)";
    }
 }

@@ -235,6 +235,22 @@
      color:        white;
      text-shadow:  black 2px 2px 3px;
   }
+  #lastUpdated {
+     position:     absolute;
+     bottom:       35px;
+     right:        19px;
+     line-height:  12px;
+     vertical-align:middle;
+     display:      block;
+     padding:      2px;
+     border:       0px solid transparent;
+     background:   transparent;
+     opacity:      1;
+     text-align:   left;
+     font-size:    10px;
+     color:        white;
+     text-shadow:  black 2px 2px 3px;
+  }  
   #firstHeading {
      font-size:    14px;
   }
