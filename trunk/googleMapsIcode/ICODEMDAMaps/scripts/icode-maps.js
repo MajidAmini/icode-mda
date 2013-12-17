@@ -15,7 +15,7 @@ var vesselArray = [];
 var markersDisplayed = [];
 var markersQueried = [];
 //var trackArray;
-var tracksDisplayedMMSI = [];    //keep track of which MMSI's track is already displayed
+var tracksDisplayedID = [];    //keep track of which MMSI's track is already displayed
 var tracksDisplayed = [];
 var mainQuery;
 var prevZoom = null;
@@ -38,14 +38,7 @@ var boundRectangle = null;
 //Marker timing objects
 var markerMouseoutTimeout;
 var trackMouseoverTimeout;
-//Cluster objects
-var CLUSTER;
-var markerClusterer;
-var mcOptions = {
-               gridSize: 100, 
-               minimumClusterSize: 30, 
-               averageCenter: false
-            };
+
 //Track line options
 var tracklineIconsOptions = {
                path:          'M -3,0 0,-3 3,0 0,3 z',
@@ -107,9 +100,7 @@ var tempKMLcount = 0;
 var Ports = false;
 var portIcons = [];
 var portCircles = [];
-//Sources objects
-//var sourcesInt=3;
-var sourcesDate="_20130801";
+
 //Distance measurement
 var latLng;
 var prevlatLng;
@@ -203,10 +194,12 @@ function initialize() {
    google.maps.event.addListener(map, 'idle', function() {
       google.maps.event.trigger(map, 'resize'); 
       var idleTimeout = window.setTimeout(
-         function(){ refreshMaps(false) }, 
+         function(){ 
+            refreshMaps(false) 
+         }, 
          2000);   //milliseconds to pause after bounds change
 
-      google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+         google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
          window.clearTimeout(idleTimeout);
       });
    });
@@ -220,9 +213,6 @@ function initialize() {
             Math.round(event.latLng.lat()*10000000)/10000000 + ', ' + Math.round(event.latLng.lng()*10000000)/10000000
    });
 
-   //Distance tool
-//   enableDistanceTool();
-
    //TODO: TEST WMS layers
    addWmsLayers();
    //TEST
@@ -232,12 +222,6 @@ function initialize() {
    //Check for TMACS layer toggle on load
    toggleTMACSHeadWMSLayer();
    toggleTMACSHistoryWMSLayer();
-
-   //Cluster overlay layer
-   if (CLUSTER) {
-   	markerClusterer = new MarkerClusterer(map, [], mcOptions);
-   }
-   toggleClusterLayer();
 
    //Radar layer
    toggleRadarLayer();
@@ -277,18 +261,36 @@ function refreshMaps(forceRedraw) {
    var queryArgument = Request.QueryString("query").toString();
    //console.log(queryArgument);
 
+   //Check if URL has query parameter, and use if it is defined
    if (queryArgument != null) {
       mainQuery = queryArgument;
 
-      getTargetsFromDB(map.getBounds(), queryArgument, forceRedraw);
+      //Default to querying from AIS table
+      getTargetsFromDB(map.getBounds(), queryArgument, "AIS", forceRedraw);
    }
    else {
       //Update vessels displayed
-      if (map.getZoom() > 8) {
-         getTargetsFromDB(map.getBounds(), null, forceRedraw);
+      if (document.getElementById("LAISIC_TARGETS").checked) {
+         //Uncheck auto refresh
+         $('input[name=autoRefresh]').attr('checked', false);
+         toggleAutoRefresh();
+
+         //do LAISIC targets at all zoom levels
+         clearMarkerAndClusters();
+         localStorage.clear();
+
+         //sourceType = "LAISIC_AIS_TRACK";
+         getTargetsFromDB(map.getBounds(), null, "LAISIC_AIS_TRACK", true, false);
+         //sourceType = "LAISIC_RADAR";
+         getTargetsFromDB(map.getBounds(), null, "LAISIC_RADAR", true, false);
+         //sourceType = "LAISIC_AIS_OBS";
+         getTargetsFromDB(map.getBounds(), null, "LAISIC_AIS_OBS", true, false);
+      }
+      else if (map.getZoom() > 8) {
+         getTargetsFromDB(map.getBounds(), null, "AIS", forceRedraw, true);
       }
       else {
-         getClustersFromDB(map.getBounds(), null, forceRedraw);
+         getClustersFromDB(map.getBounds(), null);
       }
    }
 
@@ -300,76 +302,15 @@ function refreshMaps(forceRedraw) {
 }
 
 /* -------------------------------------------------------------------------------- */
-function detectMobileBrowser() {
-   var check = false;
-
-   (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
-   
-   return check; 
-}
-
-/* -------------------------------------------------------------------------------- */
-/** 
- * Handle clicking/selection events in LAISIC table
- */
-function handleTableSelection() {
-   //test localstorage
-   function storageEventHandler(e) {
-      if (!e) { 
-         e = window.event; 
-      }
-      tableUpdated(e);
-   }
-   if (window.addEventListener) {
-      window.addEventListener("storage", storageEventHandler, false);
-   } 
-   else {
-      window.attachEvent("onstorage", storageEventHandler);
-   };
-}
-
-/* -------------------------------------------------------------------------------- */
-/** 
- * Handle clicking/selection events in LAISIC table
- */
-function tableUpdated(e) {
-   key = new String(e.key);
-   value = e.newValue;
-
-   if (key.indexOf("vessel-") === 0) {
-      if (value == "1") {
-         var mmsi = parseInt(key.substr(7));
-         $.grep(vesselArray, function(e, i){ 
-            if (e.mmsi == mmsi) {
-               //console.log(e.mmsi);
-               //console.log(i);
-               markerArray[i].setMap(map);
-            }
-         });
-      }
-      else {
-         var mmsi = parseInt(key.substr(7));
-         $.grep(vesselArray, function(e, i){ 
-            if (e.mmsi == mmsi) {
-               //console.log(e.mmsi);
-               //console.log(i);
-               markerArray[i].setMap(null);
-            }
-         });
-      }
-   }
-}
-
-/* -------------------------------------------------------------------------------- */
 /** 
  * Get AIS data from XML, which is from database, with bounds.
  *
  * Optional callback argument (4th argument)
  */
-function getTargetsFromDB(bounds, customQuery, forceUpdate) {
+function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPrevious) {
    //Set buffer around map bounds to expand queried area slightly outside viewable area
    var latLonBuffer = expandFactor / Math.pow(map.getZoom(),3);
-   console.log('zoom: ' + map.getZoom());
+   console.log('Current zoom: ' + map.getZoom());
 
    var ne = bounds.getNorthEast();
    var sw = bounds.getSouthWest();
@@ -379,10 +320,10 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
    var viewMinLon = sw.lng();
    var viewMaxLon = ne.lng();
 
-   var minLat = viewMinLat - latLonBuffer;
-   var maxLat = viewMaxLat + latLonBuffer;
-   var minLon = viewMinLon - latLonBuffer;
-   var maxLon = viewMaxLon + latLonBuffer;
+   var minLat = viewMinLat;// - latLonBuffer;
+   var maxLat = viewMaxLat;// + latLonBuffer;
+   var minLon = viewMinLon;// - latLonBuffer;
+   var maxLon = viewMaxLon;// + latLonBuffer;
 
 
    //Force re-query if zoom level changes
@@ -415,14 +356,14 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
    }
    else {
       //Handle the case when no URL query, but moved within bounds
-      if (customQuery == null && !forceUpdate && queryBounds.contains(ne) && queryBounds.contains(sw)) {
+      if (customQuery == null && !forceRedraw && queryBounds.contains(ne) && queryBounds.contains(sw)) {
          //TODO: update result count to match what is actually within current view
 
          console.log('Moved to within query bounds, not requerying. (without custom query)');
          return;
       }
       //Handle the case when URL query exists, but moved within bounds
-      else if (customQuery != null && !forceUpdate && queryBounds.contains(ne) && queryBounds.contains(sw)) {
+      else if (customQuery != null && !forceRedraw && queryBounds.contains(ne) && queryBounds.contains(sw)) {
          console.log('Moved to within query bounds, not requerying. (with custom query)');
          return;
       }
@@ -465,24 +406,26 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
        arrowStyle:       2,
        padding:          '8px',
        borderRadius:     20,
-       //maxWidth:       800,
-       //maxHeight:      800,
+       maxWidth:         800,
+       minHeight:        380
    });
 
    var phpWithArg;
-   var sources = "sources=" + sourcesDate;//sourcesInt; //0-all, 1-aisonly, 2-radaronly, etc
+
+   //Read sourceType (AIS, LAISIC stuff, etc) from global variable, set previous right before this calling this function.  This one used to notify PHP script which table to query from.
+   var source = "source=" + sourceType;
    var boundStr = "&minlat=" + Math.round(minLat*1000)/1000 + "&maxlat=" + Math.round(maxLat*1000)/1000 + "&minlon=" + Math.round(minLon*1000)/1000 + "&maxlon=" + Math.round(maxLon*1000)/1000;
 
    //Check if a query has been previously made, and use it to preserve previous query but just change the bounds to current view now
    if (!customQuery && customQuery !== '') {     //No custom query
-      if (mainQuery != null) {
-         phpWithArg = "query_current_vessels.php?query=" + mainQuery;
+/*      if (mainQuery != null) {
+         phpWithArg = "query_current_vessels.php?" + source + "&query=" + mainQuery;
       }
-      else {
+      else {*/
          //No custom query, do default query
-         //phpWithArg = "query_current_vessels.php?" + sources + boundStr;
-         phpWithArg = "query_current_vessels.php?" + sources;
-      }
+         //phpWithArg = "query_current_vessels.php?" + source + boundStr;
+         phpWithArg = "query_current_vessels.php?" + source;
+//      }
 
       phpWithArg += boundStr;
 
@@ -495,7 +438,7 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
       //TODO: need a more robust condition for keyword search
       if (customQuery.length < 20) {
          //customQuery is really a keyword search
-         phpWithArg = "query_current_vessels.php?" + sources + boundStr + "&keyword=" + customQuery;
+         phpWithArg = "query_current_vessels.php?" + source + boundStr + "&keyword=" + customQuery;
       }
       //TODO for handling case when trying to display specific vessels or LAISIC outputs
       /*
@@ -534,48 +477,80 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
 
 
          //Push query to localStorage
-         localStorage.clear();
-         localStorage.setItem('query', response.query);
-         localStorage.setItem('query-timestamp', (new Date()).getTime());
+         if (clearPrevious) {
+            localStorage.clear();
+         }
+         localStorage.setItem('query-timestamp', Math.floor((new Date()).getTime()/1000));
+
+         //Read global variable sourceType to determine which type to query (AIS, or LAISIC stuff)
+         console.log("sourceType: " + sourceType);
+         switch (sourceType) {
+            case "AIS":
+               localStorage.setItem('query', response.query);
+               break;
+            case "LAISIC_AIS_TRACK":
+               localStorage.setItem('query-LAISIC_AIS_TRACK', response.query);
+               break;
+            case "LAISIC_RADAR":
+               localStorage.setItem('query-LAISIC_RADAR', response.query);
+               break;
+            case "LAISIC_AIS_OBS":
+               localStorage.setItem('query-LAISIC_AIS_OBS', response.query);
+               break;
+            default:
+               break;
+         }
 
 
-         /*
-         //Vessel list window
-         document.getElementById('vessellist').innerHTML = 
-                                 '<h3>Current Vessels List:</h3><br>' + 
-                                 '<b>MMSI - Vesselname</b><br><hr>';
-          */
-
-         //if (!customQuery) {
+         if (!customQuery) {
             mainQuery = response.basequery;
-         //}
+         }
 
          //Delete previous markers
-         if (boundStr != null) {
-            console.log('Clearing previous markers and tracks');
-            clearVesselMarkerArray();
-            clearOutBoundMarkers();
-            clearAllTracks();
-            for(var i=0; i < clusterBoxes.length; i++) {
-               clusterBoxes[i].setMap(null);
-               clusterBoxesLabels[i].setMap(null);
-            }
+         if (clearPrevious && boundStr != null) {
+            clearMarkerAndClusters();
          }
 
          markersDisplayed = [];
          markersQueried = [];
 
-//         document.getElementById('selectable').innerHTML = "";
-
          //Prepare to grab PHP results as JSON objects
          $.each(response.vessels, function(key,vessel) {
                //Push to localStorage for tables to know of change
-               localStorage.setItem('vessel-'+vessel.mmsi, "1");
+               switch (sourceType) {
+                  case "AIS":
+                     localStorage.setItem('vessel-'+vessel.mmsi, "1");
+                     break;
+                  case "LAISIC_AIS_TRACK":
+                     localStorage.setItem('laisicaistrack-'+vessel.mmsi, "1");
+                     break;
+                  case "LAISIC_RADAR":
+                     localStorage.setItem('laisicradar-'+vessel.trknum, "1");
+                     break;
+                  case "LAISIC_AIS_OBS":
+                     localStorage.setItem('laisicaisobs-'+vessel.obsguid, "1");
+                     break;
+                  default:
+                     break;
+               }               
 
 
                var point = new google.maps.LatLng(
                      parseFloat(vessel.lat),
                      parseFloat(vessel.lon));
+
+               if (sourceType == "LAISIC_AIS_TRACK") {
+                  vessel.true_heading = vessel.cog;
+                  vessel.vesseltypeint = 999;
+               }
+               else if (sourceType == "LAISIC_RADAR") {
+                  vessel.true_heading = vessel.cog;
+                  vessel.vesseltypeint = 888;
+               }
+               else if (sourceType == "LAISIC_AIS_OBS") {
+                  vessel.true_heading = vessel.cog;
+                  vessel.vesseltypeint = 777;
+               }
 
                var iconColor = getIconColor(vessel.vesseltypeint, vessel.streamid);
 
@@ -612,13 +587,13 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
                }               
 
                //Try new marker shape for LAISIC (type 999) contacts
-               if (vessel.vesseltypeint == 999) {
+               if (vessel.vesseltypeint == 999) {// || vessel.vesseltypeint == 777) {
                   marker = new google.maps.Marker({
                      position: point,
                      icon: {
                         path:         'm -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0',
-                        strokeColor:  iconColor,
-                        strokeWeight: 2,
+                        strokeColor:  '#222200',//iconColor,
+                        strokeWeight: 1,
                         fillColor:    iconColor,
                         fillOpacity:  0.6,
                         rotation:     vessel.true_heading-90 //-90 degrees to account for SVG drawing rotation
@@ -629,8 +604,7 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
                //Listener for click on marker to display infoBubble
                google.maps.event.addListener(marker, 'click', function () {
                   //Associate the infoBubble to the marker
-                  //markerInfoBubble(marker, infoBubble, html, vessel.mmsi, vessel.vesselname, vessel.vesseltypeint, vessel.streamid, vessel.datetime);
-                     clearInterval(vesselLastUpdated);
+                  clearInterval(vesselLastUpdated);
                   markerInfoBubble(marker, vessel, infoBubble);
 
 
@@ -679,48 +653,15 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
                   lat: vessel.lat,
                   lon: vessel.lon
                });
-
-
-/*
-               if (vesselArray.length < 100) {
-                  //Display current vessel list to vessellist div window
-                  if (vessel.vesselname == '') {
-                     document.getElementById('vessellist').innerHTML += '<a onmouseover="highlightMMSI(' + vessel.mmsi + ')" onmouseout="hideHighlightMMSI()" href="#">' + vessel.mmsi + ' - (no vessel name)</a ><hr>';
-                  }
-                  else {
-                     document.getElementById('vessellist').innerHTML += '<a onmouseover="highlightMMSI(' + vessel.mmsi + ')" onmouseout="hideHighlightMMSI()" href="#">' + vessel.mmsi + ' - ' + vessel.vesselname + '</a ><hr>';
-                  }
-               }
-               else {
-                  document.getElementById('vessellist').innerHTML = 'Too many vessels to list here';
-               }
-               */
-
-
-               //Display current vessel to selectable results list
-               //document.getElementById('selectable').innerHTML += '<li class="ui-widget-content">' + vessel.mmsi + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.imo + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.vesselname + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.vesseltypeint + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.datetime + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.lat + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.lon + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.sog + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + vessel.cog + '</li>';
-               //document.getElementById('selectable').innerHTML += '<li class="ui-widget-content"><table><col class="width20" /><col class="width20" /><col class="width40" /><col class="width20" /><td>' + mmsi + '</td><td>' + imo + '</td><td>' + vesselname + '</td><td>' + vesseltypeint + '</td></table></li>';
          });
 
 
          //Display the appropriate layer according to the sidebar checkboxes
-         if (CLUSTER) {
-            if (document.getElementById("HeatmapLayer").checked) {
-               addHeatmap();
-            }
-            else {
-               markerClusterer.addMarkers(markerArray);
-            }
-            console.log('getTargetsFromDB(): ' + "Number of markers = " + markerClusterer.getTotalMarkers());
-            console.log('getTargetsFromDB(): ' + "Number of clusters = " + markerClusterer.getTotalClusters());
+         if (document.getElementById("HeatmapLayer").checked) {
+            addHeatmap();
          }
          else {
-            if (document.getElementById("HeatmapLayer").checked) {
-               addHeatmap();
-            }
-            else {
-               showOverlays();   //Display the markers individually
-            }
+            showOverlays();   //Display the markers individually
          }
 
          //Check if user wants to display all tracks (from URL request)
@@ -752,7 +693,7 @@ function getTargetsFromDB(bounds, customQuery, forceUpdate) {
 /** 
  * Get counts from clusters
  */
-function getClustersFromDB(bounds, customQuery, forceUpdate) {
+function getClustersFromDB(bounds, customQuery) {
    console.log("Refreshing target points...");
    document.getElementById("query").value = "QUERY RUNNING...";
    document.getElementById('stats_nav').innerHTML = '';
@@ -817,6 +758,11 @@ function getClustersFromDB(bounds, customQuery, forceUpdate) {
          console.log('getClustersFromDB(): ' + response.query);
          //Show the query and put it in the form
          document.getElementById("query").value = response.query;
+
+         //Push query to localStorage
+         localStorage.clear();
+         localStorage.setItem('query-cluster', response.query);
+         localStorage.setItem('query-timestamp', (new Date()).getTime());
 
          mainQuery = response.basequery;
 
@@ -894,6 +840,21 @@ function getClustersFromDB(bounds, customQuery, forceUpdate) {
 
 /* -------------------------------------------------------------------------------- */
 /**
+ * Function to clear the map of all markers and clusters
+ */
+function clearMarkerAndClusters() {
+   console.log('Clearing previous markers and tracks');
+   clearVesselMarkerArray();
+   clearOutBoundMarkers();
+   //clearAllTracks();
+   for(var i=0; i < clusterBoxes.length; i++) {
+      clusterBoxes[i].setMap(null);
+      clusterBoxesLabels[i].setMap(null);
+   }
+}
+
+/* -------------------------------------------------------------------------------- */
+/**
  * Function to attach information associated with marker, or call track 
  * fetcher to get track line
  */
@@ -908,26 +869,28 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    }
 
    var title;
+   var vesseltype = vessel.vesseltypeint;
    if (vessel.vesselname != null && vessel.vesselname != '') {
       title = vessel.vesselname;
    }
    else {
-      if (vessel.streamid == 'shore-radar' || (vessel.streamid == 'r166710001' && vessel.vesseltypeint != 999)) {
-         title = 'Radar Track ID: ' + vessel.mmsi;
+      if (vessel.streamid == 'shore-radar' || vessel.vesseltypeint == 888 || (vessel.streamid == 'r166710001' && vessel.vesseltypeint != 999)) {
+         title = 'Assoc. MMSI: ' + vessel.mmsi + ', Radar Track ID: ' + vessel.trknum;
+         vesseltype = 'LAISIC_RADAR';
       }
       else if (vessel.vesseltypeint == 999) {
-         title = 'LAISIC Fusion: ' + vessel.mmsi;
+         title = 'LAISIC AIS Track: ' + vessel.mmsi;
+         vesseltype = 'LAISIC_AIS_TRACK';
       }
-      else {
+      else if (vessel.vesseltypeint == 777) {
          title = 'MMSI or RADAR ID: ' + vessel.mmsi;
+         vesseltype = 'LAISIC_AIS_OBS';
       }
    }
 
    var htmlTitle = 
       '<div id="content">'+
-      //                  '<div id="siteNotice">'+
-      //                  '</div>'+
-      '<h2 id="firstHeading" class="firstHeading">' + title + '</h1>' +
+      '<h3 id="firstHeading" class="firstHeading"><img height=20px src=flags/' + vessel.mmsi.toString().substr(0,3) + '.png>  ' + title + '</h3>' +
       '<div id="bodyContent">';
    var htmlLeft = 
       '<div id="content-left">' +
@@ -938,11 +901,11 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       '<div id="content-sub" border=1>' +
       '<b>MMSI</b>: ' + vessel.mmsi + '<br>' +
       '<b>IMO</b>: ' + vessel.imo + '<br>' +
-      '<b>Vessel Type</b>: ' + vessel.vesseltypeint + '<br>' +
+      '<b>Vessel Type</b>: ' + vesseltype + '<br>' +
       '<b>Last Message Type</b>: ' + vessel.messagetype + '<br>' +
       '</div>' +
       '<div>' + 
-      '<a id="showtracklink" link="" href="javascript:void(0);" onClick="getTrack(\'' + vessel.mmsi + '\', \'' + vessel.vesseltypeint + '\', \'' + vessel.streamid + '\', \'' + vessel.datetime + '\');">Show vessel track history</a>' +
+      '<a id="showtracklink" link="" href="javascript:void(0);" onClick="getTrack(\'' + vessel.mmsi + '\', \'' + vessel.vesseltypeint + '\', \'' + vesseltype + '\', \'' + vessel.datetime + '\', \'' + vessel.streamid + '\', \'' + vessel.trknum + '\');">Show vessel track history</a>' +
       '</div>' +
       '</div>';
    var htmlRight = 
@@ -963,9 +926,10 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       '<b>Draught</b>: ' + vessel.draught  + '<br>'+
       '<b>Destination</b>: ' + vessel.destination + '<br>'+
       '<b>ETA</b>: ' + vessel.eta + '<br>'+
-      '<b>Source</b>: ' + vessel.streamid + '<br>'+
+      '<b>Source</b>: ' + vessel.streamid + '<br>';/*+
       '<b>Risk Security</b>: ' + vessel.risk_score_security + '<br>'+	
       '<b>Risk Safety</b>: ' + vessel.risk_score_safety + '<br>'+	
+      */
       '</div>' +
       '</div>'+
 
@@ -991,27 +955,12 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    //Listener for mouseover marker to display tracks
    google.maps.event.addListener(marker, 'mouseover', function() {
       //Hover display name
-      if (vessel.vesselname.length != 0 && vessel.vesselname != null) {
+      if (vessel.vesselname != null && vessel.vesselname.length != 0) {
          marker.setTitle(vessel.vesselname.trim());
       }
       else {
          marker.setTitle(vessel.mmsi);
       }
-
-      //Display ship details in sidebar
-      //var $html = $(html);
-      //document.getElementById('shipdetails').innerHTML = $html.find('#content-right').html();
-      //document.getElementById('shipdetails').innerHTML = html;
-      //document.getElementById('shipdetails').style.visibility = 'visible';
-
-      /* MOVED GET TRACK BEHAVIOR TO A HYPERLINK INSTEAD OF HOVER TRIGGER
-      //Delay, then get and display track
-      trackMouseoverTimeout = window.setTimeout(
-         function displayTracks() {
-            getTrack(mmsi, vesseltypeint, streamid, datetime);
-         },
-         1000);   //milliseconds
-      */
 
       google.maps.event.addListenerOnce(marker, 'mouseout', function() {
          window.clearTimeout(trackMouseoverTimeout);
@@ -1049,10 +998,10 @@ function clearTrack(trackline, trackIcons, dashedLines) {
 function clearAllTracks() {
    for (var i=0; i < tracksDisplayed.length; i++) {
       clearTrack(tracksDisplayed[i].trackline, tracksDisplayed[i].trackIcons, tracksDisplayed[i].dashedLines);
-      tracksDisplayedMMSI[i] = null;
+      tracksDisplayedID[i] = null;
       tracksDisplayed[i] = null;
    }
-   tracksDisplayedMMSI = [];
+   tracksDisplayedID = [];
    tracksDisplayed = [];
    deleteTrackTimeControl();
 }
@@ -1072,7 +1021,7 @@ function toggleQueryAllTracks() {
  * Function to query and show all tracks within view bounds
  **/
 function queryAllTracks() {
-   //console.log(tracksDisplayedMMSI.length);
+   //console.log(tracksDisplayedID.length);
    //console.log(tracksDisplayed.length);
 
    var bounds = map.getBounds();
@@ -1099,8 +1048,9 @@ function queryAllTracks() {
       if (viewBounds.contains(markerLatLng) || Request.QueryString("queryTracks").toString() == 'all') {
          getTrack(markersDisplayed[i].mmsi, 
                   markersDisplayed[i].vesseltypeint, 
-                  markersDisplayed[i].streamid, 
-                  markersDisplayed[i].datetime);
+                  markersDisplayed[i].datetime,
+                  markersDisplayed[i].streamid          //TODO: change streamid to source (laisic or ais)
+                  );
       }
    }
 }
@@ -1109,18 +1059,22 @@ function queryAllTracks() {
 /**
  * Function to get track from track query PHP script
  */
-function getTrack(mmsi, vesseltypeint, streamid, datetime) {
+function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
    //Check if track is already displayed or not
-   // and that it is not a LAISIC track (vesseltypeint 999)
-   if ($.inArray(mmsi, tracksDisplayedMMSI) == -1 && vesseltypeint != 999) {
+   if ($.inArray(mmsi, tracksDisplayedID) == -1 && $.inArray(trknum, tracksDisplayedID) == -1) {
       document.getElementById("query").value = "QUERY RUNNING FOR TRACK...";
       document.getElementById('stats_nav').innerHTML = '';
       document.getElementById('busy_indicator').style.visibility = 'visible';
-      var phpWithArg = "query_track.php?streamid=" + streamid + "&mmsi=" + mmsi;
 
+      var phpWithArg = "query_track.php?source=" + source;
 
-      //Grab date from track head
-      phpWithArg = phpWithArg + "&date=" + toDate(datetime);
+      if (trknum == "undefined") {
+         phpWithArg += "&mmsi=" + mmsi;
+      }
+      else {
+         phpWithArg += "&trknum=" + trknum;
+      }
+
 
       //Debug query output
       console.log('GETTRACK(): ' + phpWithArg);
@@ -1145,12 +1099,6 @@ function getTrack(mmsi, vesseltypeint, streamid, datetime) {
                      var target_status;
                      var trackTargetStatus = new Array();
 
-                     /*
-                     //Change text of showtrack link in the infowindow
-                     $('a#showtracklink').text('Hide vessel track');
-                     $('a#showtracklink').attr('onclick', "$('a#showtracklink').text('Show vessel track history');getTrack(\'" + mmsi + "\', \'" + vesseltypeint + "\', \'" + streamid + "\', \'" + datetime + "\');");
-                     */
-                     
 
                      //Loop through each time point of the same vessel
                      $.each(response.vessels, function(key,vessel) {
@@ -1243,10 +1191,10 @@ function getTrack(mmsi, vesseltypeint, streamid, datetime) {
                         tracklineIcon.setPosition(trackPath[key]);
                         tracklineIcon.setMap(map);
                         if (target_status == false) {
-                           tracklineIcon.setTitle('MMSI: ' + mmsi + '\nDatetime: ' + toHumanTime(datetime) + '\nDatatime (unixtime): ' + datetime + '\nLat: ' + lat + '\nLon: ' + lon + '\nHeading: ' + true_heading + '\nSOG: ' + sog + '\nCOG: ' + cog + '\nStreamID: ' + streamid);
+                           tracklineIcon.setTitle('MMSI: ' + mmsi + '\nDatetime: ' + toHumanTime(datetime) + '\nDatatime (unixtime): ' + datetime + '\nLat: ' + lat + '\nLon: ' + lon + '\nHeading: ' + true_heading + '\nSOG: ' + sog + '\nCOG: ' + cog + '\nSource: ' + source);
                         }
                         else {
-                           tracklineIcon.setTitle('MMSI: ' + mmsi + '\nDatetime: ' + toHumanTime(datetime) + '\nDatatime (unixtime): ' + datetime + '\nLat: ' + lat + '\nLon: ' + lon + '\nHeading: ' + true_heading + '\nSOG: ' + sog + '\nCOG: ' + cog + '\ntarget_status: ' + target_status + '\nStreamID: ' + streamid);
+                           tracklineIcon.setTitle('MMSI: ' + mmsi + '\nDatetime: ' + toHumanTime(datetime) + '\nDatatime (unixtime): ' + datetime + '\nLat: ' + lat + '\nLon: ' + lon + '\nHeading: ' + true_heading + '\nSOG: ' + sog + '\nCOG: ' + cog + '\ntarget_status: ' + target_status + '\nSource: ' + source);
                         }
 
                         trackIcons.push(tracklineIcon);
@@ -1255,8 +1203,14 @@ function getTrack(mmsi, vesseltypeint, streamid, datetime) {
                         //Add listener to delete track if right click on icon
                         google.maps.event.addListener(tracklineIcon, 'rightclick', function() {
                            clearTrack(trackline, trackIcons, dashedLines);
-                           var deleteIndex = $.inArray(mmsi, tracksDisplayedMMSI);
-                           tracksDisplayedMMSI.splice(deleteIndex, 1);
+                           var deleteIndex;
+                           if (trknum != "undefined" ) {
+                              deleteIndex = $.inArray(trknum, tracksDisplayedID);
+                           }
+                           else {
+                              deleteIndex = $.inArray(mmsi, tracksDisplayedID);
+                           }
+                           tracksDisplayedID.splice(deleteIndex, 1);
                            tracksDisplayed.splice(deleteIndex, 1);
                         });
 
@@ -1345,10 +1299,16 @@ function getTrack(mmsi, vesseltypeint, streamid, datetime) {
 
                      console.log("trackicons: " + trackIcons.length);
 
-                     //Keep track of which MMSI has tracks displayed
-                     tracksDisplayedMMSI.push(mmsi);
+                     //Keep track of which MMSI/trknum has tracks displayed
+                     if (trknum != "undefined") {
+                        tracksDisplayedID.push(trknum);
+                     }
+                     else {
+                        tracksDisplayedID.push(mmsi);
+                     }
                      var track = {
                         mmsi: mmsi,
+                        trknum: trknum,
                         trackHistory: trackHistory,
                         trackline: trackline,
                         dashedLines: dashedLines,
@@ -1364,8 +1324,14 @@ function getTrack(mmsi, vesseltypeint, streamid, datetime) {
                      //Add listener to delete track if right click on track line 
                      google.maps.event.addListener(trackline, 'rightclick', function() {
                         clearTrack(trackline, trackIcons, dashedLines);
-                        var deleteIndex = $.inArray(mmsi, tracksDisplayedMMSI);
-                        tracksDisplayedMMSI.splice(deleteIndex, 1);
+                        var deleteIndex;
+                        if (trknum != "undefined" ) {
+                           deleteIndex = $.inArray(trknum, tracksDisplayedID);
+                        }
+                        else {
+                           deleteIndex = $.inArray(mmsi, tracksDisplayedID);
+                        }
+                        tracksDisplayedID.splice(deleteIndex, 1);
                         tracksDisplayed.splice(deleteIndex, 1);
                      });
                   }
@@ -1381,7 +1347,12 @@ function getTrack(mmsi, vesseltypeint, streamid, datetime) {
             }); //end .fail()
    }
    else {
-      console.log('Track for ' + mmsi + ' is already displayed.');
+      if (trknum != "undefined") {
+         console.log('Track for ' + trknum + ' is already displayed.');
+      }
+      else {
+         console.log('Track for ' + mmsi + ' is already displayed.');
+      }
    }
 }
 
@@ -1389,10 +1360,13 @@ function getTrack(mmsi, vesseltypeint, streamid, datetime) {
 function refreshLayers() {
 	clearOverlays();
 	clearVesselMarkerArray();
-   getTargetsFromDB(map.getBounds(), null, true);
+   refreshMaps(true);
 }
 
 /* -------------------------------------------------------------------------------- */
+/**
+ * Called by user clicking "return" key while selected query bar
+ **/
 function enteredQuery() {
    var entered_query = document.getElementById("query").value;
    console.log(entered_query);
@@ -1408,11 +1382,16 @@ function enteredQuery() {
    }
 
    //Use startsWith function to find the "SELECT" statement
+   //TODO: fix below
    if (entered_query.startsWith('SELECT')) {
-      getTargetsFromDB(map.getBounds(), entered_query, true);
+      //Set entered query to default to AIS data
+      //sourceType = "AIS";
+      getTargetsFromDB(map.getBounds(), entered_query, "AIS", true);
    }
    else {
-      getTargetsFromDB(map.getBounds(), entered_query, true);
+      //Set entered query to default to AIS data
+      //sourceType = "AIS";
+      getTargetsFromDB(map.getBounds(), entered_query, "AIS", true);
    }
 }
 
@@ -1434,10 +1413,11 @@ function typeSelectUpdated() {
          }
       }
       entered_query = entered_query + ")";
-      getTargetsFromDB(map.getBounds(), entered_query, true);
+      //Set entered query to default to AIS data
+      getTargetsFromDB(map.getBounds(), entered_query, "AIS", true);
    }
    else {
-      getTargetsFromDB(map.getBounds(), null, true);
+      refreshMaps(true);
    }
 }
 
@@ -1581,7 +1561,7 @@ function getTypesSelected() {
 /* -------------------------------------------------------------------------------- */
 function getIconColor(vesseltypeint, streamid) {
    var color;
-   if (streamid == 'shore-radar' || (streamid == 'r166710001' && vesseltypeint != 999)) {
+   if (vesseltypeint == 888 || streamid == 'shore-radar' || (streamid == 'r166710001' && vesseltypeint != 999)) {
       //color = '#FE2E2E';
       color = '#F078FF';  //pink
       return color;
@@ -1645,7 +1625,8 @@ function getIconColor(vesseltypeint, streamid) {
 		//return "shipicons/red1_90.png";
    }
    else if (vesseltypeint == 999) { //currently used for LAISIC outputs
-      color = '#A901DB'; 
+      color = '#FFFF00'; 
+      //color = '#A901DB'; 
       //color = '#A4A4A4'; 
 		//return "shipicons/lightgray1_90.png";
    }
@@ -1719,10 +1700,6 @@ function clearOverlays() {
 //
 function clearVesselMarkerArray() {
 	if (markerArray) {
-      if (CLUSTER) {
-         markerClusterer.removeMarkers(markerArray);
-      }
-
 		for (i in markerArray) {
 			markerArray[i].setMap(null);
          markerArray[i] = null;
@@ -1739,10 +1716,6 @@ function clearVesselMarkerArray() {
 //TODO: need to update to clear only out of bound markers
 function clearOutBoundMarkers() {
 	if (markerArray) {
-      if (CLUSTER) {
-         markerClusterer.removeMarkers(markerArray);
-      }
-
 		for (i in markerArray) {
 			markerArray[i].setMap(null);
          markerArray[i] = null;
@@ -1758,11 +1731,11 @@ function toggleRadarLayer() {
    /*
    if (document.getElementById("RadarLayer").checked) {
       sourcesInt = 3;
-      getTargetsFromDB(map.getBounds(), null, true);
+      refreshMaps(true);
    }
    else {
       sourcesInt = 1;
-      getTargetsFromDB(map.getBounds(), null, true);
+      refreshMaps(true);
    }
    */
 }
@@ -1938,22 +1911,6 @@ function hidePorts() {
    }
    portIcons = [];
    portCircles = [];
-}
-
-/* -------------------------------------------------------------------------------- */
-function toggleClusterLayer() {
-   if (document.getElementById("ClusterLayer") && document.getElementById("ClusterLayer").checked) {
-      clearOverlays();
-      CLUSTER = true;
-      markerClusterer.addMarkers(markerArray);
-   }
-   else {
-      CLUSTER = false;
-      if (markerClusterer) {
-         markerClusterer.removeMarkers(markerArray);
-         showOverlays();   //Display the markers individually
-      }
-   }
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -2407,7 +2364,7 @@ function vessel_age_changed() {
       vessel_age = -1;
    }
    else {
-      vessel_age = parseInt(vessel_age_selection);
+      vessel_age = parseFloat(vessel_age_selection);
    }
    //console.log(vessel_age);
    refreshMaps(true);
@@ -2433,6 +2390,80 @@ function autoRefreshOn() {
 /* -------------------------------------------------------------------------------- */
 function autoRefreshOff() {
    clearInterval(autoRefresh);
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
+ * Handle clicking/selection events in LAISIC table
+ */
+function handleTableSelection() {
+   //test localstorage
+   function storageEventHandler(e) {
+      if (!e) { 
+         e = window.event; 
+      }
+      tableUpdated(e);
+   }
+
+   if (window.addEventListener) {
+      window.addEventListener("storage", storageEventHandler, false);
+   } 
+   else {
+      window.attachEvent("onstorage", storageEventHandler);
+   };
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
+ * Handle clicking/selection events in LAISIC table
+ */
+function tableUpdated(selected) {
+   key = new String(selected.key);
+   value = selected.newValue;
+
+   console.log("key is: " + key);
+
+   //Handle AIS vessels
+   if (key.indexOf("vessel-") === 0) {
+      var mmsi = parseInt(key.substr(7));
+      $.grep(vesselArray, function(e, i){ 
+         if (e.mmsi == mmsi) {
+            (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+         }
+      });
+   }
+
+   //Handle LAISIC_AIS_TRACKS
+   if (key.indexOf("laisicaistrack-") === 0) {
+      var mmsi = parseInt(key.substr(15));
+      $.grep(vesselArray, function(e, i){ 
+         if (e.mmsi == mmsi && e.vesseltypeint == 999) {
+            console.log('displaying ' + mmsi);
+            (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+         }
+      });
+   }
+
+   //Handle LAISIC_RADAR
+   if (key.indexOf("laisicradar-") === 0) {
+      var trknum = parseInt(key.substr(12));
+      $.grep(vesselArray, function(e, i){ 
+         if (e.trknum == trknum && e.vesseltypeint == 888) {
+            (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+         }
+      });
+   }
+
+   //Handle LAISIC_AIS_OBS
+   if (key.indexOf("laisicaisobs-") === 0) {
+      var obsguid = key.substr(13);
+   //console.log("obsguid is: " + obsguid);
+      $.grep(vesselArray, function(e, i){ 
+         if (e.obsguid == obsguid && e.vesseltypeint == 777) {
+            (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+         }
+      });
+   }
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -2508,10 +2539,25 @@ function pad(number, length) {
     }
 }());
 
-
 /* -------------------------------------------------------------------------------- */
 // Produce darker shade of provided HTML color code
 function shadeColor(color, percent) {   
     var num = parseInt(color.slice(1),16), amt = Math.round(2.55 * percent), R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
     return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+}
+
+/* -------------------------------------------------------------------------------- */
+// Convert MMSI MID to flag image file name
+function MIDtoFlag(mmsi) {
+    //TODO: finish this function
+    return;
+}
+
+/* -------------------------------------------------------------------------------- */
+function detectMobileBrowser() {
+   var check = false;
+
+   (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
+   
+   return check; 
 }

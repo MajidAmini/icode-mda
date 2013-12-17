@@ -180,24 +180,6 @@
      background:   rgba(255,255,255,1);
      visibility:   hidden;
   }
-  #vessellist {
-     /*
-     float:        left;
-     border:       0px solid gray;
-     margin:       0px;
-     padding:      0px;
-     */
-     font-size:    10px;
-     /*
-     width:        244px;
-     min-height:   100px;
-     max-height:   400px;
-     */
-     overflow-y:   scroll;
-  }
-  #vessellist a {
-     color:        #000000;           
-  }
   #status-msg {
      position:     absolute;
      top:          68px;

@@ -29,65 +29,22 @@ if (!$connection) {
 }
 
 if(count($_GET) > 0) { 
-   if (!empty($_GET["type"])) { 
-      $type = (string)$_GET["type"];
+   if (!empty($_GET["source"])) { 
+      $source = (string)$_GET["source"];
 
-      if ($type == "LAISIC_AIS_TRACK") { 
-         //$fromSources = "(select *  from icodemaps.trackdata ORDER by datetime DESC) as maxtime ";
-         $fromSources = "select * from icodemaps.trackdata_mem_track_heads";
-      } 
-      else if ($type == "LAISIC_RADAR") {
-         //$fromSources = "(select mmsi,sog,lon,lat,cog,datetime,streamid,target_status,target_acq,trknum,sourceid  from icodemaps.radar_laisic_output ORDER by datetime DESC) as maxtime ";
-         $fromSources = "select mmsi,sog,lon,lat,cog,datetime,streamid,target_status,target_acq,trknum,sourceid  from icodemaps.radar_laisic_output_mem_track_heads";
-      } 
-      else if ($type == "LAISIC_AIS_OBS") { 
-         //$fromSources = "select *  from icodemaps.aisobservation";
-         $fromSources = "select * from icodemaps.aisobservation_mem_track_heads";
+      switch ($source) {
+         case "LAISIC_AIS_TRACK":
+            $fromSources = "(SELECT trkguid, updateguid, srcguid, datetime, lat as Latitude, lon as Longitude, cog, sog, stage, semimajor, semiminor, orientation, holdtime, hitscount, quality, source, inttype, callsign, mmsi, vesselname, imo FROM icodemaps.trackdata_mem_track_heads) VESSELS";
+            break;
+         case "LAISIC_RADAR":
+            $fromSources = "(SELECT mmsi, sog, lon as Longitude, lat as Latitude, cog, datetime, streamid, target_status, target_acq, trknum, sourceid FROM icodemaps.radar_laisic_output_mem_track_heads) VESSELS";
+            break;
+         case "LAISIC_AIS_OBS":
+            $fromSources = "(SELECT obsguid, lat as Latitude, lon as Longitude, semimajor, semiminor, orientation, cog, sog, datetime, callsign, mmsi, vesselname, imo, streamid FROM icodemaps.aisobservation_mem_track_heads) VESSELS";
+            break;
+         default: //AIS
+            $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS";
       }
-   }
-   else {
-      /*
-         `MMSI`,
-         `CommsID`,
-         `IMONumber`,
-         `CallSign`,
-         `Name`,
-         `VesType`,
-         `Cargo`,
-         `AISClass`,
-         `Length`,
-         `Beam`,
-         `Draft`,
-         `AntOffsetBow`,
-         `AntOffsetPort`,
-         `Destination`,
-         `ETADest`,
-         `PosSource`,
-         `PosQuality`,
-         `FixDTG`,
-         `ROT`,
-         `NavStatus`,
-         `Source`,
-         `TimeOfFix`,
-         `Latitude`,
-         `Longitude`,
-         `SOG`,
-         `Heading`,
-         `RxStnID`,
-         `COG`
-         FROM vessels_memory
-         WHERE (`MMSI`, `TimeOfFix`) IN
-         (
-         SELECT 
-         `MMSI`,
-         max(`TimeOfFix`)
-         FROM vessels_memory
-         WHERE MMSI=636013848 
-         GROUP BY MMSI
-         )) VESSELS";
-       */
-      $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS";
-      //$fromSources = "(SELECT * FROM radar_vessels" . $sources . " UNION SELECT * FROM current_vessels" . $sources . ") VESSELS LEFT OUTER JOIN user_ship_risk ON VESSELS.mmsi = user_ship_risk.mmsi";
    }
 }
 
@@ -180,14 +137,13 @@ while (odbc_fetch_row($result)){
    $count_results = $count_results + 1;
 
    //Output JSON object per row
-   if ($type == "LAISIC_AIS_TRACK") {  
+   if ($source === "LAISIC_AIS_TRACK") {  
         $vessel = array(trkguid=>htmlspecialchars(odbc_result($result,"trkguid")),
                    updateguid=>htmlspecialchars(odbc_result($result,"updateguid")),
-                   trknum=>odbc_result($result,"trknum"),
                    srcguid=>htmlspecialchars(odbc_result($result,"srcguid")),
                    datetime=>odbc_result($result,"datetime"),
-                   lat=>addslashes(odbc_result($result,"lat")),
-                   lon=>addslashes(odbc_result($result,"lon")),
+                   lat=>addslashes(odbc_result($result,"Latitude")),
+                   lon=>addslashes(odbc_result($result,"Longitude")),
                    cog=>odbc_result($result,"cog"),
                    sog=>odbc_result($result,"sog"),
                    stage=>htmlspecialchars(odbc_result($result,"stage")),
@@ -203,14 +159,13 @@ while (odbc_fetch_row($result)){
                    mmsi=>odbc_result($result,"mmsi"),
                    vesselname=>htmlspecialchars(odbc_result($result,"vesselname")),
                    imo=>odbc_result($result,"imo")
-        );
+           );
     }
-    else if ($type == "LAISIC_RADAR") {
+    else if ($source === "LAISIC_RADAR") {
         $vessel = array(mmsi=>odbc_result($result,"mmsi"),
-                   navstatus=>odbc_result($result,"navstatus"),
                    sog=>odbc_result($result,"sog"),
-                   lon=>addslashes(odbc_result($result,"lon")),
-                   lat=>addslashes(odbc_result($result,"lat")),
+                   lon=>addslashes(odbc_result($result,"Longitude")),
+                   lat=>addslashes(odbc_result($result,"Latitude")),
                    cog=>odbc_result($result,"cog"),
                    datetime=>odbc_result($result,"datetime"),
                    streamid=>htmlspecialchars(odbc_result($result,"streamid")),
@@ -218,13 +173,12 @@ while (odbc_fetch_row($result)){
                    target_acq=>htmlspecialchars(odbc_result($result,"target_acq")),
                    trknum=>odbc_result($result,"trknum"),
                    sourceid=>htmlspecialchars(odbc_result($result,"sourceid"))
-
-        );
+           );
     }
-    else if ($type == "LAISIC_AIS_OBS") {
+    else if ($source === "LAISIC_AIS_OBS") {
          $vessel = array(obsguid=>htmlspecialchars(odbc_result($result,"obsguid")),
-                   lat=>addslashes(odbc_result($result,"lat")),
-                   lon=>addslashes(odbc_result($result,"lon")),
+                   lat=>addslashes(odbc_result($result,"Latitude")),
+                   lon=>addslashes(odbc_result($result,"Longitude")),
                    semiminor=>odbc_result($result,"semiminor"),
                    semimajor=>odbc_result($result,"semimajor"),          
                    orientation=>odbc_result($result,"orientation"),  
@@ -236,44 +190,9 @@ while (odbc_fetch_row($result)){
                    vesselname=>htmlspecialchars(odbc_result($result,"vesselname")),
                    imo=>odbc_result($result,"imo"),
                    streamid=>htmlspecialchars(odbc_result($result,"streamid"))      
-        );
+           );
     }
     else {
-       /* Old field names
-          $vessel = array(messagetype=>odbc_result($result,"messagetype"),
-          mmsi=>odbc_result($result,"mmsi"),
-          navstatus=>odbc_result($result,"navstatus"),
-          rot=>odbc_result($result,"rot"),
-          sog=>odbc_result($result,"sog"),
-          lon=>addslashes(odbc_result($result,"lon")),
-          lat=>addslashes(odbc_result($result,"lat")),
-          cog=>odbc_result($result,"cog"),
-          true_heading=>odbc_result($result,"true_heading"),
-          datetime=>odbc_result($result,"datetime"),
-          imo=>odbc_result($result,"imo"),
-          vesselname=>htmlspecialchars(odbc_result($result,"vesselname")),
-          vesseltypeint=>odbc_result($result,"vesseltypeint"),
-          length=>odbc_result($result,"length"),
-          shipwidth=>odbc_result($result,"shipwidth"),
-          bow=>odbc_result($result,"bow"),
-          stern=>odbc_result($result,"stern"),
-          port=>odbc_result($result,"port"),
-          starboard=>odbc_result($result,"starboard"),
-          draught=>odbc_result($result,"draught"),
-          destination=>htmlspecialchars(odbc_result($result,"destination")),
-          callsign=>htmlspecialchars(odbc_result($result,"callsign")),
-          posaccuracy=>odbc_result($result,"posaccuracy"),
-          eta=>odbc_result($result,"eta"),
-          posfixtype=>odbc_result($result,"posfixtype"),
-          //streamid=>htmlspecialchars(odbc_result($result,"streamid"))
-          streamid=>htmlspecialchars(odbc_result($result,"streamid")),
-          security_rating=>odbc_result($result,"security_rating"),
-          safety_rating=>odbc_result($result,"safety_rating"),
-          risk_score_security=>odbc_result($result,"security_score"),
-          risk_score_safety=>odbc_result($result,"safety_score")
-       );
-       */
-
        //Extract the vessel type number only
        $pos = strpos(odbc_result($result,"VesType"), '-');
        $vesseltype = substr(odbc_result($result,"VesType"), 0, $pos);
@@ -310,7 +229,7 @@ while (odbc_fetch_row($result)){
              //safety_rating=>odbc_result($result,"safety_rating"),
              //risk_score_security=>odbc_result($result,"security_score"),
              //risk_score_safety=>odbc_result($result,"safety_score")
-             );
+          );
     }
 
     array_push($vesselarray, $vessel);
