@@ -9,7 +9,6 @@
 
      <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=geometry,drawing,weather,visualization&sensor=false"> </script>
      <script type="text/javascript" src='scripts/icode-maps.js' ></script>
-     <script type="text/javascript" src='scripts/markerclusterer.js' ></script>
      <script type="text/javascript" src='scripts/infobubble.js' ></script>
 
      <script type="text/javascript" language="Javascript" src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
@@ -57,7 +56,7 @@
      <script>
         var panelhidden = false;
         $(function() {
-        $( "#results_list" ).hide();
+           $( "#results_list" ).hide();
            $( "#showpanel" ).click(function() {
               $( "#panel" ).toggle("slide", { direction: 'right' }, 180);
               //$( "#panel" ).effect('fade').dequeue().toggle("slide", { direction: 'right' }, 180);
@@ -156,7 +155,7 @@
                  </svg>
                  Radar Vessels<br>
                  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="20" width="30" viewBox="-5 -10 20 20">
-                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#A901DB;stroke:#A901DB;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
+                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#FFFF00;stroke:#222222;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
                  </path>
                  </svg>
                  LAISIC Vessels<br>
@@ -278,16 +277,16 @@
                  <hr>
                  <center><b>Other Information</b></center>
                  <!-- input class="checkbox" id="RadarLayer" name="RadarLayer" type="checkbox" checked="checked" onclick="toggleRadarLayer();"> <img align="top" src="icons/pink0.png" style="padding-bottom: 4px; vertical-align: middle;"> RADAR Contacts<br> -->
-                 <input class="checkbox" id="ClusterLayer" name="ClusterLayer" type="checkbox" onclick="toggleClusterLayer();"> <img align="top" width="20px" src="icons/cluster.png" style="padding-bottom: 4px; vertical-align: middle;"> Cluster Layer<br>
                  <input class="checkbox" id="HeatmapLayer" name="HeatmapLayer" type="checkbox" onclick="toggleHeatmapLayer();"> <img align="top" width="20px" src="icons/heatmap.png" style="padding-bottom: 4px; vertical-align: middle;"> Heatmap Layer<br>
                  <input class="checkbox" id="WeatherLayer" name="WeatherLayer" type="checkbox" onclick="toggleWeatherLayer();"> <img align="top" width="20px" src="icons/weather_icon.png" style="padding-bottom: 4px; vertical-align: middle;"> Weather Layer<br>
                  <!-- input class="checkbox" id="KMLLayer" name="KMLLayer" type="checkbox" onclick="toggleKMLLayer();"> <img align="top" width="20px" src="icons/kml.png" style="padding-bottom: 4px; vertical-align: middle;"> KML Layer<br> -->
                  <input class="checkbox" id="PortLayer" name="PortLayer" type="checkbox" onclick="togglePortLayer();"> <img align="top" height="20px" src="icons/anchor_port.png" style="padding-bottom: 4px; vertical-align: middle;"> Port Layer<br>
                  </p>
               </div>
-              
+
               <h3>LAISIC Tables</h3>
               <div>
+                 <input class="checkbox" id="LAISIC_TARGETS" name="LAISIC_TARGETS" type="checkbox" onclick="refreshMaps(true);"> Display LAISIC targets<br><br>
                  <center><a href="laisictables.html" target="_blank">Click here to open <br>LAISIC Tables in a new window</a></center>
               </div>
 
@@ -324,22 +323,23 @@
                  <br>
                  Only show vessels up to 
                  <select id="vessel_age" onChange="vessel_age_changed();">
-                 <option value="nolimit">no limit</option>
-                 <option value="1">1</option>
-                 <option value="2">2</option>
-                 <option value="3">3</option>
-                 <option value="4">4</option>
-                 <option value="5">5</option>
-                 <option value="6">6</option>
-                 <option value="7">7</option>
-                 <option value="8">8</option>
-                 <option value="9">9</option>
-                 <option value="10">10</option>
-                 <option value="11">11</option>
-                 <option value="12">12</option>
-                 <option value="24">24</option>
-                 <option value="48">48</option>
-                 <option value="72">72</option>
+                    <option value="nolimit">no limit</option>
+                    <option value="0.25">0.25</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="24">24</option>
+                    <option value="48">48</option>
+                    <option value="72">72</option>
                  </select>
                  hours old.<br>
               </div>
