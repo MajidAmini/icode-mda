@@ -34,7 +34,7 @@ if(count($_GET) > 0) {
 
       switch ($source) {
          case "LAISIC_AIS_TRACK":
-            $fromSources = "(SELECT trkguid, updateguid, srcguid, datetime, lat as Latitude, lon as Longitude, cog, sog, stage, semimajor, semiminor, orientation, holdtime, hitscount, quality, source, inttype, callsign, mmsi, vesselname, imo FROM icodemaps.trackdata_mem_track_heads) VESSELS";
+            $fromSources = "(SELECT trkguid, trknum, updateguid, srcguid, datetime, lat as Latitude, lon as Longitude, cog, sog, stage, semimajor, semiminor, orientation, holdtime, hitscount, quality, source, inttype, callsign, mmsi, vesselname, imo FROM icodemaps.trackdata_mem_track_heads) VESSELS";
             break;
          case "LAISIC_RADAR":
             $fromSources = "(SELECT mmsi, sog, lon as Longitude, lat as Latitude, cog, datetime, streamid, target_status, target_acq, trknum, sourceid FROM icodemaps.radar_laisic_output_mem_track_heads) VESSELS";
@@ -139,6 +139,7 @@ while (odbc_fetch_row($result)){
    //Output JSON object per row
    if ($source === "LAISIC_AIS_TRACK") {  
         $vessel = array(trkguid=>htmlspecialchars(odbc_result($result,"trkguid")),
+                   trknum=>odbc_result($result,"trknum"),
                    updateguid=>htmlspecialchars(odbc_result($result,"updateguid")),
                    srcguid=>htmlspecialchars(odbc_result($result,"srcguid")),
                    datetime=>odbc_result($result,"datetime"),

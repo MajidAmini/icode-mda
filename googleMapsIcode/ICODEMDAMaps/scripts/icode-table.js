@@ -13,6 +13,7 @@
  var LAISICAISTRACKArray = [];
  var LAISICRADARArray = [];
  var LAISICAISOBSArray = [];
+ var HistoryTrailArray = [];
 
  var AISdata;
  var LAISICAISTRACKdata;
@@ -37,16 +38,19 @@ function initialize() {
    LAISICAISTRACKdata = new google.visualization.DataTable();
    LAISICRADARdata = new google.visualization.DataTable();
    LAISICAISOBSdata = new google.visualization.DataTable();
+   HistoryTraildata = new google.visualization.DataTable();
 
    AIStable = new google.visualization.Table(document.getElementById('raw_ais_table'));
    LAISICAISTRACKtable = new google.visualization.Table(document.getElementById('laisic_ais_track_table'));
    LAISICRADARtable = new google.visualization.Table(document.getElementById('laisic_radar_table'));
    LAISICAISOBStable= new google.visualization.Table(document.getElementById('laisic_ais_obs_table'));
+   HistoryTrailtable = new google.visualization.Table(document.getElementById('historytrail_table'));
 
    AISdata_index = 0;
    LAISICAISTRACKdata_index = 0;
    LAISICRADARdata_index = 0;
    LAISICAISOBSdata_index = 0;
+   HistoryTraildata_index = 0;
 
    //Table click/selection events (for LAISIC debugging)
    handleTableSelection();
@@ -84,6 +88,12 @@ function initialize() {
    else {
       document.getElementById("query").value = 'Done.';
    }
+
+   if (localStorage.getItem('historytrailquery') != null &&
+       localStorage.getItem('historytrailquery')) {
+      showHistoryTrailTable(localStorage.getItem('historytrailquery'));
+   }
+
    document.getElementById('busy_indicator').style.visibility = 'hidden';
 }
 
@@ -124,6 +134,7 @@ function initializeTable() {
    //LAISICAISTRACKdata.addColumn('string', 'trkguid');
    //LAISICAISTRACKdata.addColumn('string', 'updateguid');
    LAISICAISTRACKdata.addColumn('string', 'srcguid');
+   LAISICAISTRACKdata.addColumn('number', 'trknum');
    LAISICAISTRACKdata.addColumn('number', 'datetime');
    LAISICAISTRACKdata.addColumn('number', 'Latitude');
    LAISICAISTRACKdata.addColumn('number', 'Longitude');
@@ -169,6 +180,8 @@ function initializeTable() {
    LAISICAISOBSdata.addColumn('string', 'Vesselname');
    LAISICAISOBSdata.addColumn('number', 'IMO');
    LAISICAISOBSdata.addColumn('string', 'StreamID');
+
+   //Setup History Trail table after query is performed to determine column names and types
 
    //Add table events listeners
    addTableListeners();
@@ -242,6 +255,63 @@ function mapsUpdated(e) {
          }
       }, 500);   //small delay to allow maps to write query strings to localStorage
    }
+   else if (key.indexOf("historytrailquery") == 0) {
+      if (e.newValue != '') {
+         console.log('History trail acquired in maps.');
+         showHistoryTrailTable(e.newValue);
+      }
+      else {
+         console.log('All history trails deleted, hiding table now.');
+         hideHistoryTrailTable();
+      }
+   }
+}
+
+/* -------------------------------------------------------------------------------- */
+function showHistoryTrailTable(historytrailquery) {
+   document.getElementById('data_container').style.width = "60%";
+   document.getElementById('historytrail_container').visibility = "visible";
+   document.getElementById('historytrail_container').style.width = "39%";
+
+   var phpWithArg = "query_track.php?source=" + localStorage.getItem('historytrailtype') + "_HistoryTrail&query=" + historytrailquery;
+   console.log(phpWithArg);
+
+   clearHistoryTrailTable();
+   clearHistoryTraildata();
+
+   //Call PHP and get results as markers
+   $.getJSON(
+         phpWithArg, // The server URL 
+         { }
+      ) //end .getJSON()
+      .done(function (response) {
+         console.log('showHistoryTrailTable(): ' + response.query);
+         console.log('showHistoryTrailTable(): ' + 'track history size = ' + response.resultcount);
+
+         //document.getElementById('historytrail_container').innerHTML = response.query;
+
+         $.each(response.vessels, function(key,vessel) {
+            HistoryTrailArray.push(vessel);
+            console.log(vessel.streamid);
+         });
+
+         drawTable('HistoryTrail');
+
+         document.getElementById('busy_indicator').style.visibility = 'hidden';
+      }) //end .done()
+      .fail(function() { 
+         console.log('getAISFromDB(): ' +  'No response from track query; error in php?'); 
+         document.getElementById("query").value = "ERROR IN QUERY.  PLEASE TRY AGAIN.";
+         document.getElementById('busy_indicator').style.visibility = 'hidden';
+
+         return; 
+      }); //end .fail()
+}
+
+/* -------------------------------------------------------------------------------- */
+function hideHistoryTrailTable() {
+   document.getElementById('data_container').style.width = "100%";
+   document.getElementById('historytrail_container').visibility = "hidden";
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -334,6 +404,28 @@ function clearLAISICAISOBSdata() {
 
 /* -------------------------------------------------------------------------------- */
 /** 
+ * Clear HistoryTrail table
+ */
+function clearHistoryTrailTable() {
+   //Clear the table display
+   console.log("Clearing HistoryTrail table.");
+   HistoryTrailtable.clearChart();
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
+ * Clear HistoryTrail data
+ */
+function clearHistoryTraildata() {
+   //Clear the table display
+   console.log("Clearing HistoryTrail data.");
+   HistoryTrailArray = [];
+   HistoryTraildata_index = 0;
+   HistoryTraildata.removeRows(0,HistoryTraildata.getNumberOfRows());
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
  * Handle clicking/selection events in LAISIC table
  * e: StorageEvent object
  */
@@ -346,9 +438,12 @@ function drawTable(sourceType) {
          clearLAISICAISTRACKTable();
          clearLAISICRADARTable();
          clearLAISICAISOBSTable();
+         clearHistoryTrailTable();
+
          clearLAISICAISTRACKdata();
          clearLAISICRADARdata();
          clearLAISICAISOBSdata();
+         clearHistoryTraildata();
 
          for (i=0; i < vesselArray.length; i++){
             var vessel = vesselArray[i];
@@ -394,21 +489,22 @@ function drawTable(sourceType) {
             //LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 0, vessel.trkguid);
             //LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 1, vessel.updateguid);
             LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 0, vessel.srcguid);
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 1, parseInt(vessel.datetime));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 2, parseFloat(vessel.lat));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 3, parseFloat(vessel.lon));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 4, parseFloat(vessel.cog));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 5, parseFloat(vessel.sog));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 6, vessel.stage);
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 7, parseFloat(vessel.semimajor));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 8, parseFloat(vessel.semiminor));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 9, parseFloat(vessel.orientation));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 10, parseFloat(vessel.holdtime));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 11, parseFloat(vessel.hitscount));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 12, parseFloat(vessel.quality));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 13, vessel.inttype);
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 14, parseInt(vessel.mmsi));
-            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 15, parseInt(vessel.imo));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 1, parseInt(vessel.trknum));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 2, parseInt(vessel.datetime));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 3, parseFloat(vessel.lat));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 4, parseFloat(vessel.lon));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 5, parseFloat(vessel.cog));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 6, parseFloat(vessel.sog));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 7, vessel.stage);
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 8, parseFloat(vessel.semimajor));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 9, parseFloat(vessel.semiminor));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 10, parseFloat(vessel.orientation));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 11, parseFloat(vessel.holdtime));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 12, parseFloat(vessel.hitscount));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 13, parseFloat(vessel.quality));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 14, vessel.inttype);
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 15, parseInt(vessel.mmsi));
+            LAISICAISTRACKdata.setCell(LAISICAISTRACKdata_index, 16, parseInt(vessel.imo));
             LAISICAISTRACKdata_index++;
          }
          break;
@@ -455,15 +551,138 @@ function drawTable(sourceType) {
             LAISICAISOBSdata_index++;
          }
          break;
+      case "HistoryTrail":
+         clearHistoryTrailTable();
+         //Remove the previous columns in case type of trail/track changes (each has different columns)
+         HistoryTraildata.removeColumns(0, HistoryTraildata.getNumberOfColumns());
+
+         //Setup table columns and data according to the type of trail/track being received
+         if (localStorage.getItem('historytrailtype') == "AIS") {
+            HistoryTraildata.addColumn('number', 'MMSI');
+            HistoryTraildata.addColumn('number', 'TimeOfFix');
+            HistoryTraildata.addColumn('number', 'Latitude');
+            HistoryTraildata.addColumn('number', 'Longitude');
+            HistoryTraildata.addColumn('number', 'SOG');
+            HistoryTraildata.addColumn('number', 'Heading');
+            HistoryTraildata.addColumn('string', 'RxStnID');
+
+            for (i=0; i < HistoryTrailArray.length; i++){
+               var vessel = HistoryTrailArray[i];
+
+               HistoryTraildata.addRows(1);
+               HistoryTraildata.setCell(HistoryTraildata_index, 0, parseInt(vessel.mmsi));
+               HistoryTraildata.setCell(HistoryTraildata_index, 1, parseInt(vessel.datetime));
+               HistoryTraildata.setCell(HistoryTraildata_index, 2, parseFloat(vessel.lat));
+               HistoryTraildata.setCell(HistoryTraildata_index, 3, parseFloat(vessel.lon));
+               HistoryTraildata.setCell(HistoryTraildata_index, 4, parseFloat(vessel.sog));
+               HistoryTraildata.setCell(HistoryTraildata_index, 5, parseInt(vessel.true_heading));
+               HistoryTraildata.setCell(HistoryTraildata_index, 6, vessel.streamid);
+               console.log(vessel.streamid);
+               HistoryTraildata_index++;
+            }
+         }
+         else if (localStorage.getItem('historytrailtype') == "LAISIC_RADAR") {
+            HistoryTraildata.addColumn('number', 'MMSI');
+            HistoryTraildata.addColumn('number', 'TimeOfFix');
+            HistoryTraildata.addColumn('number', 'Latitude');
+            HistoryTraildata.addColumn('number', 'Longitude');
+            HistoryTraildata.addColumn('number', 'SOG');
+            HistoryTraildata.addColumn('number', 'COG');
+            HistoryTraildata.addColumn('string', 'StreamID');
+            HistoryTraildata.addColumn('number', 'Heading');
+            HistoryTraildata.addColumn('string', 'Target_Status');
+            HistoryTraildata.addColumn('string', 'Target_Acq');
+            HistoryTraildata.addColumn('number', 'Trknum');
+            HistoryTraildata.addColumn('string', 'SourceID');
+
+            for (i=0; i < HistoryTrailArray.length; i++){
+               var vessel = HistoryTrailArray[i];
+
+               HistoryTraildata.addRows(1);
+               HistoryTraildata.setCell(HistoryTraildata_index, 0, parseInt(vessel.mmsi));
+               HistoryTraildata.setCell(HistoryTraildata_index, 1, parseInt(vessel.datetime));
+               HistoryTraildata.setCell(HistoryTraildata_index, 2, parseFloat(vessel.lat));
+               HistoryTraildata.setCell(HistoryTraildata_index, 3, parseFloat(vessel.lon));
+               HistoryTraildata.setCell(HistoryTraildata_index, 4, parseFloat(vessel.sog));
+               HistoryTraildata.setCell(HistoryTraildata_index, 5, parseFloat(vessel.cog));
+               HistoryTraildata.setCell(HistoryTraildata_index, 6, vessel.streamid);
+               HistoryTraildata.setCell(HistoryTraildata_index, 7, parseFloat(vessel.true_heading));
+               HistoryTraildata.setCell(HistoryTraildata_index, 8, vessel.target_status);
+               HistoryTraildata.setCell(HistoryTraildata_index, 9, vessel.target_acq);
+               HistoryTraildata.setCell(HistoryTraildata_index, 10, parseInt(vessel.trknum));
+               HistoryTraildata.setCell(HistoryTraildata_index, 11, vessel.sourceid);
+               HistoryTraildata_index++;
+            }
+         }
+         else { //Should be "LAISIC_AIS_TRACK"
+            HistoryTraildata.addColumn('string', 'trkguid');
+            HistoryTraildata.addColumn('string', 'updateguid');
+            HistoryTraildata.addColumn('number', 'trknum');
+            HistoryTraildata.addColumn('string', 'srcguid');
+            HistoryTraildata.addColumn('number', 'datetime');
+            HistoryTraildata.addColumn('number', 'lat');
+            HistoryTraildata.addColumn('number', 'lon');
+            HistoryTraildata.addColumn('number', 'cog');
+            HistoryTraildata.addColumn('number', 'sog');
+            HistoryTraildata.addColumn('string', 'stage');
+            HistoryTraildata.addColumn('number', 'semimajor');
+            HistoryTraildata.addColumn('number', 'semiminor');
+            HistoryTraildata.addColumn('number', 'orientation');
+            HistoryTraildata.addColumn('number', 'holdtime');
+            HistoryTraildata.addColumn('number', 'hitscount');
+            HistoryTraildata.addColumn('number', 'quality');
+            HistoryTraildata.addColumn('string', 'source');
+            HistoryTraildata.addColumn('string', 'inttype');
+            HistoryTraildata.addColumn('string', 'callsign');
+            HistoryTraildata.addColumn('number', 'mmsi');
+            HistoryTraildata.addColumn('string', 'vesselname');
+            HistoryTraildata.addColumn('number', 'imo');
+
+            for (i=0; i < HistoryTrailArray.length; i++){
+               var vessel = HistoryTrailArray[i];
+
+               HistoryTraildata.addRows(1);
+               HistoryTraildata.setCell(HistoryTraildata_index, 0, vessel.trkguid);
+               HistoryTraildata.setCell(HistoryTraildata_index, 1, vessel.updateguid);
+               HistoryTraildata.setCell(HistoryTraildata_index, 2, parseInt(vessel.trknum));
+               HistoryTraildata.setCell(HistoryTraildata_index, 3, vessel.srcguid);
+               HistoryTraildata.setCell(HistoryTraildata_index, 4, parseInt(vessel.datetime));
+               HistoryTraildata.setCell(HistoryTraildata_index, 5, parseFloat(vessel.lat));
+               HistoryTraildata.setCell(HistoryTraildata_index, 6, parseFloat(vessel.lon));
+               HistoryTraildata.setCell(HistoryTraildata_index, 7, parseFloat(vessel.cog));
+               HistoryTraildata.setCell(HistoryTraildata_index, 8, parseFloat(vessel.sog));
+               HistoryTraildata.setCell(HistoryTraildata_index, 9, vessel.stage);
+               HistoryTraildata.setCell(HistoryTraildata_index, 10, parseFloat(vessel.semimajor));
+               HistoryTraildata.setCell(HistoryTraildata_index, 11, parseFloat(vessel.semiminor));
+               HistoryTraildata.setCell(HistoryTraildata_index, 12, parseFloat(vessel.orientation));
+               HistoryTraildata.setCell(HistoryTraildata_index, 13, parseInt(vessel.holdtime));
+               HistoryTraildata.setCell(HistoryTraildata_index, 14, parseInt(vessel.hitscount));
+               HistoryTraildata.setCell(HistoryTraildata_index, 15, parseFloat(vessel.quality));
+               HistoryTraildata.setCell(HistoryTraildata_index, 16, vessel.source);
+               HistoryTraildata.setCell(HistoryTraildata_index, 17, vessel.inttype);
+               HistoryTraildata.setCell(HistoryTraildata_index, 18, vessel.callsign);
+               HistoryTraildata.setCell(HistoryTraildata_index, 19, parseInt(vessel.mmsi));
+               HistoryTraildata.setCell(HistoryTraildata_index, 20, vessel.vesselname);
+               HistoryTraildata.setCell(HistoryTraildata_index, 21, parseInt(vessel.imo));
+               HistoryTraildata_index++;
+            }
+         }
+
+         break;
       case "CLUSTER":
          clearAISTable();
          clearAISdata();
+
          clearLAISICAISTRACKTable();
          clearLAISICRADARTable();
          clearLAISICAISOBSTable();
+         clearHistoryTrailTable();
+
          clearLAISICAISTRACKdata();
          clearLAISICRADARdata();
          clearLAISICAISOBSdata();
+         clearHistoryTraildata();
+
          console.log("Cluster query, nothing to show in tables.");
          break;
       default:
@@ -476,6 +695,7 @@ function drawTable(sourceType) {
    LAISICAISTRACKtable.draw(LAISICAISTRACKdata, {showRowNumber: true});
    LAISICRADARtable.draw(LAISICRADARdata, {showRowNumber: true});
    LAISICAISOBStable.draw(LAISICAISOBSdata, {showRowNumber: true});
+   HistoryTrailtable.draw(HistoryTraildata, {showRowNumber: true});
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -537,8 +757,9 @@ function addTableListeners() {
 
          //Set other table's selection by associating with current table's selection
          for (var i=0; i < row.length; i++) {
-            var mmsi = LAISICAISTRACKdata.getValue(row[i].row, 14);
-            localStorage["laisicaistrack-" + mmsi] = 1;
+            var trknum = LAISICAISTRACKdata.getValue(row[i].row, 1);
+            var mmsi = LAISICAISTRACKdata.getValue(row[i].row, 15);
+            localStorage["laisicaistrack-" + trknum] = 1;
             
             var selectionArray = [];
             for (var j=0; j < LAISICRADARdata.getNumberOfRows(); j++) {
@@ -597,7 +818,7 @@ function addTableListeners() {
             
             var selectionArray = [];
             for (var j=0; j < LAISICAISTRACKdata.getNumberOfRows(); j++) {
-               var aistrackmmsi = LAISICAISTRACKdata.getValue(j, 14);
+               var aistrackmmsi = LAISICAISTRACKdata.getValue(j, 15);
                if (aistrackmmsi == mmsi) {
                   selectionArray.push({row:j, column: null});
                   break;
@@ -669,7 +890,7 @@ function addTableListeners() {
 
             if (selectionArray.length == 1) {
                selectionArray = [];
-               var mmsi = LAISICAISTRACKdata.getValue(j, 14);
+               var mmsi = LAISICAISTRACKdata.getValue(j, 15);
                for (var j=0; j < LAISICRADARdata.getNumberOfRows(); j++) {
                   var radarmmsi = LAISICRADARdata.getValue(j, 0);
                   if (radarmmsi == mmsi) {
@@ -689,7 +910,7 @@ function addTableListeners() {
 /* -------------------------------------------------------------------------------- */
 function autoSelectedLAISICAISTRACKtable() {
    var row = LAISICAISTRACKtable.getSelection();
-   console.log('Auto selected ' + row.length + ' elements in LAISICAISTRACKtable');
+   //console.log('Auto selected ' + row.length + ' elements in LAISICAISTRACKtable');
    document.getElementById('laisicaistrack_status').innerHTML = '';
    
    //Reset all to visible if nothing selected, or to not-visible if more than 0 selected
@@ -709,13 +930,19 @@ function autoSelectedLAISICAISTRACKtable() {
    var count = 0;
    document.getElementById('laisicaistrack_status').innerHTML = 'Matching row: ';
    for (var i=0; i < row.length; i++) {
-      var mmsi = LAISICAISTRACKdata.getValue(row[i].row, 14);
-      localStorage["laisicaistrack-" + mmsi] = 1;
+      var trknum = LAISICAISTRACKdata.getValue(row[i].row, 1);
+      localStorage["laisicaistrack-" + trknum] = 1;
       count++;
       if (row.length > 1 && i > 0) {
          document.getElementById('laisicaistrack_status').innerHTML += ', ';
       }
       document.getElementById('laisicaistrack_status').innerHTML += row[i].row + 1;
+
+      //auto scroll to first matching row
+      if (i == 0) {
+         var lineheight = parseInt(getStyle('laisic_ais_track_table','line-height'));
+         document.getElementById('laisic_ais_track_table').scrollTop = row[i].row * (lineheight+13) + lineheight;
+      }
    }
    if (row.length == 0) {
       document.getElementById('laisicaistrack_status').innerHTML = '0 rows matching.';
@@ -725,7 +952,7 @@ function autoSelectedLAISICAISTRACKtable() {
 /* -------------------------------------------------------------------------------- */
 function autoSelectedLAISICRADARtable() {
    var row = LAISICRADARtable.getSelection();
-   console.log('Auto selected ' + row.length + ' elements in LAISICRADARtable');
+   //console.log('Auto selected ' + row.length + ' elements in LAISICRADARtable');
    document.getElementById('laisicradar_status').innerHTML = '';
    
    //Reset all to visible if nothing selected, or to not-visible if more than 0 selected
@@ -752,6 +979,12 @@ function autoSelectedLAISICRADARtable() {
          document.getElementById('laisicradar_status').innerHTML += ', ';
       }
       document.getElementById('laisicradar_status').innerHTML += row[i].row + 1;
+
+      //auto scroll to first matching row
+      if (i == 0) {
+         var lineheight = parseInt(getStyle('laisic_radar_table','line-height'));
+         document.getElementById('laisic_radar_table').scrollTop = row[i].row * (lineheight+4) + lineheight;
+      }
    }
    if (row.length == 0) {
       document.getElementById('laisicradar_status').innerHTML = '0 rows matching.';
@@ -759,9 +992,21 @@ function autoSelectedLAISICRADARtable() {
 }
 
 /* -------------------------------------------------------------------------------- */
+function getStyle(el, styleprop){
+	el = document.getElementById(el);
+	if(window.getComputedStyle){
+		return document.defaultView.getComputedStyle(el, null).getPropertyValue(styleprop);
+	}
+	else if(el.currentStyle){
+		return el.currentStyle[styleprop.encamel()];
+	}
+	return null;
+}
+
+/* -------------------------------------------------------------------------------- */
 function autoSelectedLAISICAISOBStable() {
    var row = LAISICAISOBStable.getSelection();
-   console.log('Auto selected ' + row.length + ' elements in LAISICAISOBStable');
+   //console.log('Auto selected ' + row.length + ' elements in LAISICAISOBStable');
    document.getElementById('laisicaisobs_status').innerHTML = '';
    
    //Reset all to visible if nothing selected, or to not-visible if more than 0 selected
@@ -788,6 +1033,12 @@ function autoSelectedLAISICAISOBStable() {
          document.getElementById('laisicaisobs_status').innerHTML += ', ';
       }
       document.getElementById('laisicaisobs_status').innerHTML += row[i].row + 1;
+
+      //auto scroll to first matching row
+      if (i == 0) {
+         var lineheight = parseInt(getStyle('laisic_ais_obs_table','line-height'));
+         document.getElementById('laisic_ais_obs_table').scrollTop = row[i].row * (lineheight+4) + lineheight;
+      }
    }
    if (row.length == 0) {
       document.getElementById('laisicaisobs_status').innerHTML = '0 rows matching.';
