@@ -153,10 +153,12 @@
   }
   #content-left {
      float:        left;
-     display: inline-block;
+     display:      inline-block;
+     padding:      2px;
   }
   #content-right {
      float:        right;
+     display:      inline-block;
      width:        160px;
      border:       0px solid #cccccc;
      padding:      2px;
@@ -235,6 +237,7 @@
   }  
   #firstHeading {
      font-size:    14px;
+     font-weight:  bold;
   }
   a {
      text-decoration: none;

@@ -44,29 +44,14 @@
            $(window).resize(function(){
               $("#accordion").accordion("refresh");
            });           
+           //Disable accordion's keyboard listener
+           delete($.ui.accordion.prototype._keydown);
         });
      </script>
 
      <script>
         $(function() {
            $('#busy_indicator').activity({segments: 8, steps: 3, opacity: 0.3, width: 4, space: 0, length: 5, color: '#fff', speed: 2.0});
-        });
-     </script>
-
-     <script>
-        var panelhidden = false;
-        $(function() {
-           $( "#results_list" ).hide();
-           $( "#showpanel" ).click(function() {
-              $( "#panel" ).toggle("slide", { direction: 'right' }, 180);
-              //$( "#panel" ).effect('fade').dequeue().toggle("slide", { direction: 'right' }, 180);
-
-              $( "#results_list" ).toggle("slide", { direction: 'down' }, 180);
-
-              !panelhidden ? $( "#showpanel" ).html("<<br><<br><") : $( "#showpanel" ).html("><br>><br>>");
-              panelhidden = !panelhidden;
-              return false;
-           });
         });
      </script>
 
@@ -116,6 +101,16 @@
         });
      </script>
 
+     <script>
+        $(document).ready(function() {
+           $("#query:text").focus(function() { 
+              $(this).one('mouseup', function(event){
+                 event.preventDefault();
+              }).select();
+           });
+        });
+     </script>
+
   </head>
 
   <body onload="initialize()">
@@ -133,7 +128,7 @@
         </div>
         <div id="top_nav">
            <div>
-              <form name="query_form"><input id="query" type="text" name="query" style="width:100%" onkeypress="if (event.which == 13) {enteredQuery();return false;}" onClick="this.select();this.onclick=null;" value="QUERY RUNNING..."><input hidden="true" type="hidden"></form>
+              <form name="query_form"><input id="query" type="text" name="query" style="width:100%" onkeypress="if (event.which == 13) {enteredQuery();return false;}" value="QUERY RUNNING..."><input hidden="true" type="hidden"></form>
            </div>
         </div>
         <div id="stats_nav">
@@ -149,16 +144,22 @@
               <h3>Legend</h3>
               <div id="vessel_types">
                  <center><b>Vessel Types</b></center>
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="20" width="30" viewBox="-5 -10 20 20">
+                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#FFFF00;stroke:#222222;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 LAISIC AIS Track<br>
                  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
                  <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#F078FF;stroke:#bd45cc;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
                  Radar Vessels<br>
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="20" width="30" viewBox="-5 -10 20 20">
-                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#FFFF00;stroke:#222222;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#3333FF;stroke:#3333FF;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
                  </svg>
-                 LAISIC Vessels<br>
+                 LAISIC AIS Observation<br>
+                 <br>
                  <input class="checkboxallships" id="All Ships" name="All Ships" checked="false" type="checkbox" onclick="typeSelectedAllShips();"> 
                  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
                  <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#444444;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
@@ -317,6 +318,7 @@
                     <input class="inputfilebutton" id="distancetooltoggle" type="button" onClick="toggleDistanceTool();" value="Enable distance tool">
                  </form>
                  -->
+                 <input class="checkbox" id="showvesselnames" name="Show Vessel Names" type="checkbox" checked="checked" onclick="toggleShowNames();"> Show vessel names<br>
                  <input class="checkbox" id="distancetooltoggle" name="distancetooltoggle" type="checkbox" onclick="toggleDistanceTool();"> Enable distance tool<br>
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
                  <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh screen (1 min)<br>
@@ -342,6 +344,17 @@
                     <option value="72">72</option>
                  </select>
                  hours old.<br>
+                 <p>
+                 <b>Hidden Tricks:</b><br>
+                 <ul>
+                    <li>Right click a target to quickly acquire track history.</li>
+                    <li>Right click track history to delete.</li>
+                    <li>Don't query tracks for vessels in view if many vessels are in view!</li>
+                    <li>Click the black vertical bar on the right to hide this menu.</li>
+                    <li>Click anywhere on the map to hide a visible infoBubble.</li>
+                    <li>Click on track history markers to display dead-reckoning prediction to next point in history.</li>
+                    <li>Press '?' for Keyboard shortcuts.</li>
+                 </ul>
               </div>
            </div>
            <!-- END ACCORDION -->
@@ -373,6 +386,24 @@
 
      <div id="status-msg">
         Currently showing RADAR and raw full AIS for 2013-08-01
+     </div>
+
+     <div id="keyboard-shortcut-modal" title="Keyboard Shortcuts">
+        <p>
+        <pre>
+  <b>?</b>&#9;&#9; Display this shortcut dialog box<br>
+  <b>Spacebar</b>&#9; Refresh targets in current view<br>
+  <b>A</b>&#9;&#9; Toggle auto-refresh targets<br>
+  <b>C</b>&#9;&#9; Clear all tracks<br>
+  <b>H</b>&#9;&#9; Hide/show menu panel<br>
+  <b>L</b>&#9;&#9; Toggle LAISIC/AIS targets<br>
+  <b>N</b>&#9;&#9; Toggle showing vessel names<br>
+  <b>R</b>&#9;&#9; Refresh browser<br>
+  <b>-</b>&#9;&#9; Zoom out<br>
+  <b>+</b>&#9;&#9; Zoom in<br>
+  <b>Arrows keys</b>&#9; Pan around map<br>
+  <b>ESC</b>&#9;&#9; Close this dialog box<br></pre>
+        </p>
      </div>
 
   </body>

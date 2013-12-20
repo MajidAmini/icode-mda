@@ -13,7 +13,6 @@ var map;
 var markerArray = [];
 var vesselArray = [];
 var markersDisplayed = [];
-var markersQueried = [];
 //var trackArray;
 var tracksDisplayedID = [];    //keep track of which MMSI's track is already displayed
 var tracksDisplayed = [];
@@ -30,6 +29,8 @@ var vesselLastUpdated;  //time of last vessel report
 var distanceLabel;      //text label for distance tool
 
 var vessel_age;         //user chosen vessel age, in hours
+
+var prevSourceType;
 
 //Viewing bounds objects
 var queryBounds;
@@ -124,6 +125,9 @@ var highlightCircle = new google.maps.Circle({
             map: null
          });
 
+//Hide/show panel
+var panelhidden = false;
+
 /* -------------------------------------------------------------------------------- */
 /** Initialize, called on main page load
 */
@@ -182,7 +186,6 @@ function initialize() {
    //Clear marker array
    markerArray = [];
    vesselArray = [];
-   //trackIcons = [];
 
    //Initialize vessel age
    vessel_age = -1;
@@ -243,6 +246,97 @@ function initialize() {
    toggleDistanceTool();
    
    toggleAutoRefresh();
+
+   initializePanel();
+
+   //Keyboard shortcuts
+   //source: http://stackoverflow.com/questions/9195814/google-maps-v3-keyboard-accessibility
+   $('body').keydown(function(event) {
+      if ($('#query').is(':focus')) {
+         return;
+      }
+
+      if ($('#accordion').is(':focus')) {
+         return;
+      }
+
+      var o = 128; // half a tile's width 
+      console.log('Pressed key: ' + event.which);
+
+      switch(event.which) {
+         case 32: // spacebar
+            refreshMaps(true);
+            break;
+         case 65: // a
+            if (document.getElementById("autoRefresh") != null &&
+                document.getElementById("autoRefresh").checked) {
+               $('input[name=autoRefresh]').attr('checked', false);
+            }
+            else {
+               document.getElementById("autoRefresh").checked = true;
+            }
+            toggleAutoRefresh();
+            break;
+         case 67: // c
+            clearAllTracks();
+            break;
+         case 72: // h
+            togglePanel();
+            break;
+         case 76: // l
+            if (document.getElementById("LAISIC_TARGETS") != null &&
+                document.getElementById("LAISIC_TARGETS").checked) {
+               document.getElementById("LAISIC_TARGETS").checked = false;
+               document.getElementById("LAISIC_TARGETS").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("LAISIC_TARGETS").checked = true;
+            }
+            refreshMaps(true);
+            break;
+         case 78: // n
+            if (document.getElementById("showvesselnames") != null &&
+                document.getElementById("showvesselnames").checked) {
+               document.getElementById("showvesselnames").checked = false;
+               document.getElementById("showvesselnames").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("showvesselnames").checked = true;
+            }
+            toggleShowNames();
+            break;
+         case 82: // r
+            location.reload();
+            break;
+         case 37: // leftArrow
+            map.panBy(-o,0);
+            break;
+         case 38: // upArrow
+            map.panBy(0,-o);
+            break;
+         case 39: // rightArrow
+            map.panBy(o,0);
+            break;
+         case 40: // downArrow
+            map.panBy(0,o);
+            break;
+         case 109: // numpad -
+         case 189: // -
+            map.setZoom(map.getZoom()-1);
+            break;
+         case 107: // numpad +
+         case 187: // =
+            map.setZoom(map.getZoom()+1);
+            break;
+         case 191: // ?
+            //Initialize modal keyboard shortcut dialog box
+            $( "#keyboard-shortcut-modal" ).dialog({
+               width:  500,
+               modal: true
+            });
+            break;
+      }
+   });
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -275,16 +369,15 @@ function refreshMaps(forceRedraw) {
          $('input[name=autoRefresh]').attr('checked', false);
          toggleAutoRefresh();
 
-         //do LAISIC targets at all zoom levels
-         clearMarkerAndClusters();
-         localStorage.clear();
-
-         //sourceType = "LAISIC_AIS_TRACK";
-         getTargetsFromDB(map.getBounds(), null, "LAISIC_AIS_TRACK", true, false);
-         //sourceType = "LAISIC_RADAR";
-         getTargetsFromDB(map.getBounds(), null, "LAISIC_RADAR", true, false);
-         //sourceType = "LAISIC_AIS_OBS";
-         getTargetsFromDB(map.getBounds(), null, "LAISIC_AIS_OBS", true, false);
+         if (prevSourceType == "AIS") {
+            forceRedraw = true;     //if type changed, force redrawing even if passed in false
+            clearMarkerAndClusters();
+            localStorage.clear();
+         }
+               
+         var redrew = getTargetsFromDB(map.getBounds(), null, "LAISIC_AIS_TRACK", forceRedraw, true);
+         getTargetsFromDB(map.getBounds(), null, "LAISIC_RADAR", redrew, false);
+         getTargetsFromDB(map.getBounds(), null, "LAISIC_AIS_OBS", redrew, false);
       }
       else if (map.getZoom() > 8) {
          getTargetsFromDB(map.getBounds(), null, "AIS", forceRedraw, true);
@@ -320,14 +413,14 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
    var viewMinLon = sw.lng();
    var viewMaxLon = ne.lng();
 
-   var minLat = viewMinLat;// - latLonBuffer;
-   var maxLat = viewMaxLat;// + latLonBuffer;
-   var minLon = viewMinLon;// - latLonBuffer;
-   var maxLon = viewMaxLon;// + latLonBuffer;
+   var minLat = viewMinLat - latLonBuffer;
+   var maxLat = viewMaxLat + latLonBuffer;
+   var minLon = viewMinLon - latLonBuffer;
+   var maxLon = viewMaxLon + latLonBuffer;
 
 
-   //Force re-query if zoom level changes
-   if (prevZoom != null && prevZoom != map.getZoom()) {
+   //Force re-query if zoom level changes by more than 3 levels inward
+   if (prevZoom != null && prevZoom != map.getZoom() && prevZoom < map.getZoom()-5) {
       console.log("Zoom level changed, so forcing re-query");
       queryBounds = null;
    }
@@ -356,16 +449,20 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
    }
    else {
       //Handle the case when no URL query, but moved within bounds
-      if (customQuery == null && !forceRedraw && queryBounds.contains(ne) && queryBounds.contains(sw)) {
+      if (customQuery == null && 
+            !forceRedraw && 
+            queryBounds.contains(ne) && queryBounds.contains(sw)) {
          //TODO: update result count to match what is actually within current view
 
          console.log('Moved to within query bounds, not requerying. (without custom query)');
-         return;
+         return false;
       }
       //Handle the case when URL query exists, but moved within bounds
-      else if (customQuery != null && !forceRedraw && queryBounds.contains(ne) && queryBounds.contains(sw)) {
+      else if (customQuery != null && 
+            !forceRedraw && 
+            queryBounds.contains(ne) && queryBounds.contains(sw)) {
          console.log('Moved to within query bounds, not requerying. (with custom query)');
-         return;
+         return false;
       }
       //Handle the case when moved outside of bounds
       else {
@@ -389,6 +486,15 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
       }
    }
 
+   //Store new previous sourceType
+   if (sourceType == "AIS") {
+      prevSourceType = "AIS";
+   }
+   else {
+      prevSourceType = "LAISIC";
+   }
+   
+
    console.log("Refreshing target points...");
    document.getElementById("query").value = "QUERY RUNNING...";
    document.getElementById('stats_nav').innerHTML = '';
@@ -405,9 +511,9 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
        disableAutoPan:   true,
        arrowStyle:       2,
        padding:          '8px',
-       borderRadius:     20,
-       maxWidth:         800,
-       minHeight:        380
+       borderRadius:     10,
+       maxWidth:         400,
+       minHeight:        360
    });
 
    var phpWithArg;
@@ -418,14 +524,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
 
    //Check if a query has been previously made, and use it to preserve previous query but just change the bounds to current view now
    if (!customQuery && customQuery !== '') {     //No custom query
-/*      if (mainQuery != null) {
-         phpWithArg = "query_current_vessels.php?" + source + "&query=" + mainQuery;
-      }
-      else {*/
-         //No custom query, do default query
-         //phpWithArg = "query_current_vessels.php?" + source + boundStr;
          phpWithArg = "query_current_vessels.php?" + source;
-//      }
 
       phpWithArg += boundStr;
 
@@ -464,6 +563,20 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
    //var markerpath = 'M 0,8 4,8 0,-8 -4,8 z';
 
 
+   //For LAISIC points, need to clear markers before executing PHP request
+   if (sourceType != "AIS") {
+      //Delete previous markers
+      //Push query to localStorage
+      if (clearPrevious && boundStr != null) {
+         clearMarkerAndClusters();
+         localStorage.clear();
+         for (var i=0; i < markersDisplayed.length; i++) {
+            markersDisplayed[i].vesselnameLabel.setMap(null);
+         }
+         markersDisplayed = [];
+      }
+   }
+
 
    //Call PHP and get results as markers
    $.getJSON(
@@ -475,11 +588,21 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
          //Show the query and put it in the form
          document.getElementById("query").value = response.query;
 
-
-         //Push query to localStorage
-         if (clearPrevious) {
-            localStorage.clear();
+         //For AIS targets, ssue clear markers after PHP returns request to
+         // maintain targets on-screen as long as possible before redraw
+         if (sourceType == "AIS") {
+            //Delete previous markers
+            //Push query to localStorage
+            if (clearPrevious && boundStr != null) {
+               clearMarkerAndClusters();
+               localStorage.clear();
+               for (var i=0; i < markersDisplayed.length; i++) {
+                  markersDisplayed[i].vesselnameLabel.setMap(null);
+               }
+               markersDisplayed = [];
+            }
          }
+
          localStorage.setItem('query-timestamp', Math.floor((new Date()).getTime()/1000));
 
          //Read global variable sourceType to determine which type to query (AIS, or LAISIC stuff)
@@ -506,14 +629,6 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
             mainQuery = response.basequery;
          }
 
-         //Delete previous markers
-         if (clearPrevious && boundStr != null) {
-            clearMarkerAndClusters();
-         }
-
-         markersDisplayed = [];
-         markersQueried = [];
-
          //Prepare to grab PHP results as JSON objects
          $.each(response.vessels, function(key,vessel) {
                //Push to localStorage for tables to know of change
@@ -522,7 +637,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                      localStorage.setItem('vessel-'+vessel.mmsi, "1");
                      break;
                   case "LAISIC_AIS_TRACK":
-                     localStorage.setItem('laisicaistrack-'+vessel.mmsi, "1");
+                     localStorage.setItem('laisicaistrack-'+vessel.trknum, "1");
                      break;
                   case "LAISIC_RADAR":
                      localStorage.setItem('laisicradar-'+vessel.trknum, "1");
@@ -567,6 +682,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                         strokeWeight: 3,
                         fillColor:    iconColor,
                         fillOpacity:  0.6,
+                        optimized:    false,
                         rotation:     vessel.true_heading
                      }
                   });
@@ -581,7 +697,8 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                         strokeWeight: 1,
                         fillColor:    iconColor,
                         fillOpacity:  0.8,
-                        rotation:     vessel.true_heading
+                        rotation:     vessel.true_heading,
+                        optimized:    false,
                      }
                   });
                }               
@@ -593,11 +710,13 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                      icon: {
                         path:         'm -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0',
                         strokeColor:  '#222200',//iconColor,
-                        strokeWeight: 1,
+                        strokeWeight: 2,
                         fillColor:    iconColor,
                         fillOpacity:  0.6,
-                        rotation:     vessel.true_heading-90 //-90 degrees to account for SVG drawing rotation
-                     }
+                        rotation:     vessel.true_heading-90, //-90 degrees to account for SVG drawing rotation
+                        optimized:    false,
+                     },
+                     zIndex:       google.maps.Marker.MAX_ZINDEX + 1
                   });
                }
 
@@ -632,29 +751,78 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                   });
                });
 
+               //Listener for mouseover marker to display tracks
+               google.maps.event.addListener(marker, 'mouseover', function() {
+                  //Hover display name
+                  if (sourceType == "LAISIC_AIS_TRACK") {
+                     marker.setTitle('LAISIC_AIS_TRACK\nTrknum: ' + vessel.trknum + '\nMMSI: ' + vessel.mmsi);
+                  }
+                  else if (sourceType == "LAISIC_AIS_OBS") {
+                     marker.setTitle('LAISIC_AIS_OBS\nMMSI: ' + vessel.mmsi);
+                  }
+                  else if (sourceType == "LAISIC_RADAR") {
+                     marker.setTitle('LAISIC_RADAR\nTrknum: ' + vessel.trknum);
+                  }
+                  else if (vessel.vesselname != null && vessel.vesselname.length != 0) {
+                     marker.setTitle(vessel.vesselname.trim());
+                  }
+                  else {
+                     marker.setTitle(vessel.mmsi);
+                  }
+
+                  google.maps.event.addListenerOnce(marker, 'mouseout', function() {
+                     window.clearTimeout(trackMouseoverTimeout);
+                     document.getElementById('shipdetails').style.visibility = 'hidden';
+                  });
+               });
+
+               google.maps.event.addListener(marker, 'rightclick', function() {
+                  console.log('Getting track for: ' + vessel.mmsi+','+vessel.vesseltypeint+','+sourceType+','+vessel.datetime+','+vessel.streamid+','+vessel.trknum);
+                  getTrack(vessel.mmsi, vessel.vesseltypeint, sourceType, vessel.datetime, vessel.streamid, vessel.trknum);
+               });
+
                //Prepare data for creating marker infoWindows/infoBubbles later
                markerArray.push(marker);
                vesselArray.push(vessel);
 
+               var vessellabel = '';
+               if (vessel.vesselname != null && vessel.vesselname != '') {
+                  vessellabel = vessel.vesselname;
+               }
+               else if (vessel.trknum != null && vessel.trknum != '') {
+                  vessellabel = vessel.trknum;
+               }
+               else {
+                  vessellabel = vessel.mmsi;
+               }
+
+               //add vesselnameLabel to markersDisplayed array
+               vesselnameLabel = new MapLabel({
+                  text: vessellabel,
+                  position: new google.maps.LatLng(vessel.lat, vessel.lon),
+                  map: map,
+                  fontSize: 12,
+                  align: 'left'
+               });
+
+               if (document.getElementById("showvesselnames") == null || 
+                   !document.getElementById("showvesselnames").checked) {
+                  vesselnameLabel.setMap(null);
+               }
+
                markersDisplayed.push({
                   mmsi: vessel.mmsi, 
+                  trknum: vessel.trknum, 
+                  vessellabel: vessel.vesselname,
                   vesseltypeint: vessel.vesseltypeint,
+                  source: sourceType,
                   streamid: vessel.streamid,
                   datetime: vessel.datetime,
                   lat: vessel.lat,
-                  lon: vessel.lon
-               });
-
-               markersQueried.push({
-                  mmsi: vessel.mmsi, 
-                  vesseltypeint: vessel.vesseltypeint,
-                  streamid: vessel.streamid,
-                  datetime: vessel.datetime,
-                  lat: vessel.lat,
-                  lon: vessel.lon
+                  lon: vessel.lon,
+                  vesselnameLabel: vesselnameLabel 
                });
          });
-
 
          //Display the appropriate layer according to the sidebar checkboxes
          if (document.getElementById("HeatmapLayer").checked) {
@@ -685,8 +853,9 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
          console.log('getTargetsFromDB(): ' +  'No response from track query; error in php?'); 
          document.getElementById("query").value = "ERROR IN QUERY.  PLEASE TRY AGAIN.";
          document.getElementById('busy_indicator').style.visibility = 'hidden';
-         return; 
+         return false; 
       }); //END .fail()
+   return true;
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -773,6 +942,10 @@ function getClustersFromDB(bounds, customQuery) {
          for(var i=0; i < clusterBoxes.length; i++) {
             clusterBoxes[i].setMap(null);
             clusterBoxesLabels[i].setMap(null);
+         }
+
+         for (var i=0; i < markersDisplayed.length; i++) {
+            markersDisplayed[i].vesselnameLabel.setMap(null);
          }
          markersDisplayed = [];
          markersQueried = [];
@@ -875,11 +1048,11 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    }
    else {
       if (vessel.streamid == 'shore-radar' || vessel.vesseltypeint == 888 || (vessel.streamid == 'r166710001' && vessel.vesseltypeint != 999)) {
-         title = 'Assoc. MMSI: ' + vessel.mmsi + ', Radar Track ID: ' + vessel.trknum;
+         title = 'RADAR Trknum: ' + vessel.trknum + ' (' + vessel.mmsi + ')';
          vesseltype = 'LAISIC_RADAR';
       }
       else if (vessel.vesseltypeint == 999) {
-         title = 'LAISIC AIS Track: ' + vessel.mmsi;
+         title = 'LAISIC AIS Trknum: ' + vessel.trknum + ' (' + vessel.mmsi + ')';
          vesseltype = 'LAISIC_AIS_TRACK';
       }
       else if (vessel.vesseltypeint == 777) {
@@ -890,12 +1063,12 @@ function markerInfoBubble(marker, vessel, infoBubble) {
 
    var htmlTitle = 
       '<div id="content">'+
-      '<h3 id="firstHeading" class="firstHeading"><img height=20px src=flags/' + vessel.mmsi.toString().substr(0,3) + '.png>  ' + title + '</h3>' +
+      '<span style="vertical-align: middle;display:inline-block;height: 30px;"><img title="' + MIDtoCountry(vessel.mmsi) + '" height=26px align="top" src=flags/' + vessel.mmsi.toString().substr(0,3) + '.png>&nbsp;&nbsp;<span id="firstHeading" class="firstHeading">' + title + '</span></span>' +
       '<div id="bodyContent">';
    var htmlLeft = 
       '<div id="content-left">' +
       '<a href="https://marinetraffic.com/ais/shipdetails.aspx?MMSI=' + vessel.mmsi + '"  target="_blank"> '+
-      '<img width=180px src="' + imgURL + '">' + 
+      '<img title="Click to open MarineTraffic page" width=180px src="' + imgURL + '">' + 
       '</a><br>' + 
       '<a href="http://www.sea-web.com/lrupdate.aspx?param1=%73%70%61%73%74%61%32%35%30&param2=%37%31%34%36%38%37&script_name=authenticated/authenticated_handler.aspx&control=list&SearchString=MMSI+=+' + vessel.mmsi + '&ListType=Ships" target="_blank">Sea-Web link</a><br>' + 
       '<div id="content-sub" border=1>' +
@@ -910,7 +1083,7 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       '</div>';
    var htmlRight = 
       '<div id="content-right">' +
-      '<div id="content-sub" border=1>' +
+      '<div id="content-sub">' +
       //'<b>Report Date</b>: ' + datetime + '<br>' +
       '<b>Report Date</b>: <br>' + toHumanTime(vessel.datetime) + '<br>' +
       //TODO: change local time to be dynamic, not hard coded to Pacific Time zone
@@ -950,23 +1123,6 @@ function markerInfoBubble(marker, vessel, infoBubble) {
 
    infoBubble.setContent(html);
    infoBubble.open(map, marker);
-
-
-   //Listener for mouseover marker to display tracks
-   google.maps.event.addListener(marker, 'mouseover', function() {
-      //Hover display name
-      if (vessel.vesselname != null && vessel.vesselname.length != 0) {
-         marker.setTitle(vessel.vesselname.trim());
-      }
-      else {
-         marker.setTitle(vessel.mmsi);
-      }
-
-      google.maps.event.addListenerOnce(marker, 'mouseout', function() {
-         window.clearTimeout(trackMouseoverTimeout);
-         document.getElementById('shipdetails').style.visibility = 'hidden';
-      });
-   });
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -988,6 +1144,9 @@ function clearTrack(trackline, trackIcons, dashedLines) {
       if (tracksDisplayed.length == 1) {
          deleteTrackTimeControl();
       }
+
+      //Signal tables to delete history trail table
+      localStorage.setItem('historytrailquery', '');
       
       document.getElementById("queryalltracks").checked = false;
       document.getElementById("queryalltracks").removeAttribute("checked");
@@ -1004,6 +1163,9 @@ function clearAllTracks() {
    tracksDisplayedID = [];
    tracksDisplayed = [];
    deleteTrackTimeControl();
+
+   //Signal tables to delete history trail table
+   localStorage.setItem('historytrailquery', '');
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -1021,9 +1183,6 @@ function toggleQueryAllTracks() {
  * Function to query and show all tracks within view bounds
  **/
 function queryAllTracks() {
-   //console.log(tracksDisplayedID.length);
-   //console.log(tracksDisplayed.length);
-
    var bounds = map.getBounds();
 
    var ne = bounds.getNorthEast();
@@ -1048,8 +1207,10 @@ function queryAllTracks() {
       if (viewBounds.contains(markerLatLng) || Request.QueryString("queryTracks").toString() == 'all') {
          getTrack(markersDisplayed[i].mmsi, 
                   markersDisplayed[i].vesseltypeint, 
+                  markersDisplayed[i].source, 
                   markersDisplayed[i].datetime,
-                  markersDisplayed[i].streamid          //TODO: change streamid to source (laisic or ais)
+                  markersDisplayed[i].streamid,
+                  markersDisplayed[i].trknum
                   );
       }
    }
@@ -1060,15 +1221,17 @@ function queryAllTracks() {
  * Function to get track from track query PHP script
  */
 function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
+   console.log($.inArray(mmsi, tracksDisplayedID) == -1);
    //Check if track is already displayed or not
-   if ($.inArray(mmsi, tracksDisplayedID) == -1 && $.inArray(trknum, tracksDisplayedID) == -1) {
+   if (($.inArray(mmsi, tracksDisplayedID) == -1 || source == "LAISIC_AIS_TRACK") && 
+       $.inArray(trknum, tracksDisplayedID) == -1) {
       document.getElementById("query").value = "QUERY RUNNING FOR TRACK...";
       document.getElementById('stats_nav').innerHTML = '';
       document.getElementById('busy_indicator').style.visibility = 'visible';
 
       var phpWithArg = "query_track.php?source=" + source;
 
-      if (trknum == "undefined") {
+      if (trknum == "undefined" || trknum == null) {
          phpWithArg += "&mmsi=" + mmsi;
       }
       else {
@@ -1204,11 +1367,11 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                         google.maps.event.addListener(tracklineIcon, 'rightclick', function() {
                            clearTrack(trackline, trackIcons, dashedLines);
                            var deleteIndex;
-                           if (trknum != "undefined" ) {
-                              deleteIndex = $.inArray(trknum, tracksDisplayedID);
+                           if (trknum == "undefined" || trknum == null) {
+                              deleteIndex = $.inArray(mmsi, tracksDisplayedID);
                            }
                            else {
-                              deleteIndex = $.inArray(mmsi, tracksDisplayedID);
+                              deleteIndex = $.inArray(trknum, tracksDisplayedID);
                            }
                            tracksDisplayedID.splice(deleteIndex, 1);
                            tracksDisplayed.splice(deleteIndex, 1);
@@ -1217,7 +1380,8 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                         //Add listener to project to predicted location if click on icon (dead reckoning)
                         google.maps.event.addListener(tracklineIcon, 'mousedown', function() {
                            if (sog != -1 && (key+1) < trackHistory.length) {
-                              var time = (trackHistory[key+1].datetime - trackHistory[key].datetime)/60/60; //Grab next chronological time and compare time difference
+                              //Grab next chronological time and compare time difference
+                              var time = (trackHistory[key+1].datetime - trackHistory[key].datetime)/60/60; 
                               if (time == 0 && (key+2) < 0) {
                                  time = (trackHistory[key+2].datetime - trackHistory[key].datetime)/60/60;
                               }
@@ -1227,10 +1391,6 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                               var lat1 = parseFloat(lat)*Math.PI/180;
                               var lon1 = parseFloat(lon)*Math.PI/180;
                               var brng = parseFloat(true_heading)*Math.PI/180;
-                              //console.log(lat1);
-                              //console.log(lon1);
-                              //console.log(d);
-                              //console.log(brng);
 
                               var lat2 = Math.asin( Math.sin(lat1)*Math.cos(d/R) + Math.cos(lat1)*Math.sin(d/R)*Math.cos(brng) );
 
@@ -1241,8 +1401,6 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                               lat2 = lat2 * 180/Math.PI;
                               lon2 = lon2 * 180/Math.PI;
 
-                              //console.log(lat2);
-                              //console.log(lon2);
                               var prediction = new google.maps.Marker({
                                  position: new google.maps.LatLng(lat2,lon2),
                                   map:         map,
@@ -1263,7 +1421,7 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                                   strokeWeight:   1,
                                   fillColor:      '#0000FF',
                                   fillOpacity:    0.2,
-                                  map: map
+                                  map:            map
                               });
 
 
@@ -1300,11 +1458,11 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                      console.log("trackicons: " + trackIcons.length);
 
                      //Keep track of which MMSI/trknum has tracks displayed
-                     if (trknum != "undefined") {
-                        tracksDisplayedID.push(trknum);
+                     if (trknum == "undefined" || trknum == null) {
+                        tracksDisplayedID.push(mmsi);
                      }
                      else {
-                        tracksDisplayedID.push(mmsi);
+                        tracksDisplayedID.push(trknum);
                      }
                      var track = {
                         mmsi: mmsi,
@@ -1318,6 +1476,12 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
 
                      tracksDisplayed.push(track);
 
+                     //Notify tables that history trail was acquired for a vessel
+                     if (source == "LAISIC_AIS_TRACK" || source == "AIS" || source == "LAISIC_RADAR") {
+                        localStorage.setItem('historytrailquery', response.query);
+                        localStorage.setItem('historytrailtype', source);
+                     }
+
                      //Set up track time slider
                      createTrackTimeControl(map, 251, tracksDisplayed);
 
@@ -1325,11 +1489,11 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                      google.maps.event.addListener(trackline, 'rightclick', function() {
                         clearTrack(trackline, trackIcons, dashedLines);
                         var deleteIndex;
-                        if (trknum != "undefined" ) {
-                           deleteIndex = $.inArray(trknum, tracksDisplayedID);
+                        if (trknum == "undefined" || trknum == null) {
+                           deleteIndex = $.inArray(mmsi, tracksDisplayedID);
                         }
                         else {
-                           deleteIndex = $.inArray(mmsi, tracksDisplayedID);
+                           deleteIndex = $.inArray(trknum, tracksDisplayedID);
                         }
                         tracksDisplayedID.splice(deleteIndex, 1);
                         tracksDisplayed.splice(deleteIndex, 1);
@@ -1347,11 +1511,11 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
             }); //end .fail()
    }
    else {
-      if (trknum != "undefined") {
-         console.log('Track for ' + trknum + ' is already displayed.');
+      if (trknum == "undefined" || trknum == null) {
+         console.log('Track for ' + mmsi + ' is already displayed.');
       }
       else {
-         console.log('Track for ' + mmsi + ' is already displayed.');
+         console.log('Track for ' + trknum + ' is already displayed.');
       }
    }
 }
@@ -1361,6 +1525,27 @@ function refreshLayers() {
 	clearOverlays();
 	clearVesselMarkerArray();
    refreshMaps(true);
+}
+
+/* -------------------------------------------------------------------------------- */
+function toggleShowNames() {
+   if (document.getElementById("showvesselnames") != null &&
+       document.getElementById("showvesselnames").checked) {
+      console.log('showing vessel names');
+
+      //loop through markersDisplayed
+      for (var i=0; i < markersDisplayed.length; i++) {
+         markersDisplayed[i].vesselnameLabel.setMap(map);
+      }
+   }
+   else {
+      console.log('hiding vessel names');
+
+      //loop through markersDisplayed
+      for (var i=0; i < markersDisplayed.length; i++) {
+         markersDisplayed[i].vesselnameLabel.setMap(null);
+      }
+   }
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -1623,6 +1808,9 @@ function getIconColor(vesseltypeint, streamid) {
       //color = '#FF0000'; 
       color = '#BE3C14'; 
 		//return "shipicons/red1_90.png";
+   }
+   else if (vesseltypeint == 777) { //currently used for LAISIC outputs
+      color = '#3333FF'; 
    }
    else if (vesseltypeint == 999) { //currently used for LAISIC outputs
       color = '#FFFF00'; 
@@ -2126,7 +2314,11 @@ function enableDistanceTool() {
          prevdistIcon.setMap(null);
       }
       prevdistIcon = distIcon;
-      distIcon = new google.maps.Marker({position: latLng, map: map, icon: distIconsOptions});
+      distIcon = new google.maps.Marker({
+         position: latLng, 
+         map: map, 
+         icon: distIconsOptions
+      });
 
       //Get the distance on second click
       if (prevlatLng != null) {
@@ -2429,17 +2621,19 @@ function tableUpdated(selected) {
       $.grep(vesselArray, function(e, i){ 
          if (e.mmsi == mmsi) {
             (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+            (value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
          }
       });
    }
 
    //Handle LAISIC_AIS_TRACKS
    if (key.indexOf("laisicaistrack-") === 0) {
-      var mmsi = parseInt(key.substr(15));
+      var trknum = parseInt(key.substr(15));
       $.grep(vesselArray, function(e, i){ 
-         if (e.mmsi == mmsi && e.vesseltypeint == 999) {
-            console.log('displaying ' + mmsi);
+         if (e.trknum == trknum && e.vesseltypeint == 999) {
+            console.log('displaying ' + trknum);
             (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+            (value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
          }
       });
    }
@@ -2450,6 +2644,7 @@ function tableUpdated(selected) {
       $.grep(vesselArray, function(e, i){ 
          if (e.trknum == trknum && e.vesseltypeint == 888) {
             (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+            (value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
          }
       });
    }
@@ -2461,6 +2656,7 @@ function tableUpdated(selected) {
       $.grep(vesselArray, function(e, i){ 
          if (e.obsguid == obsguid && e.vesseltypeint == 777) {
             (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+            (value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
          }
       });
    }
@@ -2548,9 +2744,316 @@ function shadeColor(color, percent) {
 
 /* -------------------------------------------------------------------------------- */
 // Convert MMSI MID to flag image file name
-function MIDtoFlag(mmsi) {
-    //TODO: finish this function
-    return;
+function MIDtoCountry(mmsi) {
+   var countryName;
+   switch (parseInt(mmsi.toString().substr(0,3))) {
+      case 501: countryName = "Adelie Land (French Southern Territories)"; break;
+      case 401: countryName = "Afghanistan"; break;
+      case 303: countryName = "Alaska (State of)"; break;
+      case 201: countryName = "Albania (Republic of)"; break;
+      case 605: countryName = "Algeria (People's Democratic Republic of)"; break;
+      case 559: countryName = "American Samoa"; break;
+      case 202: countryName = "Andorra (Principality of)"; break;
+      case 603: countryName = "Angola (Republic of)"; break;
+      case 301: countryName = "Anguilla"; break;
+      case 304: countryName = "Antigua and Barbuda"; break;
+      case 305: countryName = "Antigua and Barbuda"; break;
+      case 701: countryName = "Argentine Republic"; break;
+      case 216: countryName = "Armenia (Republic of)"; break;
+      case 307: countryName = "Aruba"; break;
+      case 608: countryName = "Ascension Island"; break;
+      case 503: countryName = "Australia"; break;
+      case 203: countryName = "Austria"; break;
+      case 423: countryName = "Azerbaijani Republic"; break;
+      case 204: countryName = "Azores (Portuguese isles of)"; break;
+      case 308: countryName = "Bahamas (Commonwealth of the)"; break;
+      case 309: countryName = "Bahamas (Commonwealth of the)"; break;
+      case 311: countryName = "Bahamas (Commonwealth of the)"; break;
+      case 408: countryName = "Bahrain (Kingdom of)"; break;
+      case 405: countryName = "Bangladesh (People's Republic of)"; break;
+      case 314: countryName = "Barbados"; break;
+      case 206: countryName = "Belarus (Republic of)"; break;
+      case 205: countryName = "Belgium"; break;
+      case 312: countryName = "Belize"; break;
+      case 610: countryName = "Benin (Republic of)"; break;
+      case 310: countryName = "Bermuda"; break;
+      case 410: countryName = "Bhutan (Kingdom of)"; break;
+      case 720: countryName = "Bolivia (Republic of)"; break;
+      case 478: countryName = "Bosnia and Herzegovina"; break;
+      case 611: countryName = "Botswana (Republic of)"; break;
+      case 710: countryName = "Brazil (Federative Republic of)"; break;
+      case 378: countryName = "British Virgin Islands"; break;
+      case 508: countryName = "Brunei Darussalam"; break;
+      case 207: countryName = "Bulgaria (Republic of)"; break;
+      case 633: countryName = "Burkina Faso"; break;
+      case 609: countryName = "Burundi (Republic of)"; break;
+      case 514: countryName = "Cambodia (Kingdom of)"; break;
+      case 515: countryName = "Cambodia (Kingdom of)"; break;
+      case 515: countryName = "Cameroon (Republic of)"; break;
+      case 316: countryName = "Canada"; break;
+      case 617: countryName = "Cape Verde (Republic of)"; break;
+      case 319: countryName = "Cayman Islands"; break;
+      case 612: countryName = "Central African Republic"; break;
+      case 670: countryName = "Chad (Republic of)"; break;
+      case 725: countryName = "Chile"; break;
+      case 412: countryName = "China (People's Republic of)"; break;
+      case 413: countryName = "China (People's Republic of)"; break;
+      case 414: countryName = "China (People's Republic of)"; break;
+      case 516: countryName = "Christmas Island (Indian Ocean)"; break;
+      case 523: countryName = "Cocos (Keeling) Islands"; break;
+      case 730: countryName = "Colombia (Republic of)"; break;
+      case 616: countryName = "Comoros (Union of the)"; break;
+      case 615: countryName = "Congo (Republic of the)"; break;
+      case 518: countryName = "Cook Islands"; break;
+      case 321: countryName = "Costa Rica"; break;
+      case 619: countryName = "Côte d'Ivoire (Republic of)"; break;
+      case 238: countryName = "Croatia (Republic of)"; break;
+      case 618: countryName = "Crozet Archipelago"; break;
+      case 323: countryName = "Cuba"; break;
+      case 209: countryName = "Cyprus (Republic of)"; break;
+      case 210: countryName = "Cyprus (Republic of)"; break;
+      case 212: countryName = "Cyprus (Republic of)"; break;
+      case 270: countryName = "Czech Republic"; break;
+      case 445: countryName = "Democratic People's Republic of Korea"; break;
+      case 676: countryName = "Democratic Republic of the Congo"; break;
+      case 219: countryName = "Denmark"; break;
+      case 220: countryName = "Denmark"; break;
+      case 621: countryName = "Djibouti (Republic of)"; break;
+      case 325: countryName = "Dominica (Commonwealth of)"; break;
+      case 327: countryName = "Dominican Republic"; break;
+      case 735: countryName = "Ecuador"; break;
+      case 622: countryName = "Egypt (Arab Republic of)"; break;
+      case 359: countryName = "El Salvador (Republic of)"; break;
+      case 631: countryName = "Equatorial Guinea (Republic of)"; break;
+      case 625: countryName = "Eritrea"; break;
+      case 276: countryName = "Estonia (Republic of)"; break;
+      case 624: countryName = "Ethiopia (Federal Democratic Republic of)"; break;
+      case 740: countryName = "Falkland Islands (Malvinas)"; break;
+      case 231: countryName = "Faroe Islands"; break;
+      case 520: countryName = "Fiji (Republic of)"; break;
+      case 230: countryName = "Finland"; break;
+      case 226: countryName = "France"; break;
+      case 227: countryName = "France"; break;
+      case 228: countryName = "France"; break;
+      case 546: countryName = "French Polynesia"; break;
+      case 626: countryName = "Gabonese Republic"; break;
+      case 629: countryName = "Gambia (Republic of the)"; break;
+      case 213: countryName = "Georgia"; break;
+      case 211: countryName = "Germany (Federal Republic of)"; break;
+      case 218: countryName = "Germany (Federal Republic of)"; break;
+      case 627: countryName = "Ghana"; break;
+      case 236: countryName = "Gibraltar"; break;
+      case 237: countryName = "Greece"; break;
+      case 239: countryName = "Greece"; break;
+      case 240: countryName = "Greece"; break;
+      case 241: countryName = "Greece"; break;
+      case 331: countryName = "Greenland"; break;
+      case 330: countryName = "Grenada"; break;
+      case 329: countryName = "Guadeloupe (French Department of)"; break;
+      case 332: countryName = "Guatemala (Republic of)"; break;
+      case 745: countryName = "Guiana (French Department of)"; break;
+      case 632: countryName = "Guinea (Republic of)"; break;
+      case 630: countryName = "Guinea-Bissau (Republic of)"; break;
+      case 750: countryName = "Guyana"; break;
+      case 336: countryName = "Haiti (Republic of)"; break;
+      case 334: countryName = "Honduras (Republic of)"; break;
+      case 477: countryName = "Hong Kong (Special Administrative Region of China)"; break;
+      case 243: countryName = "Hungary (Republic of)"; break;
+      case 251: countryName = "Iceland"; break;
+      case 419: countryName = "India (Republic of)"; break;
+      case 525: countryName = "Indonesia (Republic of)"; break;
+      case 422: countryName = "Iran (Islamic Republic of)"; break;
+      case 425: countryName = "Iraq (Republic of)"; break;
+      case 250: countryName = "Ireland"; break;
+      case 428: countryName = "Israel (State of)"; break;
+      case 247: countryName = "Italy"; break;
+      case 339: countryName = "Jamaica"; break;
+      case 431: countryName = "Japan"; break;
+      case 432: countryName = "Japan"; break;
+      case 438: countryName = "Jordan (Hashemite Kingdom of)"; break;
+      case 436: countryName = "Kazakhstan (Republic of)"; break;
+      case 634: countryName = "Kenya (Republic of)"; break;
+      case 635: countryName = "Kerguelen Islands"; break;
+      case 529: countryName = "Kiribati (Republic of)"; break;
+      case 440: countryName = "Korea (Republic of)"; break;
+      case 441: countryName = "Korea (Republic of)"; break;
+      case 447: countryName = "Kuwait (State of)"; break;
+      case 451: countryName = "Kyrgyzstan"; break;
+      case 531: countryName = "Laos"; break;
+      case 531: countryName = "Lao People's Democratic Republic"; break;
+      case 275: countryName = "Latvia (Republic of)"; break;
+      case 450: countryName = "Lebanon"; break;
+      case 644: countryName = "Lesotho (Kingdom of)"; break;
+      case 636: countryName = "Liberia (Republic of)"; break;
+      case 637: countryName = "Liberia (Republic of)"; break;
+      case 252: countryName = "Liechtenstein (Principality of)"; break;
+      case 277: countryName = "Lithuania (Republic of)"; break;
+      case 253: countryName = "Luxembourg"; break;
+      case 453: countryName = "Macao"; break;
+      case 274: countryName = "Macedonia (Republic of)"; break;
+      case 647: countryName = "Madagascar (Republic of)"; break;
+      case 255: countryName = "Madeira (Portuguese isles of)"; break;
+      case 655: countryName = "Malawi"; break;
+      case 533: countryName = "Malaysia"; break;
+      case 455: countryName = "Maldives (Republic of)"; break;
+      case 649: countryName = "Mali (Republic of)"; break;
+      case 215: countryName = "Malta"; break;
+      case 229: countryName = "Malta"; break;
+      case 248: countryName = "Malta"; break;
+      case 249: countryName = "Malta"; break;
+      case 256: countryName = "Malta"; break;
+      case 538: countryName = "Marshall Islands (Republic of the)"; break;
+      case 347: countryName = "Martinique (French Department of)"; break;
+      case 654: countryName = "Mauritania (Islamic Republic of)"; break;
+      case 645: countryName = "Mauritius (Republic of)"; break;
+      case 345: countryName = "Mexico"; break;
+      case 510: countryName = "Micronesia (Federated States of)"; break;
+      case 214: countryName = "Moldova (Republic of)"; break;
+      case 254: countryName = "Monaco (Principality of)"; break;
+      case 457: countryName = "Mongolia"; break;
+      case 457: countryName = "Montenegro (Republic of)"; break;
+      case 348: countryName = "Montserrat"; break;
+      case 242: countryName = "Morocco (Kingdom of)"; break;
+      case 650: countryName = "Mozambique (Republic of)"; break;
+      case 506: countryName = "Myanmar (Union of)"; break;
+      case 659: countryName = "Namibia (Republic of)"; break;
+      case 544: countryName = "Nauru (Republic of)"; break;
+      case 459: countryName = "Nepal"; break;
+      case 244: countryName = "Netherlands (Kingdom of the)"; break;
+      case 245: countryName = "Netherlands (Kingdom of the)"; break;
+      case 246: countryName = "Netherlands (Kingdom of the)"; break;
+      case 306: countryName = "Netherlands Antilles"; break;
+      case 540: countryName = "New Caledonia"; break;
+      case 512: countryName = "New Zealand"; break;
+      case 350: countryName = "Nicaragua"; break;
+      case 656: countryName = "Niger (Republic of the)"; break;
+      case 657: countryName = "Nigeria (Federal Republic of)"; break;
+      case 542: countryName = "Niue"; break;
+      case 536: countryName = "Northern Mariana Islands (Commonwealth of the)"; break;
+      case 257: countryName = "Norway"; break;
+      case 258: countryName = "Norway"; break;
+      case 259: countryName = "Norway"; break;
+      case 461: countryName = "Oman (Sultanate of)"; break;
+      case 463: countryName = "Pakistan (Islamic Republic of)"; break;
+      case 511: countryName = "Palau (Republic of)"; break;
+      case 443: countryName = "Palestinian Authority (based on Resolution 99 of PP-98)"; break;
+      case 351: countryName = "Panama (Republic of)"; break;
+      case 352: countryName = "Panama (Republic of)"; break;
+      case 353: countryName = "Panama (Republic of)"; break;
+      case 354: countryName = "Panama (Republic of)"; break;
+      case 355: countryName = "Panama (Republic of)"; break;
+      case 356: countryName = "Panama (Republic of)"; break;
+      case 357: countryName = "Panama (Republic of)"; break;
+      case 370: countryName = "Panama (Republic of)"; break;
+      case 371: countryName = "Panama (Republic of)"; break;
+      case 372: countryName = "Panama (Republic of)"; break;
+      case 373: countryName = "Panama (Republic of)"; break;
+      case 553: countryName = "Papua New Guinea"; break;
+      case 755: countryName = "Paraguay (Republic of)"; break;
+      case 760: countryName = "Peru"; break;
+      case 548: countryName = "Philippines (Republic of the)"; break;
+      case 555: countryName = "Pitcairn Island"; break;
+      case 261: countryName = "Poland (Republic of)"; break;
+      case 263: countryName = "Portugal"; break;
+      case 358: countryName = "Puerto Rico"; break;
+      case 466: countryName = "Qatar (State of)"; break;
+      case 660: countryName = "Réunion (French Department of)"; break;
+      case 264: countryName = "Romania"; break;
+      case 273: countryName = "Russian Federation"; break;
+      case 661: countryName = "Rwandese Republic"; break;
+      case 665: countryName = "Saint Helena"; break;
+      case 341: countryName = "Saint Kitts and Nevis"; break;
+      case 343: countryName = "Saint Lucia"; break;
+      case 607: countryName = "Saint Paul and Amsterdam Islands"; break;
+      case 361: countryName = "Saint Pierre and Miquelon (Territorial Collectivity of)"; break;
+      case 375: countryName = "Saint Vincent and the Grenadines"; break;
+      case 376: countryName = "Saint Vincent and the Grenadines"; break;
+      case 377: countryName = "Saint Vincent and the Grenadines"; break;
+      case 561: countryName = "Samoa (Independent State of)"; break;
+      case 268: countryName = "San Marino (Republic of)"; break;
+      case 668: countryName = "São Tomé and Príncipe (Democratic Republic of)"; break;
+      case 403: countryName = "Saudi Arabia (Kingdom of)"; break;
+      case 663: countryName = "Senegal (Republic of)"; break;
+      case 279: countryName = "Serbia"; break;
+      case 664: countryName = "Seychelles (Republic of)"; break;
+      case 667: countryName = "Sierra Leone"; break;
+      case 563: countryName = "Singapore (Republic of)"; break;
+      case 564: countryName = "Singapore (Republic of)"; break;
+      case 565: countryName = "Singapore (Republic of)"; break;
+      case 566: countryName = "Singapore (Republic of)"; break;
+      case 267: countryName = "Slovakia"; break;
+      case 278: countryName = "Slovenia (Republic of)"; break;
+      case 642: countryName = "Socialist People's Libyan Arab Jamahiriya"; break;
+      case 557: countryName = "Solomon Islands"; break;
+      case 666: countryName = "Somali Democratic Republic"; break;
+      case 601: countryName = "South Africa (Republic of)"; break;
+      case 224: countryName = "Spain"; break;
+      case 225: countryName = "Spain"; break;
+      case 417: countryName = "Sri Lanka (Democratic Socialist Republic of)"; break;
+      case 662: countryName = "Sudan (Republic of the)"; break;
+      case 765: countryName = "Suriname (Republic of)"; break;
+      case 669: countryName = "Swaziland (Kingdom of)"; break;
+      case 265: countryName = "Sweden"; break;
+      case 266: countryName = "Sweden"; break;
+      case 269: countryName = "Switzerland (Confederation of)"; break;
+      case 468: countryName = "Syrian Arab Republic"; break;
+      case 416: countryName = "Taiwan (Republic of China)"; break;
+      case 674: countryName = "Tanzania (United Republic of)"; break;
+      case 677: countryName = "Tanzania (United Republic of)"; break;
+      case 567: countryName = "Thailand"; break;
+      case 671: countryName = "Togolese Republic"; break;
+      case 570: countryName = "Tonga (Kingdom of)"; break;
+      case 362: countryName = "Trinidad and Tobago"; break;
+      case 672: countryName = "Tunisia"; break;
+      case 271: countryName = "Turkey"; break;
+      case 434: countryName = "Turkmenistan"; break;
+      case 364: countryName = "Turks and Caicos Islands"; break;
+      case 572: countryName = "Tuvalu"; break;
+      case 675: countryName = "Uganda (Republic of)"; break;
+      case 272: countryName = "Ukraine"; break;
+      case 470: countryName = "United Arab Emirates"; break;
+      case 232: countryName = "United Kingdom of Great Britain and Northern Ireland"; break;
+      case 233: countryName = "United Kingdom of Great Britain and Northern Ireland"; break;
+      case 234: countryName = "United Kingdom of Great Britain and Northern Ireland"; break;
+      case 235: countryName = "United Kingdom of Great Britain and Northern Ireland"; break;
+      case 379: countryName = "United States Virgin Islands"; break;
+      case 338: countryName = "United States of America"; break;
+      case 366: countryName = "United States of America"; break;
+      case 367: countryName = "United States of America"; break;
+      case 368: countryName = "United States of America"; break;
+      case 369: countryName = "United States of America"; break;
+      case 770: countryName = "Uruguay (Eastern Republic of)"; break;
+      case 437: countryName = "Uzbekistan"; break;
+      case 576: countryName = "Vanuatu (Republic of)"; break;
+      case 577: countryName = "Vanuatu (Republic of)"; break;
+      case 208: countryName = "Vatican City State"; break;
+      case 775: countryName = "Venezuela (Bolivarian Republic of)"; break;
+      case 574: countryName = "Vietnam (Socialist Republic of)"; break;
+      case 578: countryName = "Wallis and Futuna Islands"; break;
+      case 473: countryName = "Yemen (Republic of)"; break;
+      case 475: countryName = "Yemen (Republic of)"; break;
+      case 678: countryName = "Zambia (Republic of)"; break;
+      case 679: countryName = "Zimbabwe (Republic of)"; break;
+      default: countryName = "";
+   }
+   return countryName;
+}
+
+/* -------------------------------------------------------------------------------- */
+function initializePanel() {
+   $( "#showpanel" ).click(function() {
+      togglePanel();
+   });
+}
+
+/* -------------------------------------------------------------------------------- */
+function togglePanel() {
+   $( "#panel" ).toggle("slide", { direction: 'right' }, 180);
+   //$( "#panel" ).effect('fade').dequeue().toggle("slide", { direction: 'right' }, 180);
+
+   !panelhidden ? $( "#showpanel" ).html("<<br><<br><") : $( "#showpanel" ).html("><br>><br>>");
+   panelhidden = !panelhidden;
+   return false;
 }
 
 /* -------------------------------------------------------------------------------- */
