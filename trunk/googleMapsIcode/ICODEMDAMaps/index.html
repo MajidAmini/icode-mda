@@ -44,8 +44,6 @@
            $(window).resize(function(){
               $("#accordion").accordion("refresh");
            });           
-           //Disable accordion's keyboard listener
-           delete($.ui.accordion.prototype._keydown);
         });
      </script>
 
@@ -301,10 +299,12 @@
                  <div id="upload"></div>
               </div>
 
+              <!--
               <h3>Query Builder</h3>
               <div>
                  Coming Soon...
               </div>
+              -->
 
               <!--
               <h3>Current Vessel List</h3>
@@ -398,6 +398,7 @@
   <b>H</b>&#9;&#9; Hide/show menu panel<br>
   <b>L</b>&#9;&#9; Toggle LAISIC/AIS targets<br>
   <b>N</b>&#9;&#9; Toggle showing vessel names<br>
+  <b>Q</b>&#9;&#9; Select the query bar<br>
   <b>R</b>&#9;&#9; Refresh browser<br>
   <b>-</b>&#9;&#9; Zoom out<br>
   <b>+</b>&#9;&#9; Zoom in<br>
