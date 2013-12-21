@@ -28,6 +28,8 @@ var vesselLastUpdated;  //time of last vessel report
 
 var distanceLabel;      //text label for distance tool
 
+var infoBubble;
+
 var vessel_age;         //user chosen vessel age, in hours
 
 var prevSourceType;
@@ -190,6 +192,22 @@ function initialize() {
    //Initialize vessel age
    vessel_age = -1;
 
+   //var infoWindow = new google.maps.InfoWindow();
+   /*
+   var infoBubble = new google.maps.InfoWindow({ 
+      disableAutoPan: true
+   });
+   */
+   infoBubble = new InfoBubble({
+       disableAnimation: true,
+       disableAutoPan:   true,
+       arrowStyle:       2,
+       padding:          '8px',
+       borderRadius:     10,
+       //maxWidth:         400,
+       //minHeight:        360
+   });   
+
    //Add drawing toolbar
    addDrawingManager();
 
@@ -270,7 +288,9 @@ function initialize() {
          case 65: // a
             if (document.getElementById("autoRefresh") != null &&
                 document.getElementById("autoRefresh").checked) {
-               $('input[name=autoRefresh]').attr('checked', false);
+               //$('input[name=autoRefresh]').attr('checked', false);
+               document.getElementById("autoRefresh").checked = false;
+               document.getElementById("autoRefresh").removeAttribute("checked");
             }
             else {
                document.getElementById("autoRefresh").checked = true;
@@ -305,6 +325,7 @@ function initialize() {
             }
             toggleShowNames();
             break;
+
          case 82: // r
             location.reload();
             break;
@@ -335,6 +356,35 @@ function initialize() {
                modal: true
             });
             break;
+      }
+   });
+
+   //Need to use 'Q' for query focus on keyup instead of keydown to prevent typing into query after selection
+   $('body').keyup(function(event) {
+      if ($('#query').is(':focus')) {
+         return;
+      }
+
+      if ($('#accordion').is(':focus')) {
+         return;
+      }
+
+      switch(event.which) {
+         case 81: // q
+            $("#query:text").select()
+               .keyup(function (e) {e.preventDefault(); });
+            break;
+      }
+   });
+
+   //Handle ESC while query bar is in focus
+   $('body').keyup(function(event) {
+      if ($('#query').is(':focus')) {
+         switch(event.which) {
+            case 27: // ESC
+               $("#query:text").blur();
+               break;
+         }
       }
    });
 }
@@ -499,22 +549,6 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
    document.getElementById("query").value = "QUERY RUNNING...";
    document.getElementById('stats_nav').innerHTML = '';
    document.getElementById('busy_indicator').style.visibility = 'visible';
-
-   //var infoWindow = new google.maps.InfoWindow();
-   /*
-   var infoBubble = new google.maps.InfoWindow({ 
-      disableAutoPan: true
-   });
-   */
-   var infoBubble = new InfoBubble({
-       disableAnimation: true,
-       disableAutoPan:   true,
-       arrowStyle:       2,
-       padding:          '8px',
-       borderRadius:     10,
-       maxWidth:         400,
-       minHeight:        360
-   });
 
    var phpWithArg;
 
@@ -708,7 +742,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                   marker = new google.maps.Marker({
                      position: point,
                      icon: {
-                        path:         'm -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0',
+                        path:         'm -5 0 5 -5 5 5 -5 5 z m 12 0 l 8 0',
                         strokeColor:  '#222200',//iconColor,
                         strokeWeight: 2,
                         fillColor:    iconColor,
@@ -1084,30 +1118,29 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    var htmlRight = 
       '<div id="content-right">' +
       '<div id="content-sub">' +
-      //'<b>Report Date</b>: ' + datetime + '<br>' +
       '<b>Report Date</b>: <br>' + toHumanTime(vessel.datetime) + '<br>' +
       //TODO: change local time to be dynamic, not hard coded to Pacific Time zone
       '<b>(local time)</b>: <br>' + toHumanTime(UTCtoSANTime(vessel.datetime)) + '<br>' +
-      //'<b>Last updated</b>: <br>' + Math.round((new Date() - lastRefresh)/1000) + ' secs ago<br>' +
-      '<div id="vesselLastUpdated"></div>' + 
+      '<div id="vesselLastUpdated">Last Updated on...</div>' + 
       '<b>Lat</b>: ' + vessel.lat + '<br>' +
       '<b>Lon</b>: ' + vessel.lon + '<br>' +
       '<b>Navigation Status</b>: <br>' + vessel.navstatus + '<br>' +
-      '<b>Speed Over Ground</b>: ' + vessel.sog + '<br>' + 
-      '<b>Course Over Ground</b>: ' + vessel.cog + '<br>' + 
-      '<b>Length x Width</b>: ' + vessel.length + ' x ' + vessel.shipwidth + '<br>'+
+      '<b>Speed Over Ground</b>: ' + Number(parseFloat(vessel.sog).toFixed(3)) + '<br>' + 
+      '<b>Course Over Ground</b>: ' + Number(parseFloat(vessel.cog).toFixed(3)) + '<br>' + 
+      '<b>Length x Width</b>: <br>' + vessel.length + ' x ' + vessel.shipwidth + '<br>'+
       '<b>Draught</b>: ' + vessel.draught  + '<br>'+
       '<b>Destination</b>: ' + vessel.destination + '<br>'+
       '<b>ETA</b>: ' + vessel.eta + '<br>'+
-      '<b>Source</b>: ' + vessel.streamid + '<br>';/*+
+      '<b>Source</b>: ' + vessel.streamid + '<br>' +
+      /*
       '<b>Risk Security</b>: ' + vessel.risk_score_security + '<br>'+	
       '<b>Risk Safety</b>: ' + vessel.risk_score_safety + '<br>'+	
       */
-      '</div>' +
-      '</div>'+
-
-      '</div>'+
-      '</div>';
+      '</div>' +     //close for content-sub
+      '<br><br>' +   
+      '</div>' +     //close for content-right
+      '</div>' +     //close for bodyContent
+      '</div>';      //close for content
 
    var html = htmlTitle + htmlLeft + htmlRight;
    //END Prepare HTML for infoWindow
@@ -1586,10 +1619,10 @@ function typeSelectUpdated() {
    var types = getTypesSelected();
 
    //var entered_query = document.getElementById("query").value;
-   var entered_query = mainQuery;
+   var entered_query;
 
    if ($.inArray(999, types) == -1) {
-      entered_query = entered_query + " AND vesseltypeint IN (";
+      entered_query = mainQuery.substring(0,mainQuery.indexOf(') VESSELS')) + " AND VesType IN (";
    
       for (var i=0; i < types.length; i++) {
          entered_query = entered_query + types[i];
@@ -1597,7 +1630,7 @@ function typeSelectUpdated() {
             entered_query = entered_query + ",";
          }
       }
-      entered_query = entered_query + ")";
+      entered_query += ")) VESSELS";
       //Set entered query to default to AIS data
       getTargetsFromDB(map.getBounds(), entered_query, "AIS", true);
    }
