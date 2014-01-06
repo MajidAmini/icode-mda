@@ -17,7 +17,7 @@ require("phpsql_dbinfo.php");
 /* Building DSN */
 $dsn =  'DRIVER={'.$odbc_driver.'};'.
 		'Server='.$odbc_host.';'.
-		'Database='.$odbc_database.';'.
+		'Database='.$ais_database.';'.
 		'uid='.$odbc_user.'; pwd='.$odbc_password;
 
 /* Connecting */
@@ -34,13 +34,13 @@ if(count($_GET) > 0) {
 
       switch ($source) {
          case "LAISIC_AIS_TRACK":
-            $fromSources = "(SELECT trkguid, trknum, updateguid, srcguid, datetime, lat as Latitude, lon as Longitude, cog, sog, stage, semimajor, semiminor, orientation, holdtime, hitscount, quality, source, inttype, callsign, mmsi, vesselname, imo FROM icodemaps.trackdata_mem_track_heads) VESSELS";
+            $fromSources = "(SELECT trkguid, trknum, updateguid, srcguid, datetime, lat as Latitude, lon as Longitude, cog, sog, stage, semimajor, semiminor, orientation, holdtime, hitscount, quality, source, inttype, callsign, mmsi, vesselname, imo FROM " . $laisic_database . ".trackdata_mem_track_heads) VESSELS";
             break;
          case "LAISIC_RADAR":
-            $fromSources = "(SELECT mmsi, sog, lon as Longitude, lat as Latitude, cog, datetime, streamid, target_status, target_acq, trknum, sourceid FROM icodemaps.radar_laisic_output_mem_track_heads) VESSELS";
+            $fromSources = "(SELECT mmsi, sog, lon as Longitude, lat as Latitude, cog, datetime, streamid, target_status, target_acq, trknum, sourceid FROM " . $laisic_database . ".radar_laisic_output_mem_track_heads) VESSELS";
             break;
          case "LAISIC_AIS_OBS":
-            $fromSources = "(SELECT obsguid, lat as Latitude, lon as Longitude, semimajor, semiminor, orientation, cog, sog, datetime, callsign, mmsi, vesselname, imo, streamid FROM icodemaps.aisobservation_mem_track_heads) VESSELS";
+            $fromSources = "(SELECT obsguid, lat as Latitude, lon as Longitude, semimajor, semiminor, orientation, cog, sog, datetime, callsign, mmsi, vesselname, imo, streamid FROM " . $laisic_database . ".aisobservation_mem_track_heads) VESSELS";
             break;
          default: //AIS
             $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS";

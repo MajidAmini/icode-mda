@@ -1060,6 +1060,17 @@ function clearMarkerAndClusters() {
    }
 }
 
+function checkImageExist(url) {
+   var img = document.createElement('img');
+   img.onload = function() {
+      document.getElementById('marinetrafficimage').src = url;
+   }
+   img.onerror = function() {
+      document.getElementById('marinetrafficimage').src = 'icons/pirate.png';
+   }
+   img.src = url;
+}
+
 /* -------------------------------------------------------------------------------- */
 /**
  * Function to attach information associated with marker, or call track 
@@ -1074,6 +1085,8 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    else {
       imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + vessel.mmsi;
    }
+
+   checkImageExist(imgURL);
 
    var title;
    var vesseltype = vessel.vesseltypeint;
@@ -1102,7 +1115,7 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    var htmlLeft = 
       '<div id="content-left">' +
       '<a href="https://marinetraffic.com/ais/shipdetails.aspx?MMSI=' + vessel.mmsi + '"  target="_blank"> '+
-      '<img title="Click to open MarineTraffic page" width=180px src="' + imgURL + '">' + 
+      '<img id="marinetrafficimage" title="Click to open MarineTraffic page" width=180px src="' + imgURL + '">' + 
       '</a><br>' + 
       '<a href="http://www.sea-web.com/lrupdate.aspx?param1=%73%70%61%73%74%61%32%35%30&param2=%37%31%34%36%38%37&script_name=authenticated/authenticated_handler.aspx&control=list&SearchString=MMSI+=+' + vessel.mmsi + '&ListType=Ships" target="_blank">Sea-Web link</a><br>' + 
       '<div id="content-sub" border=1>' +
