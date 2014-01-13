@@ -17,7 +17,7 @@ require("phpsql_dbinfo.php");
 /* Building DSN */
 $dsn =  'DRIVER={'.$odbc_driver.'};'.
 		'Server='.$odbc_host.';'.
-		'Database='.$port_database.';'.
+		'Database='.$odbc_database.';'.
 		'uid='.$odbc_user.'; pwd='.$odbc_password;
 
 /* Connecting */
@@ -29,21 +29,12 @@ if (!$connection) {
 }
 
 //Query statement
-$query = "SELECT main_port_name, latitude_degrees, latitude_minutes, latitude_hemisphere, longitude_degrees, longitude_minutes, longitude_hemisphere from $port_database.wpi_data";
+//Special cases: all fields are non null
+$imo = (string)$_GET["imo"];
+$query = "SELECT id,lrno,shipname,crewlistdate,nationality,totalcrew,totalratings,totalofficers";
+$query = $query . " FROM wros.tblcrewlist where lrno=" . $imo;
 
-//Count the number of arguments
-/*
-if(count($_GET) > 0) {
-    //Bound limits
-   if(!empty($_GET["minlat"]) && !empty($_GET["minlon"]) &&
-      !empty($_GET["maxlat"]) && !empty($_GET["maxlon"])) {
-         $query = $query . " WHERE latitude BETWEEN " . $_GET["minlat"] . " AND " . $_GET["maxlat"] . 
-            " AND longitude BETWEEN " .  $_GET["minlon"] . " AND " . $_GET["maxlon"];
-       }
-}
-else { //Fetch all ports
-}
-*/
+
 
 //Execute the query
 $result = @odbc_exec($connection, $query) or die('Query error: '.htmlspecialchars(odbc_errormsg()));;
@@ -68,18 +59,24 @@ header('Content-type: application/json');
 //echo json_encode(array(query => $query));
 // Iterate through the rows, printing XML nodes for each
 $count_results = 0;
-$portarray = array();
+$ihsarray = array();
 while (odbc_fetch_row($result)){
    $count_results = $count_results + 1;
 
    //Output JSON object per row
-   $port = array(port_name=>addslashes(odbc_result($result,"main_port_name")),
-                 lat=>odbc_result($result,"latitude_degrees"),
-                 lon=>odbc_result($result,"longitude_degrees")
+   $ihs = array(id=>htmlspecialchars(odbc_result($result,"id")),
+                   lrno=>odbc_result($result,"lrno"),
+                   call_sign=>htmlspecialchars(odbc_result($result,"call_sign")),
+                   shipname=>odbc_result($result,"shipname"),
+                   crewlistdate=>htmlspecialchars(odbc_result($result,"crewlistdate")),
+                   nationality=>htmlspecialchars(odbc_result($result,"nationality")),
+                   totalcrew=>htmlspecialchars(odbc_result($result,"totalcrew")),
+                   totalratings=>htmlspecialchars(odbc_result($result,"totalratings")),
+                   totalofficers=>htmlspecialchars(odbc_result($result,"totalofficers"))                        
    );
-   array_push($portarray, $port);
+   array_push($ihsarray, $ihs);
 }
 
-$data = array(query => $query, resultcount => $count_results, exectime => $totaltime, ports => $portarray);
+$data = array(query => $query, resultcount => $count_results, exectime => $totaltime, ihsdata => $ihsarray);
 echo json_encode($data);
 ?>

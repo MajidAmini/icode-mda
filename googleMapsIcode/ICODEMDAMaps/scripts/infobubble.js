@@ -1228,6 +1228,13 @@ InfoBubble.prototype.imageLoaded_ = function() {
 };
 
 /**
+ * Custom function to return the number of tabs
+ */
+InfoBubble.prototype.getNumTabs = function() {
+  return this.tabs_.length;
+};
+
+/**
  * Updates the styles of the tabs
  * @private
  */

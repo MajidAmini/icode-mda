@@ -29,51 +29,15 @@
      <link rel="stylesheet" href="css/custom-theme/jquery-ui-1.10.3.custom.css">
 
      <script>
+        var HistoryTrailTabs;    //global variable
         $(function() {
            $('#busy_indicator').activity({segments: 8, steps: 3, opacity: 0.3, width: 4, space: 0, length: 5, color: '#fff', speed: 2.0});
         });
-     </script>
 
-     <!--
-     <style>
-        #feedback { font-size: 1em; }
-        #selectable .ui-selecting { background: #feca40; }
-        #selectable .ui-selected { background: #f39814; color: white; }
-        #selectable { list-style-type: none; margin: 0; padding: 0; width: 100%; }
-        #selectable li { margin: 0px; padding: 0.5em; font-size: 1em; height: 10px; }
-     </style>
-     <script>
         $(function() {
-        $( "#selectable" ).selectable({
-        stop: function() { 
-        var result = [];
-        $( ".ui-selected", this ).each(function() {
-        var index = $( "#selectable li" ).index(this);
-        result.push(index + 1);
-        });                 
-
-        //clear screen of all vessels
-        localstorage["toggle"] = "toggle me to update maps";
-
-        //populate screen again with selected vessel rows
-        if (vesselarray) {
-        for (var i=0; i < vesselarray.length; i++) {
-        if ($.inarray(i+1,result) != -1) {
-        localstorage[vesselarray[i]] = 1;
-        }
-        else {
-        localstorage[vesselarray[i]] = 0;
-        }
-        }
-        }
-        else {
-        console.log("vesselarray is null");
-        }
-        }
-        });           
+           HistoryTrailTabs = $( "#historytrail_container" ).tabs();
         });
      </script>
-     -->
 
      <script>
         $(document).ready(function() {
@@ -153,9 +117,14 @@
 
         <div id="historytrail_container" visibility="hidden">
            <center><h3><b>History Trail</b></h3></center>
-           <div id="historytrailtable">
-              <div id="historytrail_table" class="table_style"></div>
-           </div>
+           <ul>
+              <!-- <li><a href="#tabs-1">Track 1</a></li> -->
+           </ul>
+           <!-- <div id="tabs-1" class="tabs">
+              <div id="historytrailtable">
+                 <div id="historytrail_table" class="table_style"></div>
+              </div>
+           </div>-->
         </div>
 
      </div>

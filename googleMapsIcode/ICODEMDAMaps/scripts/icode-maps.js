@@ -42,6 +42,13 @@ var boundRectangle = null;
 var markerMouseoutTimeout;
 var trackMouseoverTimeout;
 
+//Enable risk info flag
+var enableRisk;
+
+//IHS Tabs global
+var NUM_INFO_BUBBLE = 4; //AIS info at Tab=0 and IHS Fairplay data at  Tab = 1 thru 4
+var enableIHSTabs;
+
 //Track line options
 var tracklineIconsOptions = {
                path:          'M -3,0 0,-3 3,0 0,3 z',
@@ -129,6 +136,9 @@ var highlightCircle = new google.maps.Circle({
 
 //Hide/show panel
 var panelhidden = false;
+
+var EEZ;
+var COUNTRYBORDERS;
 
 /* -------------------------------------------------------------------------------- */
 /** Initialize, called on main page load
@@ -265,6 +275,10 @@ function initialize() {
    
    toggleAutoRefresh();
 
+   toggleIHSTabs();
+
+   toggleRisk();
+
    initializePanel();
 
    //Keyboard shortcuts
@@ -302,6 +316,30 @@ function initialize() {
             break;
          case 72: // h
             togglePanel();
+            break;
+         case 73: // i
+            if (document.getElementById("IHSTabs") != null &&
+                document.getElementById("IHSTabs").checked) {
+               document.getElementById("IHSTabs").checked = false;
+               document.getElementById("IHSTabs").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("IHSTabs").checked = true;
+            }
+            toggleIHSTabs();
+            break;
+         case 75: // k
+            //Risk information
+            if (document.getElementById("Risk") != null &&
+                document.getElementById("Risk").checked) {
+               document.getElementById("Risk").checked = false;
+               document.getElementById("Risk").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("Risk").checked = true;
+            }
+            toggleRisk();
+            refreshMaps(true);
             break;
          case 76: // l
             if (document.getElementById("LAISIC_TARGETS") != null &&
@@ -387,6 +425,8 @@ function initialize() {
          }
       }
    });
+
+   showEEZ();
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -442,6 +482,8 @@ function refreshMaps(forceRedraw) {
       hidePorts();
       showPorts();
    }
+
+   showCountryBorders();
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -558,7 +600,11 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
 
    //Check if a query has been previously made, and use it to preserve previous query but just change the bounds to current view now
    if (!customQuery && customQuery !== '') {     //No custom query
-         phpWithArg = "query_current_vessels.php?" + source;
+      phpWithArg = "query_current_vessels.php?" + source;
+
+      if (enableRisk) {
+         phpWithArg += "&risk=1";
+      }
 
       phpWithArg += boundStr;
 
@@ -704,15 +750,14 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                var iconColor = getIconColor(vessel.vesseltypeint, vessel.streamid);
 
                //Slightly different style for vessels with valid risk score
-               if (vessel.risk_score_safety != null || vessel.risk_score_security != null) {
+               if (enableRisk && (vessel.risk_score_safety != null || vessel.risk_score_security != null)) {
                   var riskColorSafety = getRiskColor(vessel.vesseltypeint, vessel.streamid, vessel.safety_rating);
                   var riskColorSecurity = getRiskColor(vessel.vesseltypeint, vessel.streamid, vessel.security_rating);
                   var marker = new google.maps.Marker({
                      position: point,
                      icon: {
                         path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
-                        //strokeColor:  iconColor,
-                        strokeColor:  vessel.riskColorSafety,
+                        strokeColor:  riskColorSafety,
                         strokeWeight: 3,
                         fillColor:    iconColor,
                         fillOpacity:  0.6,
@@ -727,7 +772,6 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                      icon: {
                         path:         markerpath, //'M 0,8 4,8 4,-3 0,-8 -4,-3 -4,8 z', //middle rear
                         strokeColor:  shadeColor(iconColor,-20),
-                        //strokeColor:  vessel.riskColor,
                         strokeWeight: 1,
                         fillColor:    iconColor,
                         fillOpacity:  0.8,
@@ -779,6 +823,10 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
 
                   //Close the infoBubble if user clicks outside of infoBubble area
                   google.maps.event.addListenerOnce(map, 'click', function() {
+                     for (var i=0; i < NUM_INFO_BUBBLE; i++) {
+                        console.log('Removing tab ' + i);
+                        infoBubble.removeTab(0);
+                     }
                      clearInterval(vesselLastUpdated);
                      infoBubble.setMap(null);
                      infoBubble.close(); 
@@ -831,6 +879,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                }
 
                //add vesselnameLabel to markersDisplayed array
+               /* The MapLabel method causes white map areas when too many MapLabels are displayed
                vesselnameLabel = new MapLabel({
                   text: vessellabel,
                   position: new google.maps.LatLng(vessel.lat, vessel.lon),
@@ -838,7 +887,27 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                   fontSize: 12,
                   align: 'left'
                });
-
+               */
+               //Trying InfoBox to display many labels with no problems
+               vesselnameLabel = new InfoBox({
+                    content: vessellabel,
+                    boxStyle: {
+                      border: "0px dashed black",
+                      textAlign: "center",
+                      //fontSize: "10pt",  //Define text styling properties in CSS file
+                      width: "120px"
+                    },
+                    disableAutoPan: true,
+                    pixelOffset: new google.maps.Size(-60, 10),
+                    position: new google.maps.LatLng(vessel.lat, vessel.lon),
+                    closeBoxURL: "",
+                    isHidden: false,
+                    pane: "mapPane",
+                    enableEventPropagation: true
+               });
+               vesselnameLabel.open(map);
+               
+               //Check if labels should be displayed or not
                if (document.getElementById("showvesselnames") == null || 
                    !document.getElementById("showvesselnames").checked) {
                   vesselnameLabel.setMap(null);
@@ -1060,13 +1129,17 @@ function clearMarkerAndClusters() {
    }
 }
 
+/* -------------------------------------------------------------------------------- */
+/**
+ * Function to check if MarineTraffic source image exists.  If not exist, then fill default PNG image
+ **/
 function checkImageExist(url) {
    var img = document.createElement('img');
    img.onload = function() {
       document.getElementById('marinetrafficimage').src = url;
    }
    img.onerror = function() {
-      document.getElementById('marinetrafficimage').src = 'icons/pirate.png';
+      document.getElementById('marinetrafficimage').src = 'icons/noimage.png';
    }
    img.src = url;
 }
@@ -1086,7 +1159,6 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       imgURL = 'http://photos2.marinetraffic.com/ais/showphoto.aspx?mmsi=' + vessel.mmsi;
    }
 
-   checkImageExist(imgURL);
 
    var title;
    var vesseltype = vessel.vesseltypeint;
@@ -1145,10 +1217,8 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       '<b>Destination</b>: ' + vessel.destination + '<br>'+
       '<b>ETA</b>: ' + vessel.eta + '<br>'+
       '<b>Source</b>: ' + vessel.streamid + '<br>' +
-      /*
       '<b>Risk Security</b>: ' + vessel.risk_score_security + '<br>'+	
       '<b>Risk Safety</b>: ' + vessel.risk_score_safety + '<br>'+	
-      */
       '</div>' +     //close for content-sub
       '<br><br>' +   
       '</div>' +     //close for content-right
@@ -1168,11 +1238,36 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    }, 1000);
 
    infoBubble.setContent(html);
+
+   //TEST LYNNE's TABS
+   if (enableIHSTabs) {
+      console.log('imo ' + vessel.imo + " stringlength " + vessel.imo.length);
+      if (vessel.imo.length == 7) {
+         //Handle adding tabs in the IHS tabs functions
+         updateIHSTabTblShip(1,NUM_INFO_BUBBLE,vessel.imo,infoBubble,map,marker,updateIHSTabSigInspect);
+      } 
+      //Add a tab for the regular infoBubble info
+      infoBubble.addTab(0);
+      infoBubble.updateTab(0,'AIS Based Info',html);
+   }
+   //END TEST
+
    infoBubble.open(map, marker);
+
+   /*
+   document.getElementById('busy_indicator').style.visibility = 'visible';
+   while (infoBubble.getNumTabs() < NUM_INFO_BUBBLE) {
+      console.debug(infoBubble.getNumTabs());
+   }
+   document.getElementById('busy_indicator').style.visibility = 'hidden';
+   */
+
+   //Check if MarineTraffic image exists; if not, then fill in default PNG image
+   checkImageExist(imgURL);
 }
 
 /* -------------------------------------------------------------------------------- */
-function clearTrack(trackline, trackIcons, dashedLines) {
+function clearTrack(trackline, trackIcons, dashedLines, trackID) {
    if (trackline != null && trackIcons != null) {
       trackline.setMap(null);
       trackline = null;
@@ -1191,8 +1286,11 @@ function clearTrack(trackline, trackIcons, dashedLines) {
          deleteTrackTimeControl();
       }
 
+      console.log(trackID);
+
       //Signal tables to delete history trail table
-      localStorage.setItem('historytrailquery', '');
+      localStorage.removeItem('historytrailquery-' + trackID);
+      localStorage.removeItem('historytrailtype-' + trackID);
       
       document.getElementById("queryalltracks").checked = false;
       document.getElementById("queryalltracks").removeAttribute("checked");
@@ -1202,7 +1300,7 @@ function clearTrack(trackline, trackIcons, dashedLines) {
 /* -------------------------------------------------------------------------------- */
 function clearAllTracks() {
    for (var i=0; i < tracksDisplayed.length; i++) {
-      clearTrack(tracksDisplayed[i].trackline, tracksDisplayed[i].trackIcons, tracksDisplayed[i].dashedLines);
+      clearTrack(tracksDisplayed[i].trackline, tracksDisplayed[i].trackIcons, tracksDisplayed[i].dashedLines, tracksDisplayedID[i]);
       tracksDisplayedID[i] = null;
       tracksDisplayed[i] = null;
    }
@@ -1210,8 +1308,6 @@ function clearAllTracks() {
    tracksDisplayed = [];
    deleteTrackTimeControl();
 
-   //Signal tables to delete history trail table
-   localStorage.setItem('historytrailquery', '');
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -1411,13 +1507,14 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
 
                         //Add listener to delete track if right click on icon
                         google.maps.event.addListener(tracklineIcon, 'rightclick', function() {
-                           clearTrack(trackline, trackIcons, dashedLines);
                            var deleteIndex;
                            if (trknum == "undefined" || trknum == null) {
                               deleteIndex = $.inArray(mmsi, tracksDisplayedID);
+                              clearTrack(trackline, trackIcons, dashedLines, mmsi);
                            }
                            else {
                               deleteIndex = $.inArray(trknum, tracksDisplayedID);
+                              clearTrack(trackline, trackIcons, dashedLines, trknum);
                            }
                            tracksDisplayedID.splice(deleteIndex, 1);
                            tracksDisplayed.splice(deleteIndex, 1);
@@ -1523,9 +1620,9 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                      tracksDisplayed.push(track);
 
                      //Notify tables that history trail was acquired for a vessel
-                     if (source == "LAISIC_AIS_TRACK" || source == "AIS" || source == "LAISIC_RADAR") {
-                        localStorage.setItem('historytrailquery', response.query);
-                        localStorage.setItem('historytrailtype', source);
+                     if (source == "AIS" || source == "LAISIC_AIS_TRACK" || source == "LAISIC_AIS_OBS" || source == "LAISIC_RADAR") {
+                        localStorage.setItem('historytrailquery-'+tracksDisplayedID[tracksDisplayedID.length-1], response.query);
+                        localStorage.setItem('historytrailtype-'+tracksDisplayedID[tracksDisplayedID.length-1], source);
                      }
 
                      //Set up track time slider
@@ -1533,13 +1630,14 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
 
                      //Add listener to delete track if right click on track line 
                      google.maps.event.addListener(trackline, 'rightclick', function() {
-                        clearTrack(trackline, trackIcons, dashedLines);
                         var deleteIndex;
                         if (trknum == "undefined" || trknum == null) {
                            deleteIndex = $.inArray(mmsi, tracksDisplayedID);
+                           clearTrack(trackline, trackIcons, dashedLines, mmsi);
                         }
                         else {
                            deleteIndex = $.inArray(trknum, tracksDisplayedID);
+                           clearTrack(trackline, trackIcons, dashedLines, trknum);
                         }
                         tracksDisplayedID.splice(deleteIndex, 1);
                         tracksDisplayed.splice(deleteIndex, 1);
@@ -1893,7 +1991,7 @@ function getRiskColor(vesseltypeint, streamid, risk_rating) {
    }
    else
    {
-      color = '#FFFFFF';
+      color = '#000000';
    }
    return color;
 }
@@ -3103,10 +3201,71 @@ function togglePanel() {
 }
 
 /* -------------------------------------------------------------------------------- */
+function toggleIHSTabs() {
+   if (document.getElementById("IHSTabs") && document.getElementById("IHSTabs").checked) {
+      console.log("Turning on IHS tabs");
+      enableIHSTabs = true;
+   }
+   else {
+      console.log("Turning off IHS tabs");
+      enableIHSTabs = false;
+   }
+}
+
+/* -------------------------------------------------------------------------------- */
+function toggleRisk() {
+   if (document.getElementById("Risk") && document.getElementById("Risk").checked) {
+      console.log("Turning on risk information");
+      enableRisk = true;
+   }
+   else {
+      console.log("Turning off risk information");
+      enableRisk = false;
+   }
+}
+
+/* -------------------------------------------------------------------------------- */
 function detectMobileBrowser() {
    var check = false;
 
    (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
    
    return check; 
+}
+
+
+var COMMON_PATH = "https://mda.volpe.dot.gov/overlays/";
+var EEZ_PATH = COMMON_PATH + "eez-layer.kmz";
+var COUNTRY_BORDERS_PATH = COMMON_PATH + "Country_Borders.kmz";
+
+
+/* -------------------------------------------------------------------------------- */
+/**
+ * Display VOLPE's EEZ KML
+ **/
+function showEEZ() {
+   EEZ = new google.maps.KmlLayer({
+      url: EEZ_PATH,
+      preserveViewport: true,
+      map: map
+   });
+}
+
+/* -------------------------------------------------------------------------------- */
+/**
+ * Display VOLPE's country border KML
+ **/
+function showCountryBorders() {
+   if (map.getZoom() < 9) {
+      COUNTRYBORDERS = new google.maps.KmlLayer({
+         url: COUNTRY_BORDERS_PATH,
+         preserveViewport: true,
+         map: map
+      });
+   }
+   else {
+      if (COUNTRYBORDERS != null) {
+         COUNTRYBORDERS.setMap(null);
+      }
+   }
 }

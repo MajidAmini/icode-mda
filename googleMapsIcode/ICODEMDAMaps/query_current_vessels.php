@@ -43,7 +43,14 @@ if(count($_GET) > 0) {
             $fromSources = "(SELECT obsguid, lat as Latitude, lon as Longitude, semimajor, semiminor, orientation, cog, sog, datetime, callsign, mmsi, vesselname, imo, streamid FROM " . $laisic_database . ".aisobservation_mem_track_heads) VESSELS";
             break;
          default: //AIS
-            $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS";
+            if (empty($_GET["risk"])) {
+               //No risk query:
+               $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM $ais_database.vessels_memory GROUP BY MMSI)) VESSELS";
+            }
+            else {
+               //With risk query:
+               $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM $ais_database.vessels_memory GROUP BY MMSI)) VESSELS LEFT OUTER JOIN `risk`.user_ship_risk ON VESSELS.mmsi = `risk`.user_ship_risk.mmsi";
+            }
       }
    }
 }
@@ -75,14 +82,20 @@ if(count($_GET) > 0) {
        }
     }
 
+    /*
+    if (!empty($_GET["risk"])) {
+       $query = $query . " AND `risk`.user_ship_risk.user_id = 'jstastny'";
+    }
+    */
+
     //Add timestamp constraint
-    if (!empty($_GET["vessel_age"])) {
+    if (!empty($_GET["vessel_age"]) && $source === "AIS") {
        $vessel_age = $_GET["vessel_age"];
        $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
     }
 
     //Add keyword search constraint
-    if (!empty($_GET["keyword"])) {
+    if (!empty($_GET["keyword"]) && $source === "AIS") {
        $keyword = $_GET["keyword"];
        $query = $query . " AND (MMSI like ('%" . $keyword . "%') OR " . 
                          "IMONumber like ('%" . $keyword . "%') OR " . 
@@ -226,10 +239,10 @@ while (odbc_fetch_row($result)){
              eta=>odbc_result($result,"ETADest"),
              posfixtype=>odbc_result($result,"PosSource"),
              streamid=>htmlspecialchars(odbc_result($result,"RxStnID")),
-             //security_rating=>odbc_result($result,"security_rating"),
-             //safety_rating=>odbc_result($result,"safety_rating"),
-             //risk_score_security=>odbc_result($result,"security_score"),
-             //risk_score_safety=>odbc_result($result,"safety_score")
+             security_rating=>odbc_result($result,"security_rating"),
+             safety_rating=>odbc_result($result,"safety_rating"),
+             risk_score_security=>odbc_result($result,"security_score"),
+             risk_score_safety=>odbc_result($result,"safety_score")
           );
     }
 

@@ -17,7 +17,7 @@ require("phpsql_dbinfo.php");
 /* Building DSN */
 $dsn =  'DRIVER={'.$odbc_driver.'};'.
 		'Server='.$odbc_host.';'.
-		'Database='.$port_database.';'.
+		'Database='.$odbc_database.';'.
 		'uid='.$odbc_user.'; pwd='.$odbc_password;
 
 /* Connecting */
@@ -28,22 +28,12 @@ if (!$connection) {
     exit("Connection Failed: " . $conn);
 }
 
-//Query statement
-$query = "SELECT main_port_name, latitude_degrees, latitude_minutes, latitude_hemisphere, longitude_degrees, longitude_minutes, longitude_hemisphere from $port_database.wpi_data";
+//Query statement - Look back by 1 year for changes based on Fairplay SID
+//Special Cases: The following may have null values: ex_flag,ex_name,ex_year_acquired
+$fairplay_sid = (string)$_GET["fairplay_sid"];
+$query = "SELECT ex_flag,ex_owner,ex_name,ex_year_acquired,iteration,TIMESTAMPDIFF(month,ex_year_acquired,NOW()) as 'time_diff_months' FROM wros.tblship_ex where ship_id= ".$fairplay_sid;
+$query = $query . " order by Ex_Year_Acquired asc";
 
-//Count the number of arguments
-/*
-if(count($_GET) > 0) {
-    //Bound limits
-   if(!empty($_GET["minlat"]) && !empty($_GET["minlon"]) &&
-      !empty($_GET["maxlat"]) && !empty($_GET["maxlon"])) {
-         $query = $query . " WHERE latitude BETWEEN " . $_GET["minlat"] . " AND " . $_GET["maxlat"] . 
-            " AND longitude BETWEEN " .  $_GET["minlon"] . " AND " . $_GET["maxlon"];
-       }
-}
-else { //Fetch all ports
-}
-*/
 
 //Execute the query
 $result = @odbc_exec($connection, $query) or die('Query error: '.htmlspecialchars(odbc_errormsg()));;
@@ -68,18 +58,21 @@ header('Content-type: application/json');
 //echo json_encode(array(query => $query));
 // Iterate through the rows, printing XML nodes for each
 $count_results = 0;
-$portarray = array();
+$ihsarray = array();
 while (odbc_fetch_row($result)){
    $count_results = $count_results + 1;
 
    //Output JSON object per row
-   $port = array(port_name=>addslashes(odbc_result($result,"main_port_name")),
-                 lat=>odbc_result($result,"latitude_degrees"),
-                 lon=>odbc_result($result,"longitude_degrees")
+   $ihs = array(ex_flag=>htmlspecialchars(odbc_result($result,"ex_flag")),
+                   ex_owner=>odbc_result($result,"ex_owner"),
+                   ex_name=>htmlspecialchars(odbc_result($result,"ex_name")),
+                   ex_year_acquired=>odbc_result($result,"ex_year_acquired"),
+                   iteration=>htmlspecialchars(odbc_result($result,"iteration")),
+                   time_diff_months=>htmlspecialchars(odbc_result($result,"time_diff_months"))
    );
-   array_push($portarray, $port);
+   array_push($ihsarray, $ihs);
 }
 
-$data = array(query => $query, resultcount => $count_results, exectime => $totaltime, ports => $portarray);
+$data = array(query => $query, resultcount => $count_results, exectime => $totaltime, ihsdata => $ihsarray);
 echo json_encode($data);
 ?>

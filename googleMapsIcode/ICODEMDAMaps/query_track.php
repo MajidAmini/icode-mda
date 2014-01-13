@@ -17,7 +17,7 @@ require("phpsql_dbinfo.php");
 /* Building DSN */
 $dsn =  'DRIVER={'.$odbc_driver.'};'.
 		'Server='.$odbc_host.';'.
-		'Database='.$odbc_database.';'.
+		'Database='.$ais_database.';'.
 		'uid='.$odbc_user.'; pwd='.$odbc_password;
 
 /* Connecting */
@@ -119,6 +119,32 @@ while (odbc_fetch_row($result)){
             );
       array_push($vesselarray, $vessel);
    }
+   else if ($source === "LAISIC_AIS_TRACK_HistoryTrail") {
+      $vessel = array(trkguid=>odbc_result($result,"trkguid"),
+                      updateguid=>odbc_result($result,"updateguid"),
+                      trknum=>odbc_result($result,"trknum"),
+                      srcguid=>odbc_result($result,"srcguid"),
+                      datetime=>odbc_result($result,"TimeOfFix"),
+                      lat=>addslashes(odbc_result($result,"Latitude")),
+                      lon=>addslashes(odbc_result($result,"Longitude")),
+                      cog=>odbc_result($result,"COG"),
+                      sog=>odbc_result($result,"SOG"),
+                      stage=>odbc_result($result,"stage"),
+                      semimajor=>odbc_result($result,"semimajor"),
+                      semiminor=>odbc_result($result,"semiminor"),
+                      orientation=>odbc_result($result,"orientation"),
+                      holdtime=>odbc_result($result,"holdtime"),
+                      hitscount=>odbc_result($result,"hitscount"),
+                      quality=>odbc_result($result,"quality"),
+                      source=>odbc_result($result,"source"),
+                      inttype=>odbc_result($result,"inttype"),
+                      callsign=>odbc_result($result,"callsign"),
+                      mmsi=>odbc_result($result,"MMSI"),
+                      vesselname=>odbc_result($result,"vesselname"),
+                      imo=>odbc_result($result,"imo"),
+            );
+      array_push($vesselarray, $vessel);
+   }
    else if ($source === "LAISIC_RADAR" || $source === "LAISIC_RADAR_HistoryTrail") {
       $vessel = array(mmsi=>odbc_result($result,"MMSI"),
                       lat=>addslashes(odbc_result($result,"Latitude")),
@@ -148,32 +174,24 @@ while (odbc_fetch_row($result)){
             );
       array_push($vesselarray, $vessel);
    }
-   else if ($source === "LAISIC_AIS_TRACK_HistoryTrail") {
-      $vessel = array(trkguid=>odbc_result($result,"trkguid"),
-                      updateguid=>odbc_result($result,"updateguid"),
-                      trknum=>odbc_result($result,"trknum"),
-                      srcguid=>odbc_result($result,"srcguid"),
-                      datetime=>odbc_result($result,"TimeOfFix"),
+   else if ($source === "LAISIC_AIS_OBS_HistoryTrail") {
+      $vessel = array(obsguid=>odbc_result($result,"obsguid"),
                       lat=>addslashes(odbc_result($result,"Latitude")),
                       lon=>addslashes(odbc_result($result,"Longitude")),
+                      semimajor=>addslashes(odbc_result($result,"semimajor")),
+                      semiminor=>addslashes(odbc_result($result,"semiminor")),
+                      orientation=>addslashes(odbc_result($result,"orientation")),
                       cog=>odbc_result($result,"COG"),
                       sog=>odbc_result($result,"SOG"),
-                      stage=>odbc_result($result,"stage"),
-                      semimajor=>odbc_result($result,"semimajor"),
-                      semiminor=>odbc_result($result,"semiminor"),
-                      orientation=>odbc_result($result,"orientation"),
-                      holdtime=>odbc_result($result,"holdtime"),
-                      hitscount=>odbc_result($result,"hitscount"),
-                      quality=>odbc_result($result,"quality"),
-                      source=>odbc_result($result,"source"),
-                      inttype=>odbc_result($result,"inttype"),
+                      datetime=>odbc_result($result,"TimeOfFix"),
                       callsign=>odbc_result($result,"callsign"),
                       mmsi=>odbc_result($result,"MMSI"),
                       vesselname=>odbc_result($result,"vesselname"),
                       imo=>odbc_result($result,"imo"),
+                      streamid=>odbc_result($result,"streamid")
             );
       array_push($vesselarray, $vessel);
-   }   
+   }
    else {
       $vessel = array(mmsi=>odbc_result($result,"MMSI"),
                       datetime=>odbc_result($result,"TimeOfFix"),

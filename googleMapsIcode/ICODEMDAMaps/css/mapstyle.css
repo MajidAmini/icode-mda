@@ -238,6 +238,16 @@ table {
    font-size:    14px;
    font-weight:  bold;
 }
+#vessellabel {
+   font-size:    14px;
+   font-weight:  bold;
+   text-shadow:
+    -1px -1px 0 #FFF,
+     1px -1px 0 #FFF,
+    -1px  1px 0 #FFF,
+     1px  1px 0 #FFF; 
+   line-height:  12px;
+}
 a {
    text-decoration: none;
    color:        #0000FF;
