@@ -18,6 +18,8 @@
 
      <script type="text/javascript" src='scripts/fade.js' ></script>
 
+     <script type="text/javascript" src="scripts/ihs-table.js"></script>
+
      <script type="text/javascript" src="scripts/geoxml3.js"></script>
      <script type="text/javascript" src="scripts/ProjectedOverlay.js"></script>
 
@@ -26,7 +28,8 @@
 
      <script type="text/javascript" src="scripts/ExtDraggableObject.js"></script>
      <script type="text/javascript" src="scripts/trackTimeSlider.js"></script>
-     <script type="text/javascript" src="scripts/maplabel-compiled.js"></script>
+     <script type="text/javascript" src="scripts/maplabel.js"></script>
+     <script type="text/javascript" src="scripts/infobox.js"></script>
 
      <script type="text/javascript" src="scripts/CSJSRequestObject.js"></script>
 
@@ -250,6 +253,7 @@
                  8x - Tankers<br>
                  <hr>
                  <center><b>Risk Level</b><br>(vessel outline)</center>
+                 <input class="checkbox" id="Risk" name="Risk" type="checkbox" onclick="toggleRisk();refreshMaps(true);"> Enable risk information<br>
                  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
                  <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#00F014;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
                  </path>
@@ -321,7 +325,8 @@
                  <input class="checkbox" id="showvesselnames" name="Show Vessel Names" type="checkbox" checked="checked" onclick="toggleShowNames();"> Show vessel names<br>
                  <input class="checkbox" id="distancetooltoggle" name="distancetooltoggle" type="checkbox" onclick="toggleDistanceTool();"> Enable distance tool<br>
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
-                 <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh screen (1 min)<br>
+                 <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh (1 min)<br>
+                 <input class="checkbox" id="IHSTabs" name="IHSTabs" type="checkbox" checked="checked" onclick="toggleIHSTabs();"> Enable IHS Tabs<br>
                  <br>
                  Only show vessels up to 
                  <select id="vessel_age" onChange="vessel_age_changed();">

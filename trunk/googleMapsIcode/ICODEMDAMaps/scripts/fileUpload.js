@@ -46,16 +46,6 @@ function fileUpload(form, action_url, div_id) {
                    alert('Please upload a *.kmz file');
                 }
              }
-             else if (JSON.stringify(result.type)  == '"laisic"') {
-                if (result.filename.slice(-3).toLowerCase() == 'bin') {
-                   //Query the table
-                   //getCurrentAISFromDB(map.getBounds(), "SELECT messagetype, mmsi, navstatus, rot, sog, lon, lat, cog, true_heading, datetime, imo, vesselname, vesseltypeint, length, shipwidth, bow, stern, port, starboard, draught, destination, callsign, posaccuracy, eta, posfixtype, streamid FROM upload_table", true);
-                   getCurrentAISFromDB(map.getBounds(), "SELECT * FROM upload_table_view", true);
-                }
-                else {
-                   alert('Please upload a *.bin file');
-                }
-             }
              else {
                 console.log('Uploaded type not supported yet');
              }

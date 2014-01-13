@@ -9,26 +9,31 @@
 /**
  *  Global objects 
  */
- var vesselArray = [];
- var LAISICAISTRACKArray = [];
- var LAISICRADARArray = [];
- var LAISICAISOBSArray = [];
- var HistoryTrailArray = [];
+var vesselArray = [];
+var LAISICAISTRACKArray = [];
+var LAISICRADARArray = [];
+var LAISICAISOBSArray = [];
 
- var AISdata;
- var LAISICAISTRACKdata;
- var LAISICRADARdata;
- var LAISICAISOBSdata;
- 
- var AIStable;
- var LAISICAISTRACKtable;
- var LAISICRADARtable;
- var LAISICAISOBStable;
+var AISdata;
+var LAISICAISTRACKdata;
+var LAISICRADARdata;
+var LAISICAISOBSdata;
 
- var AISdata_index;
- var LAISICAISTRACKdata_index;
- var LAISICRADARdata_index;
- var LAISICAISOBSdata_index;
+var AIStable;
+var LAISICAISTRACKtable;
+var LAISICRADARtable;
+var LAISICAISOBStable;
+
+var AISdata_index;
+var LAISICAISTRACKdata_index;
+var LAISICRADARdata_index;
+var LAISICAISOBSdata_index;
+
+var NumHistoryTrails;
+var HistoryTrailArrayOfArrays = [];         //array (for each history trail) of arrays of history trail track
+var HistoryTraildataArray = [];
+var HistoryTrailtableArray = [];
+var HistoryTraildata_index;         //index for row of history trail
 
 /* -------------------------------------------------------------------------------- */
 /** Initialize, called on main page load
@@ -38,25 +43,24 @@ function initialize() {
    LAISICAISTRACKdata = new google.visualization.DataTable();
    LAISICRADARdata = new google.visualization.DataTable();
    LAISICAISOBSdata = new google.visualization.DataTable();
-   HistoryTraildata = new google.visualization.DataTable();
 
    AIStable = new google.visualization.Table(document.getElementById('raw_ais_table'));
    LAISICAISTRACKtable = new google.visualization.Table(document.getElementById('laisic_ais_track_table'));
    LAISICRADARtable = new google.visualization.Table(document.getElementById('laisic_radar_table'));
    LAISICAISOBStable= new google.visualization.Table(document.getElementById('laisic_ais_obs_table'));
-   HistoryTrailtable = new google.visualization.Table(document.getElementById('historytrail_table'));
 
    AISdata_index = 0;
    LAISICAISTRACKdata_index = 0;
    LAISICRADARdata_index = 0;
    LAISICAISOBSdata_index = 0;
-   HistoryTraildata_index = 0;
 
    //Table click/selection events (for LAISIC debugging)
    handleTableSelection();
 
+   //Add column and set types to all tables
    initializeTable();
 
+   //Load existing queries
    if (localStorage.getItem('query-timestamp') != null) {
       if (localStorage.getItem('query')) {
          getAISFromDB("AIS");
@@ -89,9 +93,37 @@ function initialize() {
       document.getElementById("query").value = 'Done.';
    }
 
-   if (localStorage.getItem('historytrailquery') != null &&
-       localStorage.getItem('historytrailquery')) {
-      showHistoryTrailTable(localStorage.getItem('historytrailquery'));
+   //Count the number of existing history trails
+   NumHistoryTrails = 0;
+   for (var i=0; i < localStorage.length; i++) {
+      key = localStorage.key(i);
+      if (key.indexOf("historytrailquery-") === 0) {
+         console.log('History trail previously acquired in maps.');
+         showHistoryTrailTable(localStorage.getItem(key), key.substring(18), i);
+         NumHistoryTrails++;
+
+         var trackID = key.substring(18);
+
+         //append to li list
+         HistoryTrailTabs.find(".ui-tabs-nav").append('<li><a href="#tabs-'+(i+1)+'">Track '+trackID+'</a></li>');
+         
+         //append to div list
+         HistoryTrailTabs.append('<div id="tabs-'+(i+1)+'" class="tabs"><div id="historytrailtable"><div id="historytrail_table-'+(i+1)+'" class="table_style"></div></div></div>');
+
+         //Initialize the history trail table objects, and store into arrays
+         var HistoryTraildata = new google.visualization.DataTable();
+         var HistoryTrailtable = new google.visualization.Table(document.getElementById('historytrail_table-'+(i+1)));
+         //HistoryTraildataArray.push(HistoryTraildata);
+         //HistoryTrailtableArray.push(HistoryTrailtable);
+         HistoryTraildataArray[i] = HistoryTraildata;
+         HistoryTrailtableArray[i] = HistoryTrailtable;
+
+         //Refresh the tabs to reflect newly added tab
+         HistoryTrailTabs.tabs("refresh");
+
+         //Make newest tab active
+         HistoryTrailTabs.tabs({active: i});
+      }
    }
 
    document.getElementById('busy_indicator').style.visibility = 'hidden';
@@ -256,28 +288,53 @@ function mapsUpdated(e) {
       }, 500);   //small delay to allow maps to write query strings to localStorage
    }
    else if (key.indexOf("historytrailquery") == 0) {
-      if (e.newValue != '') {
+      if (e.newValue != '' && e.newValue != null) {
          console.log('History trail acquired in maps.');
-         showHistoryTrailTable(e.newValue);
+         showHistoryTrailTable(e.newValue, key.substring(18), NumHistoryTrails);
+         NumHistoryTrails++;
+
+         console.log(NumHistoryTrails);
+
+         var trackID = key.substring(18);
+
+         //append to li list
+         HistoryTrailTabs.find(".ui-tabs-nav").append('<li><a href="#tabs-'+NumHistoryTrails+'">Track '+trackID+'</a></li>');
+         
+         //append to div list
+         HistoryTrailTabs.append('<div id="tabs-'+NumHistoryTrails+'" class="tabs"><div id="historytrailtable"><div id="historytrail_table-'+NumHistoryTrails+'" class="table_style"></div></div></div>');
+
+         //Initialize the history trail table objects, and store into arrays
+         var HistoryTraildata = new google.visualization.DataTable();
+         var HistoryTrailtable = new google.visualization.Table(document.getElementById('historytrail_table-'+NumHistoryTrails));
+         HistoryTraildataArray.push(HistoryTraildata);
+         HistoryTrailtableArray.push(HistoryTrailtable);
+
+         //Refresh the tabs to reflect newly added tab
+         HistoryTrailTabs.tabs("refresh");
+
+         //Make newest tab active
+         HistoryTrailTabs.tabs({active: NumHistoryTrails-1});
       }
       else {
-         console.log('All history trails deleted, hiding table now.');
-         hideHistoryTrailTable();
+         if (NumHistoryTrails > 0) {
+            NumHistoryTrails--;
+         }
+         if (NumHistoryTrails == 0) {
+            console.log('All history trails deleted, hiding table now.');
+            hideHistoryTrailTable();
+         }
       }
    }
 }
 
 /* -------------------------------------------------------------------------------- */
-function showHistoryTrailTable(historytrailquery) {
+function showHistoryTrailTable(historytrailquery, historytrailID, historyTrialIndex) {
    document.getElementById('data_container').style.width = "60%";
    document.getElementById('historytrail_container').visibility = "visible";
    document.getElementById('historytrail_container').style.width = "39%";
 
-   var phpWithArg = "query_track.php?source=" + localStorage.getItem('historytrailtype') + "_HistoryTrail&query=" + historytrailquery;
+   var phpWithArg = "query_track.php?source=" + localStorage.getItem('historytrailtype-'+historytrailID) + "_HistoryTrail&query=" + historytrailquery;
    console.log(phpWithArg);
-
-   clearHistoryTrailTable();
-   clearHistoryTraildata();
 
    //Call PHP and get results as markers
    $.getJSON(
@@ -290,12 +347,14 @@ function showHistoryTrailTable(historytrailquery) {
 
          //document.getElementById('historytrail_container').innerHTML = response.query;
 
+         var HistoryTrailArray = [];
          $.each(response.vessels, function(key,vessel) {
             HistoryTrailArray.push(vessel);
-            console.log(vessel.streamid);
          });
+         //HistoryTrailArrayOfArrays.push(HistoryTrailArray);
+         HistoryTrailArrayOfArrays[historyTrialIndex] = HistoryTrailArray;
 
-         drawTable('HistoryTrail');
+         drawTable('HistoryTrail-' + localStorage.getItem('historytrailtype-'+historytrailID), historyTrialIndex);
 
          document.getElementById('busy_indicator').style.visibility = 'hidden';
       }) //end .done()
@@ -405,23 +464,29 @@ function clearLAISICAISOBSdata() {
 /* -------------------------------------------------------------------------------- */
 /** 
  * Clear HistoryTrail table
+ * TODO: fix for array type
  */
 function clearHistoryTrailTable() {
    //Clear the table display
    console.log("Clearing HistoryTrail table.");
-   HistoryTrailtable.clearChart();
+   if (HistoryTrailtableArray != null && NumHistoryTrails > 0) {
+      HistoryTrailtableArray[NumHistoryTrails-1].clearChart();
+   }
 }
 
 /* -------------------------------------------------------------------------------- */
 /** 
  * Clear HistoryTrail data
+ * TODO: fix for array type
  */
 function clearHistoryTraildata() {
    //Clear the table display
    console.log("Clearing HistoryTrail data.");
-   HistoryTrailArray = [];
+   HistoryTrailArrayOfArrays = [];
    HistoryTraildata_index = 0;
-   HistoryTraildata.removeRows(0,HistoryTraildata.getNumberOfRows());
+   if (HistoryTraildataArray != null && NumHistoryTrails > 0) {
+      HistoryTraildataArray[NumHistoryTrails-1].removeRows(0,HistoryTraildataArray[NumHistoryTrails-1].getNumberOfRows());
+   }
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -429,7 +494,8 @@ function clearHistoryTraildata() {
  * Handle clicking/selection events in LAISIC table
  * e: StorageEvent object
  */
-function drawTable(sourceType) {
+function drawTable(sourceType, historyTrialIndex) {
+   console.debug(historyTrialIndex);
    var i;
 
    switch (sourceType) {
@@ -438,12 +504,12 @@ function drawTable(sourceType) {
          clearLAISICAISTRACKTable();
          clearLAISICRADARTable();
          clearLAISICAISOBSTable();
-         clearHistoryTrailTable();
+         //clearHistoryTrailTable();
 
          clearLAISICAISTRACKdata();
          clearLAISICRADARdata();
          clearLAISICAISOBSdata();
-         clearHistoryTraildata();
+         //clearHistoryTraildata();
 
          for (i=0; i < vesselArray.length; i++){
             var vessel = vesselArray[i];
@@ -551,121 +617,162 @@ function drawTable(sourceType) {
             LAISICAISOBSdata_index++;
          }
          break;
-      case "HistoryTrail":
-         clearHistoryTrailTable();
-         //Remove the previous columns in case type of trail/track changes (each has different columns)
-         HistoryTraildata.removeColumns(0, HistoryTraildata.getNumberOfColumns());
-
+      case "HistoryTrail-AIS":
          //Setup table columns and data according to the type of trail/track being received
-         if (localStorage.getItem('historytrailtype') == "AIS") {
-            HistoryTraildata.addColumn('number', 'MMSI');
-            HistoryTraildata.addColumn('number', 'TimeOfFix');
-            HistoryTraildata.addColumn('number', 'Latitude');
-            HistoryTraildata.addColumn('number', 'Longitude');
-            HistoryTraildata.addColumn('number', 'SOG');
-            HistoryTraildata.addColumn('number', 'Heading');
-            HistoryTraildata.addColumn('string', 'RxStnID');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'MMSI');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'TimeOfFix');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'Latitude');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'Longitude');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'SOG');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'Heading');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'RxStnID');
 
-            for (i=0; i < HistoryTrailArray.length; i++){
-               var vessel = HistoryTrailArray[i];
+         HistoryTraildata_index = 0;
+         for (i=0; i < HistoryTrailArrayOfArrays[historyTrialIndex].length; i++){
+            var vessel = HistoryTrailArrayOfArrays[historyTrialIndex][i];
 
-               HistoryTraildata.addRows(1);
-               HistoryTraildata.setCell(HistoryTraildata_index, 0, parseInt(vessel.mmsi));
-               HistoryTraildata.setCell(HistoryTraildata_index, 1, parseInt(vessel.datetime));
-               HistoryTraildata.setCell(HistoryTraildata_index, 2, parseFloat(vessel.lat));
-               HistoryTraildata.setCell(HistoryTraildata_index, 3, parseFloat(vessel.lon));
-               HistoryTraildata.setCell(HistoryTraildata_index, 4, parseFloat(vessel.sog));
-               HistoryTraildata.setCell(HistoryTraildata_index, 5, parseInt(vessel.true_heading));
-               HistoryTraildata.setCell(HistoryTraildata_index, 6, vessel.streamid);
-               console.log(vessel.streamid);
-               HistoryTraildata_index++;
-            }
+            HistoryTraildataArray[historyTrialIndex].addRows(1);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 0, parseInt(vessel.mmsi));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 1, parseInt(vessel.datetime));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 2, parseFloat(vessel.lat));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 3, parseFloat(vessel.lon));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 4, parseFloat(vessel.sog));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 5, parseInt(vessel.true_heading));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 6, vessel.streamid);
+
+            HistoryTraildata_index++;
          }
-         else if (localStorage.getItem('historytrailtype') == "LAISIC_RADAR") {
-            HistoryTraildata.addColumn('number', 'MMSI');
-            HistoryTraildata.addColumn('number', 'TimeOfFix');
-            HistoryTraildata.addColumn('number', 'Latitude');
-            HistoryTraildata.addColumn('number', 'Longitude');
-            HistoryTraildata.addColumn('number', 'SOG');
-            HistoryTraildata.addColumn('number', 'COG');
-            HistoryTraildata.addColumn('string', 'StreamID');
-            HistoryTraildata.addColumn('number', 'Heading');
-            HistoryTraildata.addColumn('string', 'Target_Status');
-            HistoryTraildata.addColumn('string', 'Target_Acq');
-            HistoryTraildata.addColumn('number', 'Trknum');
-            HistoryTraildata.addColumn('string', 'SourceID');
 
-            for (i=0; i < HistoryTrailArray.length; i++){
-               var vessel = HistoryTrailArray[i];
+         break;
+      case "HistoryTrail-LAISIC_AIS_OBS":
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'obsguid');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'lat');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'lon');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'semimajor');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'semiminor');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'orientation');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'COG');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'SOG');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'datetime');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'callsign');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'MMSI');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'vesselname');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'imo');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'streamid');
 
-               HistoryTraildata.addRows(1);
-               HistoryTraildata.setCell(HistoryTraildata_index, 0, parseInt(vessel.mmsi));
-               HistoryTraildata.setCell(HistoryTraildata_index, 1, parseInt(vessel.datetime));
-               HistoryTraildata.setCell(HistoryTraildata_index, 2, parseFloat(vessel.lat));
-               HistoryTraildata.setCell(HistoryTraildata_index, 3, parseFloat(vessel.lon));
-               HistoryTraildata.setCell(HistoryTraildata_index, 4, parseFloat(vessel.sog));
-               HistoryTraildata.setCell(HistoryTraildata_index, 5, parseFloat(vessel.cog));
-               HistoryTraildata.setCell(HistoryTraildata_index, 6, vessel.streamid);
-               HistoryTraildata.setCell(HistoryTraildata_index, 7, parseFloat(vessel.true_heading));
-               HistoryTraildata.setCell(HistoryTraildata_index, 8, vessel.target_status);
-               HistoryTraildata.setCell(HistoryTraildata_index, 9, vessel.target_acq);
-               HistoryTraildata.setCell(HistoryTraildata_index, 10, parseInt(vessel.trknum));
-               HistoryTraildata.setCell(HistoryTraildata_index, 11, vessel.sourceid);
-               HistoryTraildata_index++;
-            }
+         HistoryTraildata_index = 0;
+         for (i=0; i < HistoryTrailArrayOfArrays[historyTrialIndex].length; i++){
+            var vessel = HistoryTrailArrayOfArrays[historyTrialIndex][i];
+
+            HistoryTraildataArray[historyTrialIndex].addRows(1);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 0, vessel.obsguid);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 1, parseFloat(vessel.lat));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 2, parseFloat(vessel.lon));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 3, parseFloat(vessel.semimajor));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 4, parseFloat(vessel.semiminor));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 5, parseFloat(vessel.orientation));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 6, parseFloat(vessel.cog));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 7, parseFloat(vessel.sog));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 8, parseInt(vessel.datetime));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 9, vessel.callsign);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 10, parseInt(vessel.mmsi));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 11, vessel.vesselname);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 12, parseInt(vessel.imo));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 13, vessel.streamid);
+
+            HistoryTraildata_index++;
          }
-         else { //Should be "LAISIC_AIS_TRACK"
-            HistoryTraildata.addColumn('string', 'trkguid');
-            HistoryTraildata.addColumn('string', 'updateguid');
-            HistoryTraildata.addColumn('number', 'trknum');
-            HistoryTraildata.addColumn('string', 'srcguid');
-            HistoryTraildata.addColumn('number', 'datetime');
-            HistoryTraildata.addColumn('number', 'lat');
-            HistoryTraildata.addColumn('number', 'lon');
-            HistoryTraildata.addColumn('number', 'cog');
-            HistoryTraildata.addColumn('number', 'sog');
-            HistoryTraildata.addColumn('string', 'stage');
-            HistoryTraildata.addColumn('number', 'semimajor');
-            HistoryTraildata.addColumn('number', 'semiminor');
-            HistoryTraildata.addColumn('number', 'orientation');
-            HistoryTraildata.addColumn('number', 'holdtime');
-            HistoryTraildata.addColumn('number', 'hitscount');
-            HistoryTraildata.addColumn('number', 'quality');
-            HistoryTraildata.addColumn('string', 'source');
-            HistoryTraildata.addColumn('string', 'inttype');
-            HistoryTraildata.addColumn('string', 'callsign');
-            HistoryTraildata.addColumn('number', 'mmsi');
-            HistoryTraildata.addColumn('string', 'vesselname');
-            HistoryTraildata.addColumn('number', 'imo');
 
-            for (i=0; i < HistoryTrailArray.length; i++){
-               var vessel = HistoryTrailArray[i];
+         break;
+      case "HistoryTrail-LAISIC_RADAR":
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'MMSI');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'TimeOfFix');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'Latitude');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'Longitude');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'SOG');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'COG');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'StreamID');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'Heading');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'Target_Status');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'Target_Acq');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'Trknum');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'SourceID');
 
-               HistoryTraildata.addRows(1);
-               HistoryTraildata.setCell(HistoryTraildata_index, 0, vessel.trkguid);
-               HistoryTraildata.setCell(HistoryTraildata_index, 1, vessel.updateguid);
-               HistoryTraildata.setCell(HistoryTraildata_index, 2, parseInt(vessel.trknum));
-               HistoryTraildata.setCell(HistoryTraildata_index, 3, vessel.srcguid);
-               HistoryTraildata.setCell(HistoryTraildata_index, 4, parseInt(vessel.datetime));
-               HistoryTraildata.setCell(HistoryTraildata_index, 5, parseFloat(vessel.lat));
-               HistoryTraildata.setCell(HistoryTraildata_index, 6, parseFloat(vessel.lon));
-               HistoryTraildata.setCell(HistoryTraildata_index, 7, parseFloat(vessel.cog));
-               HistoryTraildata.setCell(HistoryTraildata_index, 8, parseFloat(vessel.sog));
-               HistoryTraildata.setCell(HistoryTraildata_index, 9, vessel.stage);
-               HistoryTraildata.setCell(HistoryTraildata_index, 10, parseFloat(vessel.semimajor));
-               HistoryTraildata.setCell(HistoryTraildata_index, 11, parseFloat(vessel.semiminor));
-               HistoryTraildata.setCell(HistoryTraildata_index, 12, parseFloat(vessel.orientation));
-               HistoryTraildata.setCell(HistoryTraildata_index, 13, parseInt(vessel.holdtime));
-               HistoryTraildata.setCell(HistoryTraildata_index, 14, parseInt(vessel.hitscount));
-               HistoryTraildata.setCell(HistoryTraildata_index, 15, parseFloat(vessel.quality));
-               HistoryTraildata.setCell(HistoryTraildata_index, 16, vessel.source);
-               HistoryTraildata.setCell(HistoryTraildata_index, 17, vessel.inttype);
-               HistoryTraildata.setCell(HistoryTraildata_index, 18, vessel.callsign);
-               HistoryTraildata.setCell(HistoryTraildata_index, 19, parseInt(vessel.mmsi));
-               HistoryTraildata.setCell(HistoryTraildata_index, 20, vessel.vesselname);
-               HistoryTraildata.setCell(HistoryTraildata_index, 21, parseInt(vessel.imo));
-               HistoryTraildata_index++;
-            }
+         HistoryTraildata_index = 0;
+         
+         console.debug('HistoryTrailArrayOfArrays defined yet? ' + HistoryTrailArrayOfArrays[historyTrialIndex]);
+         for (i=0; i < HistoryTrailArrayOfArrays[historyTrialIndex].length; i++){
+            var vessel = HistoryTrailArrayOfArrays[historyTrialIndex][i];
+
+            HistoryTraildataArray[historyTrialIndex].addRows(1);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 0, parseInt(vessel.mmsi));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 1, parseInt(vessel.datetime));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 2, parseFloat(vessel.lat));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 3, parseFloat(vessel.lon));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 4, parseFloat(vessel.sog));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 5, parseFloat(vessel.cog));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 6, vessel.streamid);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 7, parseFloat(vessel.true_heading));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 8, vessel.target_status);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 9, vessel.target_acq);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 10, parseInt(vessel.trknum));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 11, vessel.sourceid);
+            HistoryTraildata_index++;
+         }
+
+         break;
+      case "HistoryTrail-LAISIC_AIS_TRACK":
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'trkguid');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'updateguid');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'trknum');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'srcguid');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'datetime');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'lat');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'lon');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'cog');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'sog');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'stage');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'semimajor');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'semiminor');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'orientation');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'holdtime');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'hitscount');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'quality');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'source');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'inttype');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'callsign');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'mmsi');
+         HistoryTraildataArray[historyTrialIndex].addColumn('string', 'vesselname');
+         HistoryTraildataArray[historyTrialIndex].addColumn('number', 'imo');
+
+         HistoryTraildata_index = 0;
+         for (i=0; i < HistoryTrailArrayOfArrays[historyTrialIndex].length; i++){
+            var vessel = HistoryTrailArrayOfArrays[historyTrialIndex][i];
+
+            HistoryTraildataArray[historyTrialIndex].addRows(1);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 0, vessel.trkguid);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 1, vessel.updateguid);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 2, parseInt(vessel.trknum));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 3, vessel.srcguid);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 4, parseInt(vessel.datetime));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 5, parseFloat(vessel.lat));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 6, parseFloat(vessel.lon));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 7, parseFloat(vessel.cog));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 8, parseFloat(vessel.sog));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 9, vessel.stage);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 10, parseFloat(vessel.semimajor));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 11, parseFloat(vessel.semiminor));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 12, parseFloat(vessel.orientation));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 13, parseInt(vessel.holdtime));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 14, parseInt(vessel.hitscount));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 15, parseFloat(vessel.quality));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 16, vessel.source);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 17, vessel.inttype);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 18, vessel.callsign);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 19, parseInt(vessel.mmsi));
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 20, vessel.vesselname);
+            HistoryTraildataArray[historyTrialIndex].setCell(HistoryTraildata_index, 21, parseInt(vessel.imo));
+            HistoryTraildata_index++;
          }
 
          break;
@@ -695,7 +802,9 @@ function drawTable(sourceType) {
    LAISICAISTRACKtable.draw(LAISICAISTRACKdata, {showRowNumber: true});
    LAISICRADARtable.draw(LAISICRADARdata, {showRowNumber: true});
    LAISICAISOBStable.draw(LAISICAISOBSdata, {showRowNumber: true});
-   HistoryTrailtable.draw(HistoryTraildata, {showRowNumber: true});
+   for (var i=0; i < NumHistoryTrails; i++) {
+      HistoryTrailtableArray[i].draw(HistoryTraildataArray[i], {showRowNumber: true});
+   }
 }
 
 /* -------------------------------------------------------------------------------- */

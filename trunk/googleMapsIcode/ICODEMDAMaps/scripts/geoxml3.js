@@ -227,9 +227,10 @@ geoXML3.parser = function (options) {
             var dLon = (lon2-lon1).toRad();
             var y = Math.sin(dLon) * Math.cos(lat2);
             var x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
-            var rotation1 = Math.atan2(y, x).toDeg().toDeg();
-            rotation1 = (rotation1 + 360)%360;
+            var rot = Math.atan2(y, x).toDeg().toDeg();
+            rot = (rot + 360)%360;
 */
+
             //Rhumb Line Method:
             var lat1 = coor[1];
             var lon1 = coor[0];
@@ -251,8 +252,8 @@ geoXML3.parser = function (options) {
             //console.debug("Rotation: " + rot);
 
             
-            //Test: don't use JS rotation, testing mogrify rotation
-            var rotation = 0;
+            //TODO: fix rotation and image overlay
+            var rotation = rot;
             
             /*
             console.debug(coor[1]);
@@ -456,6 +457,7 @@ geoXML3.parser = function (options) {
    //============================================================================
    var createOverlay = function (groundOverlay, doc, rotation) {
       // Add a ProjectedOverlay to the map from a groundOverlay KML object
+      console.debug('Geoxml rotation is: ' + rotation);
 
       if (!window.ProjectedOverlay) {
          throw 'geoXML3 error: ProjectedOverlay not found while rendering GroundOverlay from KML';
