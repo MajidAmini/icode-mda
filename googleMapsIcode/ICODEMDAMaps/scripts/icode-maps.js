@@ -905,6 +905,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                     pane: "mapPane",
                     enableEventPropagation: true
                });
+
                vesselnameLabel.open(map);
                
                //Check if labels should be displayed or not
@@ -928,7 +929,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
          });
 
          //Display the appropriate layer according to the sidebar checkboxes
-         if (document.getElementById("HeatmapLayer").checked) {
+         if (document.getElementById("HeatmapLayer") && document.getElementById("HeatmapLayer").checked) {
             addHeatmap();
          }
          else {
@@ -2285,7 +2286,7 @@ function toggleWeatherLayer() {
       addWeatherLayer();
    }
    else if (document.getElementById("WeatherLayer")) {
-      if (typeof weatherLayer != 'undefined' && whetherLayer != null) {
+      if (typeof weatherLayer != 'undefined' && weatherLayer != null) {
          weatherLayer.setMap(null);
          cloudLayer.setMap(null);
       }
