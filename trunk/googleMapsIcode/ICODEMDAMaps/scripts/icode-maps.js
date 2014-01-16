@@ -13,9 +13,9 @@ var map;
 var markerArray = [];
 var vesselArray = [];
 var markersDisplayed = [];
-//var trackArray;
-var tracksDisplayedID = [];    //keep track of which MMSI's track is already displayed
-var tracksDisplayed = [];
+var tracksDisplayedID = [];   //stores MMSI/trknum of tracks that are displayed
+var tracksDisplayed = [];     //stores track objects of tracks that are displayed 
+
 var mainQuery;
 var prevZoom = null;
 
@@ -137,6 +137,10 @@ var highlightCircle = new google.maps.Circle({
 //Hide/show panel
 var panelhidden = false;
 
+//Time Machine
+var enableTimeMachine;
+var queryTimeMachine;
+
 var EEZ;
 var COUNTRYBORDERS;
 
@@ -236,7 +240,7 @@ function initialize() {
    });
 
    //Table click/selection events (for LAISIC debugging)
-   handleTableSelection();
+   handleLocalStorageChange();
 
    //Latlog indicator for current mouse position
    google.maps.event.addListener(map,'mousemove',function(event) {
@@ -279,9 +283,11 @@ function initialize() {
 
    toggleRisk();
 
+   toggleTimeMachine();
+
    initializePanel();
 
-   //Keyboard shortcuts
+   //Keyboard shortcuts/
    //source: http://stackoverflow.com/questions/9195814/google-maps-v3-keyboard-accessibility
    $('body').keydown(function(event) {
       if ($('#query').is(':focus')) {
@@ -313,6 +319,17 @@ function initialize() {
             break;
          case 67: // c
             clearAllTracks();
+            break;
+         case 68: // d
+            if (document.getElementById("distancetooltoggle") != null &&
+                document.getElementById("distancetooltoggle").checked) {
+               document.getElementById("distancetooltoggle").checked = false;
+               document.getElementById("distancetooltoggle").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("distancetooltoggle").checked = true;
+            }
+            toggleDistanceTool();
             break;
          case 72: // h
             togglePanel();
@@ -363,9 +380,32 @@ function initialize() {
             }
             toggleShowNames();
             break;
-
+         case 80: // p
+            //Port layer
+            if (document.getElementById("PortLayer") != null &&
+                document.getElementById("PortLayer").checked) {
+               document.getElementById("PortLayer").checked = false;
+               document.getElementById("PortLayer").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("PortLayer").checked = true;
+            }
+            togglePortLayer();
+            break;
          case 82: // r
             location.reload();
+            break;
+         case 87: // w
+            //Weather layer
+            if (document.getElementById("WeatherLayer") != null &&
+                document.getElementById("WeatherLayer").checked) {
+               document.getElementById("WeatherLayer").checked = false;
+               document.getElementById("WeatherLayer").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("WeatherLayer").checked = true;
+            }
+            toggleWeatherLayer();
             break;
          case 37: // leftArrow
             map.panBy(-o,0);
@@ -427,6 +467,10 @@ function initialize() {
    });
 
    showEEZ();
+
+   //Trigger localStorage to indicate page refresh or new load
+   localStorage.clear();
+   localStorage.setItem('refresh',1);
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -445,8 +489,11 @@ function refreshMaps(forceRedraw) {
    var queryArgument = Request.QueryString("query").toString();
    //console.log(queryArgument);
 
+   if (enableTimeMachine) {
+      getTargetsFromDB(map.getBounds(), queryTimeMachine, 'AIS', true); 
+   }
    //Check if URL has query parameter, and use if it is defined
-   if (queryArgument != null) {
+   else if (queryArgument != null) {
       mainQuery = queryArgument;
 
       //Default to querying from AIS table
@@ -626,7 +673,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
       */
       else {
          //Custom SQL query statement
-         phpWithArg = "query_current_vessels.php?query=" + customQuery;
+         phpWithArg = "query_current_vessels.php?query=" + customQuery + boundStr;
       }
    }
 
@@ -681,6 +728,15 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                }
                markersDisplayed = [];
             }
+         }
+
+         if (customQuery != null) {
+            clearMarkerAndClusters();
+            localStorage.clear();
+            for (var i=0; i < markersDisplayed.length; i++) {
+               markersDisplayed[i].vesselnameLabel.setMap(null);
+            }
+            markersDisplayed = [];
          }
 
          localStorage.setItem('query-timestamp', Math.floor((new Date()).getTime()/1000));
@@ -1137,10 +1193,14 @@ function clearMarkerAndClusters() {
 function checkImageExist(url) {
    var img = document.createElement('img');
    img.onload = function() {
-      document.getElementById('marinetrafficimage').src = url;
+      if (document.getElementById('marinetrafficimage')) {
+         document.getElementById('marinetrafficimage').src = url;
+      }
    }
    img.onerror = function() {
-      document.getElementById('marinetrafficimage').src = 'icons/noimage.png';
+      if (document.getElementById('marinetrafficimage')) {
+         document.getElementById('marinetrafficimage').src = 'icons/noimage.png';
+      }
    }
    img.src = url;
 }
@@ -1283,11 +1343,9 @@ function clearTrack(trackline, trackIcons, dashedLines, trackID) {
          trackIcon = trackIcons.pop();
          trackIcon.setMap(null);
       }
-      if (tracksDisplayed.length == 1) {
+      if (tracksDisplayed.length == 0) {
          deleteTrackTimeControl();
       }
-
-      console.log(trackID);
 
       //Signal tables to delete history trail table
       localStorage.removeItem('historytrailquery-' + trackID);
@@ -1299,16 +1357,38 @@ function clearTrack(trackline, trackIcons, dashedLines, trackID) {
 }
 
 /* -------------------------------------------------------------------------------- */
-function clearAllTracks() {
-   for (var i=0; i < tracksDisplayed.length; i++) {
-      clearTrack(tracksDisplayed[i].trackline, tracksDisplayed[i].trackIcons, tracksDisplayed[i].dashedLines, tracksDisplayedID[i]);
-      tracksDisplayedID[i] = null;
-      tracksDisplayed[i] = null;
+function clearTrackByTrackID(trackID) {
+   if (trackID != null) {
+      $.each(tracksDisplayed, function(index) {
+         console.debug(index);
+         if (this.mmsi == trackID) {
+            //console.log('Found track with matching MMSI to delete: ' + trackID);
+            clearTrack(this.trackline, this.trackIcons, this.dashedLines, this.mmsi);
+            tracksDisplayedID.splice(index, 1);
+            tracksDisplayed.splice(index, 1);
+         }
+         else if (this.trknum == trackID) {
+            //console.log('Found track with matching trknum to delete: ' + trackID);
+            clearTrack(this.trackline, this.trackIcons, this.dashedLines, this.trknum);
+            tracksDisplayedID.splice(index, 1);
+            tracksDisplayed.splice(index, 1);
+         }
+         else {
+            console.log('Failure to find trackID to delete: ' + trackID);
+         }
+      });
    }
-   tracksDisplayedID = [];
-   tracksDisplayed = [];
-   deleteTrackTimeControl();
+   else {
+      console.log('Error clearing track by trackID: neither MMSI or trknum is valid');
+   }
+}
 
+/* -------------------------------------------------------------------------------- */
+function clearAllTracks() {
+   while (tracksDisplayedID.length > 0) {
+      clearTrackByTrackID(tracksDisplayedID[0]);
+   }
+   deleteTrackTimeControl();
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -1505,20 +1585,17 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
 
                         trackIcons.push(tracklineIcon);
 
-
                         //Add listener to delete track if right click on icon
                         google.maps.event.addListener(tracklineIcon, 'rightclick', function() {
                            var deleteIndex;
                            if (trknum == "undefined" || trknum == null) {
                               deleteIndex = $.inArray(mmsi, tracksDisplayedID);
-                              clearTrack(trackline, trackIcons, dashedLines, mmsi);
+                              clearTrackByTrackID(mmsi);
                            }
                            else {
                               deleteIndex = $.inArray(trknum, tracksDisplayedID);
-                              clearTrack(trackline, trackIcons, dashedLines, trknum);
+                              clearTrackByTrackID(trknum);
                            }
-                           tracksDisplayedID.splice(deleteIndex, 1);
-                           tracksDisplayed.splice(deleteIndex, 1);
                         });
 
                         //Add listener to project to predicted location if click on icon (dead reckoning)
@@ -1634,14 +1711,12 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                         var deleteIndex;
                         if (trknum == "undefined" || trknum == null) {
                            deleteIndex = $.inArray(mmsi, tracksDisplayedID);
-                           clearTrack(trackline, trackIcons, dashedLines, mmsi);
+                           clearTrackByTrackID(mmsi);
                         }
                         else {
                            deleteIndex = $.inArray(trknum, tracksDisplayedID);
-                           clearTrack(trackline, trackIcons, dashedLines, trknum);
+                           clearTrackByTrackID(trknum);
                         }
-                        tracksDisplayedID.splice(deleteIndex, 1);
-                        tracksDisplayed.splice(deleteIndex, 1);
                      });
                   }
 
@@ -2733,7 +2808,7 @@ function autoRefreshOff() {
 /** 
  * Handle clicking/selection events in LAISIC table
  */
-function handleTableSelection() {
+function handleLocalStorageChange() {
    //test localstorage
    function storageEventHandler(e) {
       if (!e) { 
@@ -2805,6 +2880,12 @@ function tableUpdated(selected) {
          }
       });
    }
+
+   //Handle delete track action
+   if (key.indexOf("historytrailquery-") === 0 && (value == '' || value == null)) {
+      var trackID = key.substring(18);      
+      clearTrackByTrackID(trackID);
+   }      
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -3222,6 +3303,42 @@ function toggleRisk() {
    else {
       console.log("Turning off risk information");
       enableRisk = false;
+   }
+}
+
+/* -------------------------------------------------------------------------------- */
+function TimeMachineLookup(timestart, timeend) {
+   //Turn on Time Machine feature
+   document.getElementById("enabletimemachine").checked = true;
+   toggleTimeMachine();
+
+   queryTimeMachine = 'SELECT A.`MMSI`, A.`CommsID`, A.`IMONumber`, A.`CallSign`, A.`Name`, A.`VesType`, A.`Cargo`, A.`AISClass`, A.`Length`, A.`Beam`, A.`Draft`, A.`AntOffsetBow`, A.`AntOffsetPort`, B.`TimeOfFix`, B.`Latitude`, B.`Longitude`, B.`SOG`, B.`Heading`, B.`RxStnID` FROM vessels_memory A INNER JOIN ( SELECT *, max(TimeOfFix) FROM vessel_history WHERE TimeOfFix between ' + timestart + ' and ' + timeend;
+
+   getTargetsFromDB(map.getBounds(), queryTimeMachine, 'AIS', true); 
+}
+
+/* -------------------------------------------------------------------------------- */
+function toggleTimeMachine() {
+   if (document.getElementById("enabletimemachine") && document.getElementById("enabletimemachine").checked) {
+      console.log("Turning on Time Machine");
+      enableTimeMachine = true;
+
+      //Turn off autorefresh when using Time Machine
+      $('input[name=autoRefresh]').attr('checked', false);
+      toggleAutoRefresh();
+
+      document.getElementById('status-msg').innerHTML = "TIME MACHINE CURRENTLY TURN ON";
+      document.getElementById('status-msg').style.opacity = "1";
+
+      refreshMaps(true);
+   }
+   else {
+      console.log("Turning off Time Machine");
+      enableTimeMachine = false;
+
+      document.getElementById('status-msg').style.opacity = "0";
+      
+      refreshMaps(true);
    }
 }
 

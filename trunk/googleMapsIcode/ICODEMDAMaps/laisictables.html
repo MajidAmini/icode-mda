@@ -35,7 +35,13 @@
         });
 
         $(function() {
-           HistoryTrailTabs = $( "#historytrail_container" ).tabs();
+           HistoryTrailTabs = $("#historytrail_container").tabs();
+           // close icon: removing the tab on click
+           HistoryTrailTabs.delegate( "span.ui-closable-tab", "click", function() {
+              var tabID = $( this ).closest( "li" ).remove().attr( "aria-controls" );
+              var trackID = tabID.substring(5);
+              removeHistoryTrailTab('historytrailquery-'+trackID);
+           });
         });
      </script>
 
@@ -67,7 +73,7 @@
      </div>
 
      <div id="container" align="center">
-        <div id="data_container">
+        <div id="data_container" style="width:100%;">
            <div id="raw_ais_container">
               <center><h3><b>RAW AIS (track heads)</b></h3></center>
               <div id="aisdatatable">
@@ -115,7 +121,7 @@
            </div>
         </div>
 
-        <div id="historytrail_container" visibility="hidden">
+        <div id="historytrail_container" style="visibility:hidden">
            <center><h3><b>History Trail</b></h3></center>
            <ul>
               <!-- <li><a href="#tabs-1">Track 1</a></li> -->

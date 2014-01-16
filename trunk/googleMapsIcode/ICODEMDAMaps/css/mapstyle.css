@@ -186,7 +186,7 @@ table {
    top:          68px;
    left:         -webkit-calc(100%/3);
    left:         calc(100%/3);
-   width:        700px;
+   width:        600px;
    height:       20px;
    line-height:  20px;
    vertical-align:middle;
@@ -200,7 +200,6 @@ table {
    color:        #000000;
    font-weight:  bold;
    box-shadow:   4px 4px 5px #888888;
-   visibility:   hidden;
 }
 #latlong {
    position:     absolute;
