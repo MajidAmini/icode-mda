@@ -75,8 +75,14 @@ if(count($_GET) > 0) {
     }
     else {
        if (!empty($_GET["minlat"]) && !empty($_GET["minlon"]) &&
-             !empty($_GET["maxlat"]) && !empty($_GET["maxlon"])) {
-          $query = $query . " WHERE";
+          !empty($_GET["maxlat"]) && !empty($_GET["maxlon"])) {
+          //Check if a 'WHERE' has already been inserted into the query, append 'AND' if so
+          if (strpos($query, "WHERE TimeOfFix") !== FALSE) {
+             $query = $query . " AND";
+          }
+          else {  //Append 'WHERE' since there is no previous WHERE
+             $query = $query . " WHERE";
+          }
           $query = $query . " Latitude BETWEEN " . round($_GET["minlat"],3) . " AND " . round($_GET["maxlat"],3) . 
              " AND Longitude BETWEEN " .  round($_GET["minlon"],3) . " AND " . round($_GET["maxlon"],3);
        }
@@ -114,6 +120,10 @@ if(count($_GET) > 0) {
     //?
     if (empty($_GET["query"])) {
        $query = $query . " ORDER BY VESSELS.MMSI";
+    }
+
+    if (strpos($query, "WHERE TimeOfFix") !== FALSE) {
+       $query = $query . " GROUP BY MMSI) B ON A.mmsi = B.mmsi GROUP BY MMSI";
     }
 }
 else {

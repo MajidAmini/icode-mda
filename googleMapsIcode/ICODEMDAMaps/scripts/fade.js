@@ -32,7 +32,7 @@ function animateFade(lastTick, eid)
 }
 
 
-function fade(eid)
+function fadeToggle(eid)
 {
   var element = document.getElementById(eid);
   
@@ -63,11 +63,14 @@ function fade(eid)
 $(document).ready(function(){
    if ($('#status-msg')) {    //check if status-msg div exists
       setTimeout(function(){
-         fade('status-msg');
+         fadeToggle('status-msg');
+         //Remove the div entirely from the page
+         /*
          setTimeout(function(){
             var div = document.getElementById('status-msg');
             div.parentNode.removeChild(div);   
          }, TimeToFade);
+         */
       }, 3000);
    }
    else {

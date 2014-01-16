@@ -16,7 +16,7 @@
 
      <!-- <link href='http://fonts.googleapis.com/css?family=Lato:400,900' rel='stylesheet' type='text/css'> -->
 
-     <script type="text/javascript" src='scripts/fade.js' ></script>
+     <!-- script type="text/javascript" src='scripts/fade.js' ></script -->
 
      <script type="text/javascript" src="scripts/ihs-table.js"></script>
 
@@ -303,12 +303,33 @@
                  <div id="upload"></div>
               </div>
 
-              <!--
-              <h3>Query Builder</h3>
+              <h3>Time Machine</h3>
               <div>
-                 Coming Soon...
+                 <input class="checkbox" id="enabletimemachine" name="Enable Time Machine" type="checkbox" onclick="toggleTimeMachine();"> Enable Time Machine
+                 <br>
+                 <br>
+                 <!-- http://trentrichardson.com/examples/timepicker/ -->
+                 <script src="scripts/jquery-ui-timepicker-addon-cus.js"></script>
+                 <script>
+                    $(function() {
+                       $('#datetimestart').datetimepicker({timeFormat: 'hh:mm tt z'});
+                       $('#datetimeend').datetimepicker({timeFormat: 'hh:mm tt z'});
+                    });
+                 </script>
+                 Pick a date range:
+                 <p align="center">
+                 <input type="text" id="datetimestart" size=18 />
+                 <br /> to <br />
+                 <input type="text" id="datetimeend" size=18 />
+
+                 <br />
+                 <br />
+                 <!-- input type="button" onClick="getTargetsFromDB(map.getBounds(), 'SELECT * FROM vessel_history WHERE TimeOfFix between ' + ($('#datetimestart').datetimepicker('getDate').getTime()/1000) + ' and ' + ($('#datetimeend').datetimepicker('getDate').getTime()/1000), 'AIS', true); $('input[name=autoRefresh]').attr('checked', false); toggleAutoRefresh(); return false;" value="Query" -->
+                 <!-- input type="button" onClick="getTargetsFromDB(map.getBounds(), 'SELECT *, max(TimeOfFix) FROM vessel_history WHERE TimeOfFix between ' + ($('#datetimestart').datetimepicker('getDate').getTime()/1000) + ' and ' + ($('#datetimeend').datetimepicker('getDate').getTime()/1000), 'AIS', true); $('input[name=autoRefresh]').attr('checked', false); toggleAutoRefresh(); return false;" value="Query"-->
+                 <!-- input type="button" onClick="getTargetsFromDB(map.getBounds(), 'SELECT A.`MMSI`, A.`CommsID`, A.`IMONumber`, A.`CallSign`, A.`Name`, A.`VesType`, A.`Cargo`, A.`AISClass`, A.`Length`, A.`Beam`, A.`Draft`, A.`AntOffsetBow`, A.`AntOffsetPort`, A.`Destination`, A.`ETADest`, A.`PosSource`, A.`PosQuality`, A.`FixDTG`, A.`ROT`, A.`NavStatus`, A.`Source`, B.`TimeOfFix`, B.`Latitude`, B.`Longitude`, B.`SOG`, B.`Heading`, B.`RxStnID`, A.`COG` FROM vessels_memory A INNER JOIN ( SELECT *, max(TimeOfFix) FROM vessel_history WHERE TimeOfFix between ' + ($('#datetimestart').datetimepicker('getDate').getTime()/1000) + ' and ' + ($('#datetimeend').datetimepicker('getDate').getTime()/1000), 'AIS', true); $('input[name=autoRefresh]').attr('checked', false); toggleAutoRefresh(); return false;" value="Query" -->
+                 <input type="button" onClick="TimeMachineLookup(($('#datetimestart').datetimepicker('getDate').getTime()/1000), ($('#datetimeend').datetimepicker('getDate').getTime()/1000)); return false;" value="Query">
+                 </p>
               </div>
-              -->
 
               <!--
               <h3>Current Vessel List</h3>
@@ -326,7 +347,7 @@
                  <input class="checkbox" id="distancetooltoggle" name="distancetooltoggle" type="checkbox" onclick="toggleDistanceTool();"> Enable distance tool<br>
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
                  <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh (1 min)<br>
-                 <input class="checkbox" id="IHSTabs" name="IHSTabs" type="checkbox" checked="checked" onclick="toggleIHSTabs();"> Enable IHS Tabs<br>
+                 <input class="checkbox" id="IHSTabs" name="IHSTabs" type="checkbox" onclick="toggleIHSTabs();"> Enable IHS Tabs<br>
                  <br>
                  Only show vessels up to 
                  <select id="vessel_age" onChange="vessel_age_changed();">
@@ -390,7 +411,7 @@
      </div>
 
      <div id="status-msg">
-        Currently showing RADAR and raw full AIS for 2013-08-01
+        Currently showing RADAR and raw full AIS
      </div>
 
      <div id="keyboard-shortcut-modal" title="Keyboard Shortcuts">
@@ -403,8 +424,10 @@
   <b>H</b>&#9;&#9; Hide/show menu panel<br>
   <b>L</b>&#9;&#9; Toggle LAISIC/AIS targets<br>
   <b>N</b>&#9;&#9; Toggle showing vessel names<br>
+  <b>P</b>&#9;&#9; Toggle port layer<br>
   <b>Q</b>&#9;&#9; Select the query bar<br>
   <b>R</b>&#9;&#9; Refresh browser<br>
+  <b>W</b>&#9;&#9; Toggle weather layer<br>
   <b>-</b>&#9;&#9; Zoom out<br>
   <b>+</b>&#9;&#9; Zoom in<br>
   <b>Arrows keys</b>&#9; Pan around map<br>
