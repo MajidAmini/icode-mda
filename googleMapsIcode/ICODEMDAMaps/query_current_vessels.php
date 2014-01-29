@@ -76,15 +76,32 @@ if(count($_GET) > 0) {
     else {
        if (!empty($_GET["minlat"]) && !empty($_GET["minlon"]) &&
           !empty($_GET["maxlat"]) && !empty($_GET["maxlon"])) {
-          //Check if a 'WHERE' has already been inserted into the query, append 'AND' if so
+          //Check if flipped, then probably crossed the meridian (> +180, or < -180)
+          if ($_GET["minlon"] > $_GET["maxlon"]) {
+             $meridianflag = true;
+          }
+          else {
+             $meridianflag = false;
+          }
+
+          //Check if a 'WHERE' has already been inserted into the query, append 'AND' if so.
+          // "WHERE TimeOfFix" is for Time Machine queries
           if (strpos($query, "WHERE TimeOfFix") !== FALSE) {
              $query = $query . " AND";
           }
           else {  //Append 'WHERE' since there is no previous WHERE
              $query = $query . " WHERE";
           }
-          $query = $query . " Latitude BETWEEN " . round($_GET["minlat"],3) . " AND " . round($_GET["maxlat"],3) . 
-             " AND Longitude BETWEEN " .  round($_GET["minlon"],3) . " AND " . round($_GET["maxlon"],3);
+
+          if ($meridianflag == false) { //Handle normal case
+             $query = $query . " Latitude BETWEEN " . round($_GET["minlat"],3) . " AND " . round($_GET["maxlat"],3) . 
+                " AND Longitude BETWEEN " .  round($_GET["minlon"],3) . " AND " . round($_GET["maxlon"],3);
+          }
+          else {
+             $query = $query . " Latitude BETWEEN " . round($_GET["minlat"],3) . " AND " . round($_GET["maxlat"],3) . 
+                  " AND (Longitude BETWEEN -180 AND " . round($_GET["maxlon"],3) .
+                  " OR Longitude BETWEEN " . round($_GET["minlon"],3) . " AND 180 )";
+          }
        }
     }
 
@@ -94,7 +111,7 @@ if(count($_GET) > 0) {
     }
     */
 
-    //Add timestamp constraint
+    //Add timestamp constraint, only for AIS tracks
     if (!empty($_GET["vessel_age"]) && $source === "AIS") {
        $vessel_age = $_GET["vessel_age"];
        $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
@@ -122,8 +139,10 @@ if(count($_GET) > 0) {
        $query = $query . " ORDER BY VESSELS.MMSI";
     }
 
+    //For Time Machine
     if (strpos($query, "WHERE TimeOfFix") !== FALSE) {
-       $query = $query . " GROUP BY MMSI) B ON A.mmsi = B.mmsi GROUP BY MMSI";
+       //$query = $query . " GROUP BY MMSI) B ON A.mmsi = B.mmsi GROUP BY MMSI";
+       $query = $query . " GROUP BY MMSI) vm2 ON (vm1.MMSI = vm2.MMSI AND vm1.TimeOfFix = vm2.maxtime)) B ON A.MMSI = B.MMSI GROUP BY MMSI";
     }
 }
 else {

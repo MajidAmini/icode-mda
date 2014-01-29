@@ -121,13 +121,10 @@ function initialize() {
  */
 function initializeTable() {
    AISdata.addColumn('number', 'MMSI');
-   AISdata.addColumn('string', 'CommsID');
    AISdata.addColumn('number', 'IMONumber');
    AISdata.addColumn('string', 'CallSign');
    AISdata.addColumn('string', 'Name');
    AISdata.addColumn('string', 'VesType');
-   AISdata.addColumn('string', 'Cargo');
-   AISdata.addColumn('string', 'AISClass');
    AISdata.addColumn('number', 'Length');
    AISdata.addColumn('number', 'Beam');
    AISdata.addColumn('number', 'Draft');
@@ -137,10 +134,8 @@ function initializeTable() {
    AISdata.addColumn('string', 'ETADest');
    AISdata.addColumn('string', 'PosSource');
    AISdata.addColumn('string', 'PosQuality');
-   AISdata.addColumn('string', 'FixDTG');
    AISdata.addColumn('number', 'ROT');
    AISdata.addColumn('string', 'NavStatus');
-   AISdata.addColumn('string', 'Source');
    AISdata.addColumn('number', 'TimeOfFix');
    AISdata.addColumn('number', 'Latitude');
    AISdata.addColumn('number', 'Longitude');
@@ -148,6 +143,11 @@ function initializeTable() {
    AISdata.addColumn('number', 'Heading');
    AISdata.addColumn('string', 'RxStnID');
    AISdata.addColumn('number', 'COG');
+   AISdata.addColumn('string', 'CommsID');
+   AISdata.addColumn('string', 'Cargo');
+   AISdata.addColumn('string', 'AISClass');
+   AISdata.addColumn('string', 'FixDTG');
+   AISdata.addColumn('string', 'Source');
 
    //LAISICAISTRACKdata.addColumn('string', 'trkguid');
    //LAISICAISTRACKdata.addColumn('string', 'updateguid');
@@ -530,33 +530,33 @@ function drawTable(sourceType, historytrailindex) {
 
             AISdata.addRows(1);
             AISdata.setCell(AISdata_index, 0, parseInt(vessel.mmsi));
+            AISdata.setCell(AISdata_index, 1, parseInt(vessel.imo));
+            AISdata.setCell(AISdata_index, 2, vessel.callsign);
+            AISdata.setCell(AISdata_index, 3, vessel.vesselname);
+            AISdata.setCell(AISdata_index, 4, vessel.vesseltypeint);
+            AISdata.setCell(AISdata_index, 5, parseFloat(vessel.length));
+            AISdata.setCell(AISdata_index, 6, parseFloat(vessel.shipwidth));
+            AISdata.setCell(AISdata_index, 7, parseFloat(vessel.draught));
+            AISdata.setCell(AISdata_index, 8, parseFloat(vessel.bow));
+            AISdata.setCell(AISdata_index, 9, parseFloat(vessel.port));
+            AISdata.setCell(AISdata_index, 10, vessel.destination);
+            AISdata.setCell(AISdata_index, 11, vessel.eta);
+            AISdata.setCell(AISdata_index, 12, vessel.posfixtype);
+            AISdata.setCell(AISdata_index, 13, vessel.posaccuracy);
+            AISdata.setCell(AISdata_index, 14, parseFloat(vessel.rot));
+            AISdata.setCell(AISdata_index, 15, vessel.navstatus);
+            AISdata.setCell(AISdata_index, 16, parseInt(vessel.datetime));
+            AISdata.setCell(AISdata_index, 17, parseFloat(vessel.lat));
+            AISdata.setCell(AISdata_index, 18, parseFloat(vessel.lon));
+            AISdata.setCell(AISdata_index, 19, parseFloat(vessel.sog));
+            AISdata.setCell(AISdata_index, 20, parseFloat(vessel.true_heading));
+            AISdata.setCell(AISdata_index, 21, vessel.streamid);
+            AISdata.setCell(AISdata_index, 22, parseFloat(vessel.cog));
             //commsid
-            AISdata.setCell(AISdata_index, 2, parseInt(vessel.imo));
-            AISdata.setCell(AISdata_index, 3, vessel.callsign);
-            AISdata.setCell(AISdata_index, 4, vessel.vesselname);
-            AISdata.setCell(AISdata_index, 5, vessel.vesseltypeint);
             //cargo
             //aisclass
-            AISdata.setCell(AISdata_index, 8, parseFloat(vessel.length));
-            AISdata.setCell(AISdata_index, 9, parseFloat(vessel.shipwidth));
-            AISdata.setCell(AISdata_index, 10, parseFloat(vessel.draught));
-            AISdata.setCell(AISdata_index, 11, parseFloat(vessel.bow));
-            AISdata.setCell(AISdata_index, 12, parseFloat(vessel.port));
-            AISdata.setCell(AISdata_index, 13, vessel.destination);
-            AISdata.setCell(AISdata_index, 14, vessel.eta);
-            AISdata.setCell(AISdata_index, 15, vessel.posfixtype);
-            AISdata.setCell(AISdata_index, 16, vessel.posaccuracy);
             //fixdtg
-            AISdata.setCell(AISdata_index, 18, parseFloat(vessel.rot));
-            AISdata.setCell(AISdata_index, 19, vessel.navstatus);
             //source
-            AISdata.setCell(AISdata_index, 21, parseInt(vessel.datetime));
-            AISdata.setCell(AISdata_index, 22, parseFloat(vessel.lat));
-            AISdata.setCell(AISdata_index, 23, parseFloat(vessel.lon));
-            AISdata.setCell(AISdata_index, 24, parseFloat(vessel.sog));
-            AISdata.setCell(AISdata_index, 25, parseFloat(vessel.true_heading));
-            AISdata.setCell(AISdata_index, 26, vessel.streamid);
-            AISdata.setCell(AISdata_index, 27, parseFloat(vessel.cog));
             AISdata_index++;
          }
          break;
@@ -829,6 +829,13 @@ function drawTable(sourceType, historytrailindex) {
 
 /* -------------------------------------------------------------------------------- */
 /** 
+ */
+function getTrack(trackID, source) {
+   localStorage.setItem('historytrailtype-' + trackID, source);
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
  * Get AIS data from XML, which is from database, with bounds.
  *
  * Optional callback argument (4th argument)
@@ -860,8 +867,10 @@ function addTableListeners() {
    //LAISICAISTRACKtable listener
    google.visualization.events.addListener(LAISICAISTRACKtable, 'select', function() {
          var row = LAISICAISTRACKtable.getSelection();
+         var selected_trknum = LAISICAISTRACKdata.getValue(row[0].row, 1);
+
          console.log('You selected ' + row.length + ' elements in LAISICAISTRACKtable');
-         document.getElementById('laisicaistrack_status').innerHTML = 'This table currently selected.';         
+         document.getElementById('laisicaistrack_status').innerHTML = '<input class="button" type="button" onClick="getTrack(' + selected_trknum + ',\'LAISIC_AIS_TRACK\');" value="Query Track of Selection">';         
          //Reset all to visible if nothing selected, or to not-visible if row is selected
          var visible = (row.length == 0) ? 1 : 0;
          if (visible) {
@@ -915,8 +924,10 @@ function addTableListeners() {
    //LAISICRADARtable listener
    google.visualization.events.addListener(LAISICRADARtable, 'select', function() {
          var row = LAISICRADARtable.getSelection();
+         var selected_trknum = LAISICRADARdata.getValue(row[0].row, 9);
+
          console.log('You selected ' + row.length + ' elements in LAISICRADARtable');
-         document.getElementById('laisicradar_status').innerHTML = 'This table currently selected.';
+         document.getElementById('laisicradar_status').innerHTML = '<input class="button" type="button" onClick="getTrack(' + selected_trknum + ',\'LAISIC_RADAR\');" value="Query Track of Selection">';
 
          //Reset all to visible if nothing selected, or to not-visible if row is selected
          var visible = (row.length == 0) ? 1 : 0;
@@ -976,8 +987,10 @@ function addTableListeners() {
    //LAISICAISOBStable listener
    google.visualization.events.addListener(LAISICAISOBStable, 'select', function() {
          var row = LAISICAISOBStable.getSelection();
+         var selected_mmsi = LAISICAISOBSdata.getValue(row[0].row, 10);
+
          console.log('You selected ' + row.length + ' elements in LAISICAISOBStable');
-         document.getElementById('laisicaisobs_status').innerHTML = 'This table currently selected.';
+         document.getElementById('laisicaisobs_status').innerHTML = '<input class="button" type="button" onClick="getTrack(' + selected_mmsi + ',\'LAISIC_AIS_OBS\');" value="Query Track of Selection">';
 
          //Reset all to visible if nothing selected, or to not-visible if row is selected
          var visible = (row.length == 0) ? 1 : 0;
