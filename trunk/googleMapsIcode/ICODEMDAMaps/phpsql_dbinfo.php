@@ -3,7 +3,9 @@
 $odbc_driver      = 'MySQL ODBC 5.2 Unicode Driver';
 $ais_database     = 'icodemda';
 $laisic_database  = 'icodemaps';
-$odbc_host        = '127.0.0.1';
-$odbc_user        = 'YOURUSERNAME';
-$odbc_password    = 'YOURPASSWORD';
+$ihs_database     = 'wros';
+$port_database    = 'risk';
+$odbc_host        = 'localhost';
+$odbc_user        = 'USERNAME';
+$odbc_password    = 'PASSWORD';
 ?>

@@ -10,17 +10,22 @@
  *  Global objects 
  */
 var map;
+
+var reloadDelay;
+
 var markerArray = [];
 var vesselArray = [];
 var markersDisplayed = [];
 var tracksDisplayedID = [];   //stores MMSI/trknum of tracks that are displayed
 var tracksDisplayed = [];     //stores track objects of tracks that are displayed 
 
+var latestPHPcall;
 var mainQuery;
 var prevZoom = null;
 
 var clusterBoxes = [];
 var clusterBoxesLabels= [];
+var enableCluster;
 
 var autoRefresh;        //interval event handler of map auto refresh
 var lastRefresh;        //time of last map refresh
@@ -31,6 +36,8 @@ var distanceLabel;      //text label for distance tool
 var infoBubble;
 
 var vessel_age;         //user chosen vessel age, in hours
+
+var history_trail_length;     //user chosen history trail length, in days
 
 var prevSourceType;
 
@@ -140,9 +147,24 @@ var panelhidden = false;
 //Time Machine
 var enableTimeMachine;
 var queryTimeMachine;
+var startTimeMachine;
+var endTimeMachine;
+
+//Custom search/query
+var enableCustomQuery;
+var queryCustomQuery;
+
+//LAISIC Tables selection
+var selectionCircle;
 
 var EEZ;
 var COUNTRYBORDERS;
+var COMMON_PATH = "https://mda.volpe.dot.gov/overlays/";
+var EEZ_PATH = COMMON_PATH + "eez-layer.kmz";
+var COUNTRY_BORDERS_PATH = COMMON_PATH + "Country_Borders.kmz";
+
+//Geocoder
+var geocoder;
 
 /* -------------------------------------------------------------------------------- */
 /** Initialize, called on main page load
@@ -204,7 +226,10 @@ function initialize() {
    vesselArray = [];
 
    //Initialize vessel age
-   vessel_age = -1;
+   vessel_age_changed();
+
+   //Initialize history trail length 
+   history_trail_length_changed();
 
    //var infoWindow = new google.maps.InfoWindow();
    /*
@@ -225,6 +250,8 @@ function initialize() {
    //Add drawing toolbar
    addDrawingManager();
 
+   reloadDelay = 10;
+
    //Map dragged then idle listener
    google.maps.event.addListener(map, 'idle', function() {
       google.maps.event.trigger(map, 'resize'); 
@@ -232,7 +259,7 @@ function initialize() {
          function(){ 
             refreshMaps(false) 
          }, 
-         2000);   //milliseconds to pause after bounds change
+         reloadDelay);   //milliseconds to pause after bounds change
 
          google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
          window.clearTimeout(idleTimeout);
@@ -285,6 +312,12 @@ function initialize() {
 
    toggleTimeMachine();
 
+   toggleCluster();
+
+   enableCustomQuery = false;
+
+   geocoder = new google.maps.Geocoder();
+
    initializePanel();
 
    //Keyboard shortcuts/
@@ -295,6 +328,13 @@ function initialize() {
       }
 
       if ($('#accordion').is(':focus')) {
+         return;
+      }
+
+      if ($('#geocodeAddress').is(':focus')) {
+         if (event.which == 13) {
+            codeAddress();
+         }
          return;
       }
 
@@ -330,6 +370,17 @@ function initialize() {
                document.getElementById("distancetooltoggle").checked = true;
             }
             toggleDistanceTool();
+            break;
+         case 71:
+            if (document.getElementById("enableCluster") != null &&
+                document.getElementById("enableCluster").checked) {
+               document.getElementById("enableCluster").checked = false;
+               document.getElementById("enableCluster").removeAttribute("checked");
+            }
+            else {
+               document.getElementById("enableCluster").checked = true;
+            }
+            toggleCluster();
             break;
          case 72: // h
             togglePanel();
@@ -367,6 +418,7 @@ function initialize() {
             else {
                document.getElementById("LAISIC_TARGETS").checked = true;
             }
+            clearAllTracks();
             refreshMaps(true);
             break;
          case 78: // n
@@ -447,6 +499,10 @@ function initialize() {
          return;
       }
 
+      if ($('#geocodeAddress').is(':focus')) {
+         return;
+      }
+
       switch(event.which) {
          case 81: // q
             $("#query:text").select()
@@ -490,10 +546,16 @@ function refreshMaps(forceRedraw) {
    //console.log(queryArgument);
 
    if (enableTimeMachine) {
+      console.log('Performing Time Machine query');
       getTargetsFromDB(map.getBounds(), queryTimeMachine, 'AIS', true); 
+   }
+   else if (enableCustomQuery) {
+      console.log('Performing custom query: ' + queryCustomQuery);
+      getTargetsFromDB(map.getBounds(), queryCustomQuery, 'AIS', true); 
    }
    //Check if URL has query parameter, and use if it is defined
    else if (queryArgument != null) {
+      console.log('Performing URL query');
       mainQuery = queryArgument;
 
       //Default to querying from AIS table
@@ -516,7 +578,7 @@ function refreshMaps(forceRedraw) {
          getTargetsFromDB(map.getBounds(), null, "LAISIC_RADAR", redrew, false);
          getTargetsFromDB(map.getBounds(), null, "LAISIC_AIS_OBS", redrew, false);
       }
-      else if (map.getZoom() > 8) {
+      else if (!enableCluster || map.getZoom() > 9) {
          getTargetsFromDB(map.getBounds(), null, "AIS", forceRedraw, true);
       }
       else {
@@ -530,7 +592,24 @@ function refreshMaps(forceRedraw) {
       showPorts();
    }
 
-   showCountryBorders();
+   toggleCountryBorders();
+}
+
+/* -------------------------------------------------------------------------------- */
+/** 
+ * Handles refreshing map of all tracks
+ */
+function refreshTracks() {
+   console.log("Calling refreshTracks");
+
+   var trackIDtoRequery = tracksDisplayedID.slice(0);
+
+   clearAllTracks();
+
+   $.each(trackIDtoRequery, function(index, value) {
+      console.log('Requerying track for ' + this);
+      getTrackByTrackIDandSource(this, "AIS");
+   });
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -552,10 +631,10 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
    var viewMinLon = sw.lng();
    var viewMaxLon = ne.lng();
 
-   var minLat = viewMinLat - latLonBuffer;
-   var maxLat = viewMaxLat + latLonBuffer;
-   var minLon = viewMinLon - latLonBuffer;
-   var maxLon = viewMaxLon + latLonBuffer;
+   var minLat = viewMinLat;// - latLonBuffer;
+   var maxLat = viewMaxLat;// + latLonBuffer;
+   var minLon = viewMinLon;// - latLonBuffer;
+   var maxLon = viewMaxLon;// + latLonBuffer;
 
 
    //Force re-query if zoom level changes by more than 3 levels inward
@@ -659,6 +738,8 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
       if (vessel_age != -1) {
          phpWithArg += "&vessel_age=" + vessel_age;
       }
+
+      enableCustomQuery = false;
    }
    else {   //Something was typed into query bar
       //TODO: need a more robust condition for keyword search
@@ -674,6 +755,15 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
       else {
          //Custom SQL query statement
          phpWithArg = "query_current_vessels.php?query=" + customQuery + boundStr;
+      }
+     
+      //If not in Time Machine mode, change status display to custom query message
+      if (!document.getElementById("enabletimemachine") 
+          || !document.getElementById("enabletimemachine").checked) {
+         enableCustomQuery = true; 
+         queryCustomQuery = customQuery;
+         document.getElementById('status-msg').innerHTML = "Custom Query Filtering On: \"" + customQuery + "\" [<a href='' onClick='disableCustomQuery(); return false;'>cancel</a>]";
+         document.getElementById('status-msg').style.opacity = "1";
       }
    }
 
@@ -705,12 +795,30 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
    }
 
 
+   //Keep track of newest PHP request, current one may not be the newest one by the time data is received
+   latestPHPcall = phpWithArg;
+
    //Call PHP and get results as markers
    $.getJSON(
          phpWithArg, // The server URL 
          { }
       ) //end .getJSON()
       .done(function (response) {
+         //Check if newer query exists, cancel current operation if newer one does exist
+         if (latestPHPcall !== phpWithArg &&
+            phpWithArg.indexOf('source=LAISIC') == -1) { //allow LAISIC queries to override this check
+            console.log('Newer PHP call exists, canceling this call');
+            console.log(' current call: ' + phpWithArg);
+            console.log(' last call: ' + latestPHPcall);
+            return;
+         }
+         /*
+            console.log(' current call: ' + phpWithArg);
+            console.log(' last call: ' + latestPHPcall);
+            console.log(phpWithArg.indexOf('source=LAISIC') == -1);
+            console.log(latestPHPcall !== phpWithArg);
+         */
+
          console.log('getTargetsFromDB(): ' + response.query);
          //Show the query and put it in the form
          document.getElementById("query").value = response.query;
@@ -1078,12 +1186,25 @@ function getClustersFromDB(bounds, customQuery) {
    //Debug query output
    console.log('getClustersFromDB(): ' + phpWithArg);
 
+
+   //Keep track of newest PHP request, current one may not be the newest one by the time data is received
+   latestPHPcall = phpWithArg;
+
    //Call PHP and get results as markers
    $.getJSON(
          phpWithArg, // The server URL 
          { }
       ) //end .getJSON()
       .done(function (response) {
+         //Check if newer query exists, cancel current operation if newer one does exist
+         if (latestPHPcall !== phpWithArg &&
+            phpWithArg.indexOf('source=LAISIC') == -1) { //allow LAISIC queries to override this check
+            console.log('Newer PHP call exists, canceling this call');
+            console.log(' current call: ' + phpWithArg);
+            console.log(' last call: ' + latestPHPcall);
+            return;
+         }
+
          console.log('getClustersFromDB(): ' + response.query);
          //Show the query and put it in the form
          document.getElementById("query").value = response.query;
@@ -1343,7 +1464,7 @@ function clearTrack(trackline, trackIcons, dashedLines, trackID) {
          trackIcon = trackIcons.pop();
          trackIcon.setMap(null);
       }
-      if (tracksDisplayed.length == 0) {
+      if (tracksDisplayed.length == 1) {
          deleteTrackTimeControl();
       }
 
@@ -1441,6 +1562,32 @@ function queryAllTracks() {
 
 /* -------------------------------------------------------------------------------- */
 /**
+ */
+function getTrackByTrackIDandSource(trackID, source) {
+   $.each(markersDisplayed, function(index, value) {
+      if (this.mmsi == trackID && this.source == source) {
+         getTrack(this.mmsi, 
+                  this.vesseltypeint, 
+                  source, 
+                  this.datetime,
+                  this.streamid,
+                  this.trknum
+                  );
+      }
+      else if (this.trknum == trackID && this.source == source) {
+         getTrack(this.mmsi, 
+                  this.vesseltypeint, 
+                  source, 
+                  this.datetime,
+                  this.streamid,
+                  this.trknum
+                  );
+      }
+   });
+}
+
+/* -------------------------------------------------------------------------------- */
+/**
  * Function to get track from track query PHP script
  */
 function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
@@ -1461,6 +1608,15 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
          phpWithArg += "&trknum=" + trknum;
       }
 
+      //if history trail limit was chosen, then add option
+      if (history_trail_length != -1 && source == "AIS") {
+         phpWithArg += "&history_trail_length=" + history_trail_length;
+      }
+
+      if (document.getElementById("enabletimemachine") && document.getElementById("enabletimemachine").checked) {
+         phpWithArg += "&timestart=" + startTimeMachine;
+         phpWithArg += "&timeend=" + endTimeMachine;
+      }
 
       //Debug query output
       console.log('GETTRACK(): ' + phpWithArg);
@@ -1600,7 +1756,7 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
 
                         //Add listener to project to predicted location if click on icon (dead reckoning)
                         google.maps.event.addListener(tracklineIcon, 'mousedown', function() {
-                           if (sog != -1 && (key+1) < trackHistory.length) {
+                           if (source == "AIS" && sog != -1 && (key+1) < trackHistory.length) {
                               //Grab next chronological time and compare time difference
                               var time = (trackHistory[key+1].datetime - trackHistory[key].datetime)/60/60; 
                               if (time == 0 && (key+2) < 0) {
@@ -1661,6 +1817,89 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                               google.maps.event.addListener(map, 'mouseup', function() {
                                  prediction.setMap(null);
                                  predictionCircle.setMap(null);
+                              });
+                           }
+                           else { //Draw LAISIC error ellipses instead of dead reckoning
+                              console.log('Drawing error ellipse: ' + vessel.semimajor + ' x ' + vessel.semiminor + ', ' + vessel.orientation);
+
+                              var testsemimajor=0.5;
+
+                              var point = new google.maps.LatLng(lat,lon); // new google.maps.LatLng(43,-78);
+                              var errorEllipse = google.maps.Polygon.Ellipse(
+                                    point,
+                                    testsemimajor,//vessel.semimajor*1852,
+                                    vessel.semiminor*1852,
+                                    vessel.orientation,
+                                    '#FFFF00',     //stroke color
+                                    1,
+                                    1,
+                                    '#FFFF00',     //fill color
+                                    0.5);
+
+                              //Set the map for the error ellipse
+                              errorEllipse.setMap(map);
+
+                              //Draw label to show error ellipse numbers
+                              /*
+                              errorEllipseLabel = new MapLabel({
+                                 text: 'Semi-major: ' + vessel.semimajor + 'Semi-minor: ' + vessel.semiminor,
+                                 position: new google.maps.LatLng(lat,lon),
+                                 map: map,
+                                 fontSize: 14,
+                                 align: 'center'
+                              });
+                              */
+
+                              errorEllipseLabel = new InfoBox({
+                                 //content: 'Semi-major: ' + vessel.semimajor + '<br>Semi-minor: ' + vessel.semiminor + '<br>Orientation: ' + vessel.orientation,
+                                 content: 'Semi-major: ' + vessel.semimajor + '<br>Semi-minor: ' + vessel.semiminor + '<br>Orientation: ' + vessel.orientation,
+                                  boxStyle: {
+                                     border: "0px dashed black",
+                                  textAlign: "center",
+                                  width: "160px"
+                                  },
+                                  disableAutoPan: true,
+                                  pixelOffset: new google.maps.Size(-80, 20),
+                                  position: new google.maps.LatLng(lat,lon),
+                                  closeBoxURL: "",
+                                  isHidden: false,
+                                  pane: "mapPane",
+                                  enableEventPropagation: true,
+                                  zIndex: 9999
+                              });
+
+                              errorEllipseLabel.open(map);
+
+                              //Draw line across semimajor axis
+                              var semimajorAxisPoints = [
+                                  new google.maps.LatLng(37.772323, -122.214897),
+                                  new google.maps.LatLng(21.291982, -157.821856)
+                              ];
+
+                              var semimajorAxisLine = new google.maps.Polyline({
+                                  path: semimajorAxisPoints,
+                                  geodesic: true,
+                                  strokeColor: '#FF0000',
+                                  strokeOpacity: 1.0,
+                                  strokeWeight: 1
+                              });
+
+                              semimajorAxisLine.setMap(map);
+
+                              google.maps.event.addListener(errorEllipse, 'mouseup', function() {
+                                 errorEllipse.setMap(null);
+                                 errorEllipseLabel.setMap(null);
+                                 semimajorAxisLine.setMap(null);
+                              });
+                              google.maps.event.addListener(tracklineIcon, 'mouseup', function() {
+                                 errorEllipse.setMap(null);
+                                 errorEllipseLabel.setMap(null);
+                                 semimajorAxisLine.setMap(null);
+                              });
+                              google.maps.event.addListener(map, 'mouseup', function() {
+                                 errorEllipse.setMap(null);
+                                 errorEllipseLabel.setMap(null);
+                                 semimajorAxisLine.setMap(null);
                               });
                            }
                         });
@@ -2261,50 +2500,101 @@ function showPorts() {
    console.log('SHOWPORTS(): ' + phpWithArg);
 
    $.getJSON(
-         phpWithArg, // The server URL 
-         { }
-      ) //end .getJSON()
-      .done(function (response) {
-         document.getElementById("query").value = response.query;
-         console.log('SHOWPORTS(): ' + response.query);
-         console.log('SHOWPORTS(): ' + 'number of ports = ' + response.resultcount);
+      phpWithArg, // The server URL 
+      { }
+   ) //end .getJSON()
+   .done(function (response) {
+      document.getElementById("query").value = response.query;
+      console.log('SHOWPORTS(): ' + response.query);
+      console.log('SHOWPORTS(): ' + 'number of ports = ' + response.resultcount);
 
-         $.each(response.ports, function(key,port) {
-            var port_name = port.port_name;
-            var country_name = port.country_name;
-            var lat = port.lat;
-            var lon = port.lon;
+      $.each(response.ports, function(key,port) {
+         var port_name = port.port_name;
+         var country_name = port.country_code;
+         var lat = port.latitude;
+         var lon = port.longitude;
 
-            port_location = new google.maps.LatLng(lat, lon);
-            var portIcon = new google.maps.Marker({icon: 'icons/anchor_port.png'});
-            portIcon.setPosition(port_location);
-            portIcon.setMap(map);
-            portIcon.setTitle('Port Name: ' + port_name + '\nCountry: ' + country_name + '\nLat: ' + lat + '\nLon: ' + lon);
+         port_location = new google.maps.LatLng(lat, lon);
+         var portIcon = new google.maps.Marker({icon: 'icons/anchor_port.png'});
+         portIcon.setPosition(port_location);
+         portIcon.setMap(map);
+         portIcon.setTitle('Port Name: ' + port_name + '\nCountry: ' + country_name + '\nLat: ' + lat + '\nLon: ' + lon);
 
-            portCircle = new google.maps.Circle({
-               center:  port_location,
-                        radius: 25000,
-                        strokeColor: "#FF0000",
-                        strokeOpacity: 0.5,
-                        strokeWeight: 2,
-                        fillColor: "#FF0000",
-                        fillOpacity: 0.15,
-                        map: map
-            });
-
-            portIcons.push(portIcon);
-            portCircles.push(portCircle);
+         portCircle = new google.maps.Circle({
+            center:  port_location,
+                     radius: 2500,
+                     strokeColor: "#FF0000",
+                     strokeOpacity: 0.5,
+                     strokeWeight: 2,
+                     fillColor: "#FF0000",
+                     fillOpacity: 0.05,
+                     map: map
          });
 
-         document.getElementById('busy_indicator').style.visibility = 'hidden';
-         document.getElementById('stats_nav').innerHTML = response.resultcount + " results<br>" + Math.round(response.exectime*1000)/1000 + " secs";
-      }) //end .done()
-      .fail(function() { 
-         console.log('SHOWPORTS(): ' +  'No response from port query; error in php?'); 
-         document.getElementById("query").value = "ERROR IN QUERY.  PLEASE TRY AGAIN.";
-         document.getElementById('busy_indicator').style.visibility = 'hidden';
-         return; 
-      }); //end .fail()
+         portIcons.push(portIcon);
+         portCircles.push(portCircle);
+      });
+
+      document.getElementById('busy_indicator').style.visibility = 'hidden';
+      document.getElementById('stats_nav').innerHTML = response.resultcount + " results<br>" + Math.round(response.exectime*1000)/1000 + " secs";
+   }) //end .done()
+   .fail(function() { 
+      console.log('SHOWPORTS(): ' +  'No response from port query; error in php?'); 
+      document.getElementById("query").value = "ERROR IN QUERY.  PLEASE TRY AGAIN.";
+      document.getElementById('busy_indicator').style.visibility = 'hidden';
+      return; 
+   }); //end .fail()
+
+
+
+
+   //Testing other/WROS port table
+   phpWithArg += "&wrosports=1";
+   $.getJSON(
+      phpWithArg, // The server URL 
+      { }
+   ) //end .getJSON()
+   .done(function (response) {
+      document.getElementById("query").value = response.query;
+      console.log('SHOWPORTS() part 2: ' + response.query);
+      console.log('SHOWPORTS() part 2: ' + 'number of ports = ' + response.resultcount);
+
+      $.each(response.ports, function(key,port) {
+         var port_name = port.port_name;
+         var country_name = port.country_code;
+         var lat = port.latitude;
+         var lon = port.longitude;
+
+         port_location = new google.maps.LatLng(lat, lon);
+         var portIcon = new google.maps.Marker({icon: 'icons/anchor_port_blue.png'});
+         portIcon.setPosition(port_location);
+         portIcon.setMap(map);
+         portIcon.setTitle('Port Name: ' + port_name + '\nCountry: ' + country_name + '\nLat: ' + lat + '\nLon: ' + lon);
+
+         portCircle = new google.maps.Circle({
+            center:  port_location,
+                     radius: 2500,
+                     strokeColor: "#0000FF",
+                     strokeOpacity: 0.5,
+                     strokeWeight: 2,
+                     fillColor: "#0000FF",
+                     fillOpacity: 0.05,
+                     map: map
+         });
+
+         portIcons.push(portIcon);
+         portCircles.push(portCircle);
+      });
+
+      document.getElementById('busy_indicator').style.visibility = 'hidden';
+      document.getElementById('stats_nav').innerHTML = response.resultcount + " results<br>" + Math.round(response.exectime*1000)/1000 + " secs";
+   }) //end .done()
+   .fail(function() { 
+      console.log('SHOWPORTS() part 2: ' +  'No response from port query; error in php?'); 
+      document.getElementById("query").value = "ERROR IN QUERY.  PLEASE TRY AGAIN.";
+      document.getElementById('busy_indicator').style.visibility = 'hidden';
+      return; 
+   }); //end .fail()      
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -2496,18 +2786,8 @@ function setMapCenterToCenterOfMass(map, tips) {
 
 /* -------------------------------------------------------------------------------- */
 function toggleDistanceTool() {
-   /* For button type
-   if (document.getElementById("distancetooltoggle").value == 'Enable distance tool') {
-      enableDistanceTool();
-      document.getElementById("distancetooltoggle").value = 'Disable distance tool';
-   }
-   else {
-      disableDistanceTool();
-      document.getElementById("distancetooltoggle").value = 'Enable distance tool';
-   }
-   */
-   //Checkbox type
-   if (document.getElementById("distancetooltoggle") && document.getElementById("distancetooltoggle").checked) {
+   if (document.getElementById("distancetooltoggle") 
+       && document.getElementById("distancetooltoggle").checked) {
       enableDistanceTool();
    }
    else {
@@ -2771,7 +3051,7 @@ function WMSTMACSHistoryGetTileUrl(tile, zoom) {
 
 /* -------------------------------------------------------------------------------- */
 function vessel_age_changed() {
-   var vessel_age_selection = $("#vessel_age option:selected").text();
+   var vessel_age_selection = $("#vessel_age option:selected").val();
    if (vessel_age_selection == "no limit") {
       vessel_age = -1;
    }
@@ -2780,6 +3060,25 @@ function vessel_age_changed() {
    }
    //console.log(vessel_age);
    refreshMaps(true);
+}
+
+/* -------------------------------------------------------------------------------- */
+function history_trail_length_changed() {
+   var history_trail_length_selection = $("#history_trail_length option:selected").val();
+   if (history_trail_length_selection == "no limit") {
+      history_trail_length = -1;
+   }
+   else {
+      history_trail_length = parseFloat(history_trail_length_selection);
+   }
+   //TODO: update all tracks to reflect new history trail length
+   refreshTracks();
+}
+
+
+/* -------------------------------------------------------------------------------- */
+function reload_delay_changed() {
+   reloadDelay = parseInt($("#reload_delay option:selected").text())*1000;
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -2834,14 +3133,34 @@ function tableUpdated(selected) {
    value = selected.newValue;
 
    console.log("key is: " + key);
+   console.log("value is: " + value);
 
    //Handle AIS vessels
    if (key.indexOf("vessel-") === 0) {
       var mmsi = parseInt(key.substr(7));
       $.grep(vesselArray, function(e, i){ 
          if (e.mmsi == mmsi) {
-            (value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
-            (value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
+            //(value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
+            //(value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
+            if (value == "1") {
+               if (selectionCircle != null) {
+                  selectionCircle.setMap(null);
+                  selectionCirle = null;
+               }
+               selectionCircle = new google.maps.Circle({
+                      center:         new google.maps.LatLng(
+                                         markerArray[i].position.d,
+                                         markerArray[i].position.e),
+                      radius:         2000,
+                      strokeColor:    '#FFFF00',
+                      strokeOpacity:  1.0,
+                      strokeWeight:   1,
+                      fillColor:      '#FFFF00',
+                      fillOpacity:    0.5,
+                      map:            map,
+                      zIndex:         0
+                  });
+            }
          }
       });
    }
@@ -2885,7 +3204,13 @@ function tableUpdated(selected) {
    if (key.indexOf("historytrailquery-") === 0 && (value == '' || value == null)) {
       var trackID = key.substring(18);      
       clearTrackByTrackID(trackID);
-   }      
+   }
+
+   if (key.indexOf("historytrailtype-") === 0) {
+      var trackID = key.substring(17);
+      var source = value;
+      getTrackByTrackIDandSource(trackID, source);
+   }
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -3307,14 +3632,35 @@ function toggleRisk() {
 }
 
 /* -------------------------------------------------------------------------------- */
+function toggleCluster() {
+   if (document.getElementById("enableCluster") && document.getElementById("enableCluster").checked) {
+      console.log("Turning on clusters");
+      enableCluster = true;
+   }
+   else {
+      console.log("Turning off clusters");
+      enableCluster = false;
+   }
+   refreshMaps(true);
+}
+
+/* -------------------------------------------------------------------------------- */
+/**
+ * Time Machine tool, function called from index.html
+ **/
 function TimeMachineLookup(timestart, timeend) {
    //Turn on Time Machine feature
    document.getElementById("enabletimemachine").checked = true;
    toggleTimeMachine();
 
-   queryTimeMachine = 'SELECT A.`MMSI`, A.`CommsID`, A.`IMONumber`, A.`CallSign`, A.`Name`, A.`VesType`, A.`Cargo`, A.`AISClass`, A.`Length`, A.`Beam`, A.`Draft`, A.`AntOffsetBow`, A.`AntOffsetPort`, B.`TimeOfFix`, B.`Latitude`, B.`Longitude`, B.`SOG`, B.`Heading`, B.`RxStnID` FROM vessels_memory A INNER JOIN ( SELECT *, max(TimeOfFix) FROM vessel_history WHERE TimeOfFix between ' + timestart + ' and ' + timeend;
+   startTimeMachine = timestart;
+   endTimeMachine = timeend;
 
-   getTargetsFromDB(map.getBounds(), queryTimeMachine, 'AIS', true); 
+   //queryTimeMachine = 'SELECT A.`MMSI`, A.`CommsID`, A.`IMONumber`, A.`CallSign`, A.`Name`, A.`VesType`, A.`Cargo`, A.`AISClass`, A.`Length`, A.`Beam`, A.`Draft`, A.`AntOffsetBow`, A.`AntOffsetPort`, B.`TimeOfFix`, B.`Latitude`, B.`Longitude`, B.`SOG`, B.`Heading`, B.`RxStnID` FROM vessels_memory A INNER JOIN ( SELECT *, max(TimeOfFix) FROM vessel_history WHERE TimeOfFix between ' + timestart + ' and ' + timeend;
+   queryTimeMachine = 'SELECT  A.`MMSI`, A.`CommsID`, A.`IMONumber`, A.`CallSign`, A.`Name`, A.`VesType`, A.`Cargo`, A.`AISClass`, A.`Length`, A.`Beam`, A.`Draft`, A.`AntOffsetBow`, A.`AntOffsetPort`, B.`TimeOfFix`, B.`Latitude`, B.`Longitude`, B.`SOG`, B.`Heading`, B.`RxStnID` FROM vessels_memory A INNER JOIN (SELECT vm1.`MMSI`, vm1.`TimeOfFix`, vm1.`Latitude`, vm1.`Longitude`, vm1.`SOG`, vm1.`Heading`, vm1.`RxStnID` FROM vessel_history vm1 INNER JOIN (SELECT mmsi, max(TimeOfFix) as maxtime, Latitude, Longitude AS TimeOfFix FROM vessel_history WHERE TimeOfFix BETWEEN ' + timestart + ' and ' + timeend;
+
+   //Use custom query feature to execute Time Machine
+   getTargetsFromDB(map.getBounds(), queryTimeMachine, 'AIS', true);
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -3327,7 +3673,7 @@ function toggleTimeMachine() {
       $('input[name=autoRefresh]').attr('checked', false);
       toggleAutoRefresh();
 
-      document.getElementById('status-msg').innerHTML = "TIME MACHINE CURRENTLY TURN ON";
+      document.getElementById('status-msg').innerHTML = "TIME MACHINE CURRENTLY TURNED ON";
       document.getElementById('status-msg').style.opacity = "1";
 
       refreshMaps(true);
@@ -3335,6 +3681,9 @@ function toggleTimeMachine() {
    else {
       console.log("Turning off Time Machine");
       enableTimeMachine = false;
+
+      timestart = null;
+      timeend = null;
 
       document.getElementById('status-msg').style.opacity = "0";
       
@@ -3352,11 +3701,6 @@ function detectMobileBrowser() {
 }
 
 
-var COMMON_PATH = "https://mda.volpe.dot.gov/overlays/";
-var EEZ_PATH = COMMON_PATH + "eez-layer.kmz";
-var COUNTRY_BORDERS_PATH = COMMON_PATH + "Country_Borders.kmz";
-
-
 /* -------------------------------------------------------------------------------- */
 /**
  * Display VOLPE's EEZ KML
@@ -3369,12 +3713,28 @@ function showEEZ() {
    });
 }
 
+/**
+ * Hide VOLPE's EEZ KML
+ **/
+function hideEEZ() {
+   if (EEZ != null) {
+      EEZ.setMap(null);
+   }
+}
+
+
 /* -------------------------------------------------------------------------------- */
 /**
  * Display VOLPE's country border KML
  **/
-function showCountryBorders() {
-   if (map.getZoom() < 9) {
+function toggleCountryBorders() {
+//   if (map.getZoom() < 9) {
+   if (document.getElementById("enableCountryBorders") != null &&
+       document.getElementById("enableCountryBorders").checked) {
+      if (COUNTRYBORDERS != null) {
+         COUNTRYBORDERS.setMap(null);
+         COUNTRYBORDERS = null;
+      }
       COUNTRYBORDERS = new google.maps.KmlLayer({
          url: COUNTRY_BORDERS_PATH,
          preserveViewport: true,
@@ -3382,8 +3742,47 @@ function showCountryBorders() {
       });
    }
    else {
+      console.log('Hiding country borders');
       if (COUNTRYBORDERS != null) {
          COUNTRYBORDERS.setMap(null);
+         COUNTRYBORDERS = null;
       }
    }
+}
+
+/* -------------------------------------------------------------------------------- */
+/**
+ **/
+function codeAddress() {
+  var address = document.getElementById('geocodeAddress').value;
+
+  //Check if user entered a lat/lon pair, separated by comma, i.e. "-118, 32"
+  if (address.match(/^[0-9\-\,\ \.]+$/) != null) {
+     var latlonArray = address.split(',');
+     map.setCenter(new google.maps.LatLng(parseFloat(latlonArray[0]), parseFloat(latlonArray[1])));
+     return;
+  }
+
+  geocoder.geocode({
+     'address': address,
+     'bounds':  map.getBounds()
+  }, function(results, status) {
+    if (status == google.maps.GeocoderStatus.OK) {
+      map.setCenter(results[0].geometry.location);
+    } 
+    else {
+      alert('Geocode was not successful for the following reason: ' + status);
+    }
+  });
+}
+
+/* -------------------------------------------------------------------------------- */
+/**
+ **/
+function disableCustomQuery() {
+   enableCustomQuery = false;
+   queryCustomQuery = null;
+   document.getElementById('status-msg').style.opacity = "0";
+   
+   refreshMaps(true);
 }

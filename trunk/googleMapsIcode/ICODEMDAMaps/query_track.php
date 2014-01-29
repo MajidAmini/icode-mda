@@ -50,9 +50,26 @@ if(count($_GET) > 0) {
       $query = "SELECT * FROM vessel_history WHERE mmsi=";
    }
 
-
+   //Add MMSI to query track for
    if (!empty($_GET["mmsi"])) {
       $query = $query . $_GET["mmsi"];
+   }
+
+   //Add history trail length if defined
+   if (!empty($_GET["history_trail_length"])) {
+      $history_trail_length = $_GET["history_trail_length"];
+
+      if (!empty($_GET["timeend"])) {
+         $timeend = $_GET["timeend"];
+         $query = $query . " AND TimeOfFix < $timeend";
+      }
+      if (!empty($_GET["timestart"])) {
+         $timestart = $_GET["timestart"];
+         $query = $query . " AND TimeOfFix > ($timestart - 60*60*24*$history_trail_length)";
+      }
+      else {
+         $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*24*$history_trail_length)";
+      }
    }
 
    $query = $query . " ORDER BY TimeOfFix";
@@ -113,6 +130,9 @@ while (odbc_fetch_row($result)){
                       datetime=>odbc_result($result,"TimeOfFix"),
                       sog=>odbc_result($result,"SOG"),
                       cog=>odbc_result($result,"COG"),
+                      semimajor=>odbc_result($result,"semimajor"),
+                      semiminor=>odbc_result($result,"semiminor"),
+                      orientation=>odbc_result($result,"orientation"),
                       streamid=>odbc_result($result,"RxStnID"),
                       true_heading=>odbc_result($result,"Heading"),
                       target_status=>odbc_result($result,"target_status")

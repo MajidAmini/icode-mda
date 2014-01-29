@@ -257,3 +257,13 @@ input, textarea, select {
 input[type="text"]  {
    height:       22px;
 }
+
+#geocodepanel {
+   position: absolute;
+   top: 65px;
+   left: 250px;
+   z-index: 5;
+   background-color: #fff;
+   padding: 5px;
+   border: 1px solid #999;
+}

@@ -40,20 +40,35 @@ if(count($_GET) > 0) {
    $minlon = $_GET["minlon"];
    $maxlon = $_GET["maxlon"];
 
+   //Check if flipped, then probably crossed the meridian (> +180, or < -180)
+   if ($minlon > $maxlon) {
+      $meridianflag = true;
+   }
+   else {
+      $meridianflag = false;
+   }
+
    if (!empty($minlat) && !empty($minlon) &&
        !empty($maxlat) && !empty($maxlon)) {
-      /*
-      if ($maxlon < $minlon) {
-         $temp = $maxlon;
-         $maxlon = $minlon;
-         $minlon = $temp;
+      $divlat = round( ($maxlat - $minlat) / 16, 3 );
+      $divlon = round( ($maxlon - $minlon) / 16, 3 );
+
+      if ( ($minlon * $maxlon) > 0) {
+         $query = "SELECT $divlon * (Longitude div $divlon) - $divlon as 'leftLon', $divlon * (Longitude div $divlon) as 'rightLon', $divlat * (Latitude div $divlat) as 'bottomLat', $divlat * (Latitude div $divlat) + ($divlat) as 'topLat', count(*) as clustersum FROM (SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM $ais_database.vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI) AND";
       }
-      */
-      $divlat = ($maxlat - $minlat) / 16;
-      $divlon = ($maxlon - $minlon) / 16;
-      $query = "SELECT $divlon * (Longitude div $divlon) as 'leftLon', $divlon * (Longitude div $divlon) + $divlon as 'rightLon', $divlat * (Latitude div $divlat) as 'bottomLat', $divlat * (Latitude div $divlat) + $divlat as 'topLat', count(*) as clustersum FROM (SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM $ais_database.vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI)) VESSELS WHERE";
-      $query = $query . " Latitude BETWEEN " . round($minlat,3) . " AND " . round($maxlat,3) . 
-               " AND Longitude BETWEEN " .  round($minlon,3) . " AND " . round($maxlon,3);
+      else {
+         $query = "SELECT $divlon * (Longitude div $divlon) as 'leftLon', $divlon * (Longitude div $divlon) + $divlon as 'rightLon', $divlat * (Latitude div $divlat) as 'bottomLat', $divlat * (Latitude div $divlat) + ($divlat) as 'topLat', count(*) as clustersum FROM (SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM $ais_database.vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI) AND";
+      }
+
+      if ($meridianflag == false) { //Handle normal case
+         $query = $query . " Latitude BETWEEN " . round($minlat,3) . " AND " . round($maxlat,3) . 
+                  " AND Longitude BETWEEN " .  round($minlon,3) . " AND " . round($maxlon,3);
+      }
+      else {   //Handle crossing over meridian case
+         $query = $query . " Latitude BETWEEN " . round($minlat,3) . " AND " . round($maxlat,3) . 
+                  " AND (Longitude BETWEEN -180 AND " . round($maxlon,3) .
+                  " OR Longitude BETWEEN " . round($minlon) . " AND 180 )";
+      }
 
       //Add timestamp constraint
       if (!empty($_GET["vessel_age"])) {
@@ -61,7 +76,7 @@ if(count($_GET) > 0) {
          $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
       }
 
-      $query = $query . " GROUP BY $divlon*(Longitude div $divlon), $divlat*(Latitude div $divlat)";
+      $query = $query . ") VESSELS GROUP BY $divlon*(Longitude div $divlon), $divlat*(Latitude div $divlat)";
    }
 }
 else {
