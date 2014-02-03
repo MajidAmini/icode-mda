@@ -867,7 +867,9 @@ function addTableListeners() {
    //LAISICAISTRACKtable listener
    google.visualization.events.addListener(LAISICAISTRACKtable, 'select', function() {
          var row = LAISICAISTRACKtable.getSelection();
-         var selected_trknum = LAISICAISTRACKdata.getValue(row[0].row, 1);
+         if (row[0] != null) {
+            var selected_trknum = LAISICAISTRACKdata.getValue(row[0].row, 1);
+         }
 
          console.log('You selected ' + row.length + ' elements in LAISICAISTRACKtable');
          document.getElementById('laisicaistrack_status').innerHTML = '<input class="button" type="button" onClick="getTrack(' + selected_trknum + ',\'LAISIC_AIS_TRACK\');" value="Query Track of Selection">';         
@@ -924,7 +926,9 @@ function addTableListeners() {
    //LAISICRADARtable listener
    google.visualization.events.addListener(LAISICRADARtable, 'select', function() {
          var row = LAISICRADARtable.getSelection();
-         var selected_trknum = LAISICRADARdata.getValue(row[0].row, 9);
+         if (row[0] != null) {
+            var selected_trknum = LAISICRADARdata.getValue(row[0].row, 9);
+         }
 
          console.log('You selected ' + row.length + ' elements in LAISICRADARtable');
          document.getElementById('laisicradar_status').innerHTML = '<input class="button" type="button" onClick="getTrack(' + selected_trknum + ',\'LAISIC_RADAR\');" value="Query Track of Selection">';
@@ -987,7 +991,9 @@ function addTableListeners() {
    //LAISICAISOBStable listener
    google.visualization.events.addListener(LAISICAISOBStable, 'select', function() {
          var row = LAISICAISOBStable.getSelection();
-         var selected_mmsi = LAISICAISOBSdata.getValue(row[0].row, 10);
+         if (row[0] != null) {
+            var selected_mmsi = LAISICAISOBSdata.getValue(row[0].row, 10);
+         }
 
          console.log('You selected ' + row.length + ' elements in LAISICAISOBStable');
          document.getElementById('laisicaisobs_status').innerHTML = '<input class="button" type="button" onClick="getTrack(' + selected_mmsi + ',\'LAISIC_AIS_OBS\');" value="Query Track of Selection">';

@@ -108,8 +108,14 @@
      </script>
 
      <script>
+        //Select all text if query bar comes into focus
         $(document).ready(function() {
            $("#query:text").focus(function() { 
+              $(this).one('mouseup', function(event){
+                 event.preventDefault();
+              }).select();
+           });
+           $("#geocodeAddress").focus(function() { 
               $(this).one('mouseup', function(event){
                  event.preventDefault();
               }).select();
@@ -291,6 +297,7 @@
                  <input class="checkbox" id="WeatherLayer" name="WeatherLayer" type="checkbox" onclick="toggleWeatherLayer();"> <img align="top" width="20px" src="icons/weather_icon.png" style="padding-bottom: 4px; vertical-align: middle;"> Weather Layer<br>
                  <!-- input class="checkbox" id="KMLLayer" name="KMLLayer" type="checkbox" onclick="toggleKMLLayer();"> <img align="top" width="20px" src="icons/kml.png" style="padding-bottom: 4px; vertical-align: middle;"> KML Layer<br> -->
                  <input class="checkbox" id="PortLayer" name="PortLayer" type="checkbox" onclick="togglePortLayer();"> <img align="top" height="20px" src="icons/anchor_port.png" style="padding-bottom: 4px; vertical-align: middle;"> Port Layer<br>
+                 <input class="checkbox" id="HeatmapLayer" name="HeatmapLayer" type="checkbox" onclick="toggleHeatmapLayer();"> Heatmap Layer<br>
                  </p>
               </div>
 
@@ -298,6 +305,8 @@
               <div>
                  <input class="checkbox" id="LAISIC_TARGETS" name="LAISIC_TARGETS" type="checkbox" onclick="refreshMaps(true);"> Display LAISIC targets<br><br>
                  <center><a href="laisictables.html" target="_blank">Click here to open <br>LAISIC Tables in a new window</a></center>
+                 <br>
+                 <input class="checkbox" id="error ellipses" name="error ellipses" type="checkbox" checked="checked" onclick=";"> Draw error ellipses on trackicons<br><br>
               </div>
 
               <h3>Upload KMZ</h3>
@@ -331,13 +340,10 @@
 
                  <br />
                  <br />
-                 <!-- input type="button" onClick="getTargetsFromDB(map.getBounds(), 'SELECT * FROM vessel_history WHERE TimeOfFix between ' + ($('#datetimestart').datetimepicker('getDate').getTime()/1000) + ' and ' + ($('#datetimeend').datetimepicker('getDate').getTime()/1000), 'AIS', true); $('input[name=autoRefresh]').attr('checked', false); toggleAutoRefresh(); return false;" value="Query" -->
-                 <!-- input type="button" onClick="getTargetsFromDB(map.getBounds(), 'SELECT *, max(TimeOfFix) FROM vessel_history WHERE TimeOfFix between ' + ($('#datetimestart').datetimepicker('getDate').getTime()/1000) + ' and ' + ($('#datetimeend').datetimepicker('getDate').getTime()/1000), 'AIS', true); $('input[name=autoRefresh]').attr('checked', false); toggleAutoRefresh(); return false;" value="Query"-->
-                 <!-- input type="button" onClick="getTargetsFromDB(map.getBounds(), 'SELECT A.`MMSI`, A.`CommsID`, A.`IMONumber`, A.`CallSign`, A.`Name`, A.`VesType`, A.`Cargo`, A.`AISClass`, A.`Length`, A.`Beam`, A.`Draft`, A.`AntOffsetBow`, A.`AntOffsetPort`, A.`Destination`, A.`ETADest`, A.`PosSource`, A.`PosQuality`, A.`FixDTG`, A.`ROT`, A.`NavStatus`, A.`Source`, B.`TimeOfFix`, B.`Latitude`, B.`Longitude`, B.`SOG`, B.`Heading`, B.`RxStnID`, A.`COG` FROM vessels_memory A INNER JOIN ( SELECT *, max(TimeOfFix) FROM vessel_history WHERE TimeOfFix between ' + ($('#datetimestart').datetimepicker('getDate').getTime()/1000) + ' and ' + ($('#datetimeend').datetimepicker('getDate').getTime()/1000), 'AIS', true); $('input[name=autoRefresh]').attr('checked', false); toggleAutoRefresh(); return false;" value="Query" -->
-                 <input type="button" onClick="TimeMachineLookup(($('#datetimestart').datetimepicker('getDate').getTime()/1000), ($('#datetimeend').datetimepicker('getDate').getTime()/1000)); return false;" value="Query">
-                 <br><br>
-                 <input id="customQueryTimeMachine" type="textbox" value="Enter MMSI to filter">
+                 <input id="queryTimeMachineButton" type="button" onClick="if ($('#datetimestart').datetimepicker('getDate') == null || $('#datetimeend').datetimepicker('getDate') == null) {$('#datetimestart').datetimepicker('setDate', (new Date(Math.round(new Date().getTime()/1000/86400)*86400*1000 + new Date().getTimezoneOffset()*60*1000 - 86400*1000)));$('#datetimeend').datetimepicker('setDate', (new Date(Math.round(new Date().getTime()/1000/86400)*86400*1000 + new Date().getTimezoneOffset()*60*1000)));} TimeMachineLookup(($('#datetimestart').datetimepicker('getDate').getTime()/1000), ($('#datetimeend').datetimepicker('getDate').getTime()/1000)); return false;" value="Query">
                  </p>
+                 Filtering MMSI: <input id="filterMMSITimeMachine" type="textbox" value="Enter MMSI to filter" onClick="document.getElementById('filterMMSITimeMachine').value= '';" onkeydown="if (event.keyCode == 13) {$('#queryTimeMachineButton').trigger('click');}"><br>
+                 Custom filter: <input id="customQueryTimeMachine" type="textbox" value="i.e. 'SOG < 1'" onClick="document.getElementById('customQueryTimeMachine').value= '';" onkeydown="if (event.keyCode == 13) {$('#queryTimeMachineButton').trigger('click');}"><br>
               </div>
 
               <!--

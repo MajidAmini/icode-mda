@@ -188,6 +188,9 @@ while (odbc_fetch_row($result)){
                       datetime=>odbc_result($result,"TimeOfFix"),
                       sog=>odbc_result($result,"SOG"),
                       cog=>odbc_result($result,"COG"),
+                      semimajor=>odbc_result($result,"semimajor"),
+                      semiminor=>odbc_result($result,"semiminor"),
+                      orientation=>odbc_result($result,"orientation"),
                       streamid=>odbc_result($result,"RxStnID"),
                       true_heading=>odbc_result($result,"Heading"),
                       target_status=>odbc_result($result,"target_status")
