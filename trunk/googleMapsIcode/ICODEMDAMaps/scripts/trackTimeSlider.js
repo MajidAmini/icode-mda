@@ -61,7 +61,7 @@ function createTrackTimeControl(map, initial, tracks) {
    }
 
    google.maps.event.addDomListener(titleDiv, "click", function () {
-      console.debug('Playback tracks history');
+      //console.debug('Playback tracks history');
       var m=0;
       trackTimeCtrlKnob.setValueX(m);
       myLoop();
@@ -192,7 +192,7 @@ function clearClosestMarker(tracks, closest, closest_index, timediff) {
       var trackIcons = tracks[i].trackIcons;
 
       //Return the track icon back to its original style
-      if (closest[i] != null && closest_index[i] != null) {
+      if (closest[i] != null && closest_index[i] != null && trackIcons[closest_index[i]] != null) {
          if (tracks[i].trackTargetStatus[closest_index[i]] == 'T') {
             trackIcons[closest_index[i]].setIcon(tracklineIconsOptionsT);
          }
@@ -227,7 +227,8 @@ function setTrackTime(pixelX, tracks, closest, closest_index, timediff) {
       var maxTime = parseInt(track[0].datetime);
       */
       //Round to nearest whole day
-      var minTime = parseInt(Math.round(track[track.length-1].datetime/86400)*86400-86400);
+      //var minTime = parseInt(Math.round(track[track.length-1].datetime/86400)*86400-86400);
+      var minTime = parseInt(Math.round(track[0].datetime/86400)*86400-86400);
       var maxTime = parseInt(Math.round(track[track.length-1].datetime/86400)*86400);
 
       var timeDiff = maxTime - minTime;
