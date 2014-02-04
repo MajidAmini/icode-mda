@@ -9,54 +9,58 @@
 /**
  *  Global objects 
  */
-var map;
+var map;                      //main Google Map object
 
-var reloadDelay;
+var reloadDelay;              //milliseconds to wait before refreshing the markers after map idle
 
-var markerArray = [];
-var vesselArray = [];
-var markersDisplayed = [];
+var markerArray = [];         //array to store all markers
+var vesselArray = [];         //array to store all vessel information
+var markersDisplayed = [];    //array to keep track of all markers currently displayed
+
+//parallel arrays to keep track of displayed tracks
 var tracksDisplayedID = [];   //stores MMSI/trknum of tracks that are displayed
 var tracksDisplayed = [];     //stores track objects of tracks that are displayed 
 
-var latestPHPcall;
-var mainQuery;
-var prevZoom = null;
+var latestPHPcall;            //last phpWithArgs call
+var mainQuery;                //main query called
+var prevZoom = null;          //store the last zoom level
 
-var clusterBoxes = [];
+//Cluster boxes for zoomed out view of vessel count instead of showing markers
+var clusterBoxes = [];        
 var clusterBoxesLabels= [];
 var enableCluster;
 
-var autoRefresh;        //interval event handler of map auto refresh
-var lastRefresh;        //time of last map refresh
-var vesselLastUpdated;  //time of last vessel report
+var autoRefresh;              //interval event handler of map auto refresh
+var lastRefresh;              //time of last map refresh
+var vesselLastUpdated;        //time of last vessel report
 
-var distanceLabel;      //text label for distance tool
+var distanceLabel;            //text label for distance tool
 
-var infoBubble;
+var infoBubble;               //info bubble to show vessel particulars (details)
 
-var vessel_age;         //user chosen vessel age, in hours
+var vessel_age;               //user chosen vessel age, in hours
 
 var history_trail_length;     //user chosen history trail length, in days
 
 var prevSourceType;
 
 //Viewing bounds objects
-var queryBounds;
-var expandFactor = 300;
-var boundRectangle = null;
+var queryBounds;              //map bounds of query
+var expandFactor = 300;       //factor to expand bounds by outside of viewable area
+var boundRectangle = null;    //rectangle map object to draw query bounds
+
 //Marker timing objects
-var markerMouseoutTimeout;
-var trackMouseoverTimeout;
+//var markerMouseoutTimeout;
+//var trackMouseoverTimeout;
 
 //Enable risk info flag
-var enableRisk;
+var enableRisk;               //Flag to enable or disable risk information in info bubbles
 
 //IHS Tabs global
-var NUM_INFO_BUBBLE = 4; //AIS info at Tab=0 and IHS Fairplay data at  Tab = 1 thru 4
-var enableIHSTabs;
+var NUM_INFO_BUBBLE = 4;      //AIS info at Tab=0 and IHS Fairplay data at  Tab = 1 thru 4
+var enableIHSTabs;            //Flag to enable or disable IHS tabs in info bubbles
 
-//Track line options
+//Trackline options
 var tracklineIconsOptions = {
                path:          'M -3,0 0,-3 3,0 0,3 z',
                strokeColor:   '#FFFFFF',
@@ -81,28 +85,27 @@ var tracklineIconsOptionsL = {
                fillColor:     '#FF0000',
                fillOpacity:   1
             };
-/*
-var tracklineOptions = {
-               strokeColor:   '#00FF25',
-               strokeOpacity: 0.7,
-               strokeWeight:  3,
-            };
-*/
+
 //Weather layer objects
 var weatherLayer;
 var cloudLayer;
+
 //Heatmap objects
 var HEATMAP = true;
 var heatmapLayer;
+
 //Other WMS layers
 var WMSTILESIZE = 512;
+
 //Shape drawing objects
 var selectedShape;
+
 //KML objects
 var KML = false;
 var kmlparser;
 var kmlparsers = [];
 var tempKMLcount = 0;
+
 //Port objects
 var Ports = false;
 var portIcons = [];
@@ -147,6 +150,7 @@ var queryCustomQuery;
 //LAISIC Tables selection
 var selectionCircle;
 
+//VOLPE's KMZ layers for EEZ and country borders
 var EEZ;
 var COUNTRYBORDERS;
 var COMMON_PATH = "https://mda.volpe.dot.gov/overlays/";
@@ -180,17 +184,9 @@ function initialize() {
             position.coords.longitude
          );
 
-         /*
-         var infowindow = new google.maps.InfoWindow({
-            map: map,
-            position: pos,
-            content: 'Location found using HTML5.'
-         });
-         */
-
          //Set the center location
          centerCoords = pos;
-         map.setCenter(centerCoords);
+         //map.setCenter(centerCoords);
 
          var geocoder = new google.maps.Geocoder();
          geocoder.geocode({'latLng': pos}, function(results, status) {
@@ -234,29 +230,29 @@ function initialize() {
       mapTypeId:         google.maps.MapTypeId.HYBRID,
       mapTypeControlOptions: {
          mapTypeIds: [google.maps.MapTypeId.ROADMAP, 
-                         google.maps.MapTypeId.SATELLITE, 
-                         google.maps.MapTypeId.HYBRID, 
-                         google.maps.MapTypeId.TERRAIN,
-                         'OpenStreetMap'
-                         ],
-				style: controlStyle
-			}
+                      google.maps.MapTypeId.SATELLITE, 
+                      google.maps.MapTypeId.HYBRID, 
+                      google.maps.MapTypeId.TERRAIN,
+                      'OpenStreetMap'
+                     ],
+			style: controlStyle
+   	}
 	};
 
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
    //Set default map layer
-   map.setMapTypeId(google.maps.MapTypeId.TERRAIN);
+   map.setMapTypeId(google.maps.MapTypeId.ROADMAP);
 
-//Define OSM map type pointing at the OpenStreetMap tile server
-            map.mapTypes.set("OpenStreetMap", new google.maps.ImageMapType({
-                getTileUrl: function(coord, zoom) {
-                    return "http://tile.openstreetmap.org/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
-                },
-                tileSize: new google.maps.Size(256, 256),
-                name: "OpenStreetMap",
-                maxZoom: 18
-            }));   
+   //Define OSM map type pointing at the OpenStreetMap tile server
+   map.mapTypes.set("OpenStreetMap", new google.maps.ImageMapType({
+      getTileUrl: function(coord, zoom) {
+         return "http://tile.openstreetmap.org/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
+      },
+      tileSize: new google.maps.Size(256, 256),
+      name: "OpenStreetMap",
+      maxZoom: 18
+   }));   
 
    //Display count up timer from last update
    lastRefresh = new Date();
@@ -294,7 +290,7 @@ function initialize() {
    //Add drawing toolbar
    addDrawingManager();
 
-   reloadDelay = 10;
+   reloadDelay = 10;    //set initial delay to 10ms
 
    //Map dragged then idle listener
    google.maps.event.addListener(map, 'idle', function() {
@@ -1415,6 +1411,9 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       title = 'MMSI or RADAR ID: ' + vessel.mmsi;
       vesseltype = 'LAISIC_AIS_OBS';
    }
+   else {
+      vesseltype = 'AIS';  //default type
+   }
 
    var htmlTitle = 
       '<div id="content">'+
@@ -1428,7 +1427,7 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       '<a href="http://www.sea-web.com/lrupdate.aspx?param1=%73%70%61%73%74%61%32%35%30&param2=%37%31%34%36%38%37&script_name=authenticated/authenticated_handler.aspx&control=list&SearchString=MMSI+=+' + vessel.mmsi + '&ListType=Ships" target="_blank">Sea-Web link</a><br>' + 
       '<div id="content-sub" border=1>' +
       '<b>MMSI</b>: ' + vessel.mmsi + '<br>' +
-      '<b>IMO</b>: ' + vessel.imo + '<br>' +
+      '<b>IMO</b>: ' + vessel.imo + (passIMOChecksum(vessel.imo)==true?'':' <font color="red">(invalid)</font>') + '<br>' +
       '<b>Vessel Type</b>: ' + vesseltype + '<br>' +
       '<b>Last Message Type</b>: ' + vessel.messagetype + '<br>' +
       '</div>' +
@@ -1503,7 +1502,7 @@ function markerInfoBubble(marker, vessel, infoBubble) {
 }
 
 /* -------------------------------------------------------------------------------- */
-function clearTrack(trackline, trackIcons, dashedLines, trackID) {
+function clearTrack(trackline, trackIcons, dashedLines, trackID, errorEllipses) {
    if (trackline != null && trackIcons != null) {
       trackline.setMap(null);
       trackline = null;
@@ -1517,6 +1516,10 @@ function clearTrack(trackline, trackIcons, dashedLines, trackID) {
       while (trackIcons.length > 0) {
          trackIcon = trackIcons.pop();
          trackIcon.setMap(null);
+      }
+      while (errorEllipses.length > 0) {
+         errorEllipse = errorEllipses.pop();
+         errorEllipse.setMap(null);
       }
       if (tracksDisplayed.length == 1) {
          deleteTrackTimeControl();
@@ -1538,13 +1541,13 @@ function clearTrackByTrackID(trackID) {
          console.debug(index);
          if (this.mmsi == trackID) {
             //console.log('Found track with matching MMSI to delete: ' + trackID);
-            clearTrack(this.trackline, this.trackIcons, this.dashedLines, this.mmsi);
+            clearTrack(this.trackline, this.trackIcons, this.dashedLines, this.mmsi, this.errorEllipses);
             tracksDisplayedID.splice(index, 1);
             tracksDisplayed.splice(index, 1);
          }
          else if (this.trknum == trackID) {
             //console.log('Found track with matching trknum to delete: ' + trackID);
-            clearTrack(this.trackline, this.trackIcons, this.dashedLines, this.trknum);
+            clearTrack(this.trackline, this.trackIcons, this.dashedLines, this.trknum, this.errorEllipses);
             tracksDisplayedID.splice(index, 1);
             tracksDisplayed.splice(index, 1);
          }
@@ -1648,6 +1651,7 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
    console.log($.inArray(mmsi, tracksDisplayedID) == -1);
    //Check if track is already displayed or not
    if (($.inArray(mmsi, tracksDisplayedID) == -1 || source == "LAISIC_AIS_TRACK") && 
+       ($.inArray(trknum, tracksDisplayedID) == -1 || source == "LAISIC_AIS_TRACK") && 
        $.inArray(trknum, tracksDisplayedID) == -1) {
       document.getElementById("query").value = "QUERY RUNNING FOR TRACK...";
       document.getElementById('stats_nav').innerHTML = '';
@@ -1695,6 +1699,7 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                      var target_status;
                      var trackTargetStatus = new Array();
 
+                     var errorEllipses = [];
 
                      //Loop through each time point of the same vessel
                      $.each(response.vessels, function(key,vessel) {
@@ -1810,10 +1815,12 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                                  1,
                                  1,
                                  '#FFFF00',     //fill color
-                                 0.5);
+                                 0.1);
 
                            //Set the map for the error ellipse
                            errorEllipse.setMap(map);
+
+                           errorEllipses.push(errorEllipse);
 
                            //Draw label to show error ellipse numbers
                            /*
@@ -2035,7 +2042,8 @@ function getTrack(mmsi, vesseltypeint, source, datetime, streamid, trknum) {
                         trackline: trackline,
                         dashedLines: dashedLines,
                         trackIcons: trackIcons,
-                        trackTargetStatus: trackTargetStatus
+                        trackTargetStatus: trackTargetStatus,
+                        errorEllipses: errorEllipses
                      };
 
                      tracksDisplayed.push(track);
@@ -3396,7 +3404,7 @@ function tableUpdated(selected) {
          if (e.mmsi == mmsi) {
             //(value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
             //(value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
-            if (value == "1") {
+            if (value == "2") {
                if (selectionCircle != null) {
                   selectionCircle.setMap(null);
                   selectionCirle = null;
@@ -4057,4 +4065,26 @@ function disableCustomQuery() {
    document.getElementById('status-msg').style.opacity = "0";
    
    refreshMaps(true);
+}
+
+/* -------------------------------------------------------------------------------- */
+/**
+ **/
+function passIMOChecksum(imo) {
+   if (imo == null) {
+      return false;
+   }
+
+   if (imo.length != 7) {
+      return false;
+   }
+
+   //Compute checksum
+   var cs = imo[0]*7 + imo[1]*6 + imo[2]*5 + imo[3]*4 + imo[4]*3 + imo[5]*2;
+   cs = cs % 10;
+   if (cs != imo[6]) {
+      return false;
+   }
+
+   return true;
 }

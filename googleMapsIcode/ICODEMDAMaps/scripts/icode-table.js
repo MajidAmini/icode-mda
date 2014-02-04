@@ -848,11 +848,11 @@ function addTableListeners() {
          console.log('You selected ' + row.length + ' elements.');
 
          //Reset all to visible if nothing selected, or to not-visible if more than 0 selected
-         var visible = (row.length == 0) ? 1 : 0;
+         var visible = (row.length == 0) ? 2 : 1;
 
          for (var i=0; i < localStorage.length; i++) {
             key = localStorage.key(i);
-            if (key.indexOf("vessel-") === 0) {
+            if (key.indexOf("vessel-") === 1) {
                localStorage[key] = visible;
             }
          }
@@ -860,7 +860,7 @@ function addTableListeners() {
          for (var i=0; i < row.length; i++) {
             var mmsi = AISdata.getValue(row[i].row, 0);
             //console.log(row[i].row + ' ' + mmsi);
-            localStorage["vessel-" + mmsi] = 1;
+            localStorage["vessel-" + mmsi] = 2;
          }
      });
 
@@ -1194,7 +1194,7 @@ function autoSelectedLAISICAISOBStable() {
 
 /* -------------------------------------------------------------------------------- */
 /** 
- * Get AIS data from XML, which is from database, with bounds.
+ * Get AIS data from JSON, which is from database, with bounds.
  *
  * Optional callback argument (4th argument)
  */
@@ -1238,6 +1238,9 @@ function getAISFromDB(sourceType) {
 
    //Debug query output
    console.log('getAISFromDB(): ' + phpWithArg);
+
+   //Escape the string in case of keyword search, need to escape the %
+   phpWithArg = encodeURI(phpWithArg);
 
    //Call PHP and get results as markers
    $.getJSON(
