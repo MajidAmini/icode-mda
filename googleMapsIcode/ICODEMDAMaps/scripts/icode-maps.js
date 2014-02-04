@@ -1068,7 +1068,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                   }
 
                   google.maps.event.addListenerOnce(marker, 'mouseout', function() {
-                     window.clearTimeout(trackMouseoverTimeout);
+                     //window.clearTimeout(trackMouseoverTimeout);
                      document.getElementById('shipdetails').style.visibility = 'hidden';
                   });
                });
