@@ -123,6 +123,6 @@ while (odbc_fetch_row($result)){
 $memused = memory_get_usage(false);
 
 $data = array(basequery => $basequery, query => $query, resultcount => $count_results, exectime => $totaltime, memused => $memused, cluster => $clusterarray);
-echo json_encode($data);
+echo json_encode($data, JSON_PRETTY_PRINT);
 ?>
 

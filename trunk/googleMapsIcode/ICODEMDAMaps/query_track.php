@@ -229,5 +229,5 @@ while (odbc_fetch_row($result)){
 }
 
 $data = array(query => $query, resultcount => $count_results, exectime => $totaltime, vessels => $vesselarray);
-echo json_encode($data);
+echo json_encode($data, JSON_PRETTY_PRINT);
 ?>
