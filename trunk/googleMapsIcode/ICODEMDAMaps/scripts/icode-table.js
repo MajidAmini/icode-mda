@@ -848,19 +848,19 @@ function addTableListeners() {
          console.log('You selected ' + row.length + ' elements.');
 
          //Reset all to visible if nothing selected, or to not-visible if more than 0 selected
-         var visible = (row.length == 0) ? 2 : 1;
+         //var visible = (row.length == 0) ? 1 : 0;
 
          for (var i=0; i < localStorage.length; i++) {
             key = localStorage.key(i);
-            if (key.indexOf("vessel-") === 1) {
-               localStorage[key] = visible;
-            }
+            //if (key.indexOf("vessel-") === 1) {
+               localStorage[key] = 0;//visible;
+            //}
          }
 
          for (var i=0; i < row.length; i++) {
             var mmsi = AISdata.getValue(row[i].row, 0);
             //console.log(row[i].row + ' ' + mmsi);
-            localStorage["vessel-" + mmsi] = 2;
+            localStorage["vessel-" + mmsi] = 1;
          }
      });
 
