@@ -44,6 +44,7 @@ table {
    vertical-align:middle;
    text-align:   center;
    font-size:    18px;
+   -webkit-text-shadow: gray 2px 2px 1px;
    text-shadow:  gray 2px 2px 1px;
 }
 #top_nav {
@@ -215,6 +216,7 @@ table {
    text-align:   left;
    font-size:    10px;
    color:        white;
+   -webkit-text-shadow: black 2px 2px 3px;
    text-shadow:  black 2px 2px 3px;
 }
 #lastUpdated {
@@ -231,6 +233,7 @@ table {
    text-align:   left;
    font-size:    10px;
    color:        white;
+   -webkit-text-shadow: black 2px 2px 3px;
    text-shadow:  black 2px 2px 3px;
 }  
 #firstHeading {
@@ -240,19 +243,33 @@ table {
 #vessellabel {
    font-size:    14px;
    font-weight:  bold;
-   text-shadow:
-    -1px -1px 0 #FFF,
-     1px -1px 0 #FFF,
-    -1px  1px 0 #FFF,
-     1px  1px 0 #FFF; 
+   -webkit-text-shadow:
+      -1px -1px 0 #FFF,
+       1px -1px 0 #FFF,
+      -1px  1px 0 #FFF,
+       1px  1px 0 #FFF; 
+   text-shadow: 
+      -1px -1px 0 #FFF,
+       1px -1px 0 #FFF,
+      -1px  1px 0 #FFF,
+       1px  1px 0 #FFF;
+   filter: Shadow(Color=#FFF, Direction=45, Strength=2);       
    line-height:  12px;
 }
 a {
    text-decoration: none;
    color:        #0000FF;
 }
+ul {
+   list-style-type: square;
+   padding-left: 20px;
+}
 input, textarea, select {
    font-family:  inherit;
+}
+textarea {
+   border-style: inset;
+   border-width: 2px;
 }
 input[type="text"]  {
    height:       22px;

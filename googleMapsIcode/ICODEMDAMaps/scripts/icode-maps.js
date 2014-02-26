@@ -36,7 +36,16 @@ var vesselLastUpdated;        //time of last vessel report
 
 var distanceLabel;            //text label for distance tool
 
-var infoBubble;               //info bubble to show vessel particulars (details)
+//info bubble to show vessel particulars (details)
+var infoBubble = new InfoBubble({
+       disableAnimation: true,
+       disableAutoPan:   true,
+       arrowStyle:       2,
+       padding:          '8px',
+       borderRadius:     10,
+       //maxWidth:         400,
+       //minHeight:        360
+   });
 
 var vessel_age;               //user chosen vessel age, in hours
 
@@ -123,16 +132,6 @@ var distIconsOptions = {
                fillColor:     '#04B4AE',
                fillOpacity:   1
             };
-var highlightCircle = new google.maps.Circle({
-            center:  new google.maps.LatLng(0,0),
-            radius: 2000,
-            strokeColor: "#FFFF00",
-            strokeOpacity: 0.8,
-            strokeWeight: 2,
-            fillColor: "#FFFF00",
-            fillOpacity: 0.2,
-            map: null
-         });
 
 //Hide/show panel
 var panelhidden = false;
@@ -148,7 +147,31 @@ var enableCustomQuery;
 var queryCustomQuery;
 
 //LAISIC Tables selection
-var selectionCircle;
+var selectionCircle = new google.maps.Circle({
+            center:  new google.maps.LatLng(0,0),
+            radius: 2000,
+            strokeColor: "#FF0000",
+            strokeOpacity: 1.0,
+            strokeWeight: 2,
+            fillColor: "#FF0000",
+            fillOpacity: 0.1,
+            map: null
+         });
+//Highlight selection from tables
+//  Need to use MarkerImage object instead of straight icon pointing to image so that
+//  we can set the center point of the image manually
+var squareImage = new google.maps.MarkerImage('icons/selected.png',
+                new google.maps.Size(35, 35),
+                new google.maps.Point(0, 0),
+                new google.maps.Point(15, 18));
+var selectionSquare = new google.maps.Marker({
+            position: new google.maps.LatLng(0,0),
+            map: null,
+            icon: squareImage, //'icons/selected.png',
+            title: '',
+            zIndex: 0
+         });
+//var selectionCircle;
 
 //VOLPE's KMZ layers for EEZ and country borders
 var EEZ;
@@ -226,6 +249,7 @@ function initialize() {
       scaleControl:      true,
       streetViewControl: false,
       overviewMapControl:true,
+      //overviewMapControlOptions: {opened: true},
       //keyboardShortcuts: false,
       mapTypeId:         google.maps.MapTypeId.HYBRID,
       mapTypeControlOptions: {
@@ -265,18 +289,13 @@ function initialize() {
    markerArray = [];
    vesselArray = [];
 
-   //Initialize vessel age
-   vessel_age_changed();
-
-   //Initialize history trail length 
-   history_trail_length_changed();
-
    //var infoWindow = new google.maps.InfoWindow();
    /*
    var infoBubble = new google.maps.InfoWindow({ 
       disableAutoPan: true
    });
    */
+   /*
    infoBubble = new InfoBubble({
        disableAnimation: true,
        disableAutoPan:   true,
@@ -285,18 +304,19 @@ function initialize() {
        borderRadius:     10,
        //maxWidth:         400,
        //minHeight:        360
-   });   
+   });
+   */
 
    //Add drawing toolbar
    addDrawingManager();
 
-   reloadDelay = 10;    //set initial delay to 10ms
+   reloadDelay = 1000;    //set initial delay to 10ms
 
    //Map dragged then idle listener
    google.maps.event.addListener(map, 'idle', function() {
       google.maps.event.trigger(map, 'resize'); 
       var idleTimeout = window.setTimeout(
-         function(){ 
+         function() { 
             refreshMaps(false) 
          }, 
          reloadDelay);   //milliseconds to pause after bounds change
@@ -315,54 +335,60 @@ function initialize() {
             Math.round(event.latLng.lat()*10000000)/10000000 + ', ' + Math.round(event.latLng.lng()*10000000)/10000000
    });
 
-   //Call all toggle functions on initialize:
+   google.maps.event.addListenerOnce(map, 'idle', function() {
+      //Call all toggle functions on initialize:
 
-   //Check for TMACS layer toggle on load
-   toggleTMACSHeadWMSLayer();
-   toggleTMACSHistoryWMSLayer();
+      //Initialize vessel age
+      vessel_age_changed();
 
-   //Radar layer
-   toggleRadarLayer();
+      //Initialize history trail length 
+      history_trail_length_changed();
 
-   //KML overlay layer
-   toggleKMLLayer();
+      //Check for TMACS layer toggle on load
+      toggleTMACSHeadWMSLayer();
+      toggleTMACSHistoryWMSLayer();
 
-   //Check for port layers
-   togglePortLayer();
+      //Radar layer
+      toggleRadarLayer();
 
-   //Weather
-   toggleWeatherLayer();
+      //KML overlay layer
+      toggleKMLLayer();
 
-   //Heatmap layer
-   toggleHeatmapLayer();
+      //Check for port layers
+      togglePortLayer();
 
-   toggleQueryAllTracks();
-   
-   toggleDistanceTool();
-   
-   toggleAutoRefresh();
+      //Weather
+      toggleWeatherLayer();
 
-   toggleIHSTabs();
+      //Heatmap layer
+      toggleHeatmapLayer();
 
-   toggleRisk();
+      toggleQueryAllTracks();
 
-   toggleTimeMachine();
+      toggleDistanceTool();
 
-   toggleCluster();
+      toggleAutoRefresh();
 
-   enableCustomQuery = false;
+      toggleIHSTabs();
 
-   geocoder = new google.maps.Geocoder();
+      toggleRisk();
 
-   initializePanel();
+      toggleTimeMachine();
+
+      toggleCluster();
+
+      enableCustomQuery = false;
+
+      geocoder = new google.maps.Geocoder();
+
+      initializePanel();
+
+      showEEZ();
+   });
 
    //Keyboard shortcuts/
    //source: http://stackoverflow.com/questions/9195814/google-maps-v3-keyboard-accessibility
    $('body').keydown(function(event) {
-      if ($('#query').is(':focus')) {
-         return;
-      }
-
       if ($('#accordion').is(':focus')) {
          return;
       }
@@ -374,10 +400,19 @@ function initialize() {
          return;
       }
 
+      if ($('input[type=text], textarea').is(':focus')) {
+         return;
+      }
+
       var o = 128; // half a tile's width 
       console.log('Pressed key: ' + event.which);
 
       switch(event.which) {
+         case 27: // ESC
+            if ($('#setup-alert-modal').dialog("isOpen")) {
+               $('#setup-alert-modal').dialog("close");
+            }
+            break;
          case 32: // spacebar
             refreshMaps(true);
             break;
@@ -406,6 +441,9 @@ function initialize() {
                document.getElementById("distancetooltoggle").checked = true;
             }
             toggleDistanceTool();
+            break;
+         case 69: // e
+            $('#setupAlert').trigger( "click" );
             break;
          case 71:
             if (document.getElementById("enableCluster") != null &&
@@ -572,8 +610,6 @@ function initialize() {
          }
       }
    });
-
-   showEEZ();
 
    //Trigger localStorage to indicate page refresh or new load
    localStorage.clear();
@@ -929,7 +965,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                //Push to localStorage for tables to know of change
                switch (sourceType) {
                   case "AIS":
-                     localStorage.setItem('vessel-'+vessel.mmsi, "1");
+                     localStorage.setItem('vessel-'+vessel.mmsi, "0");
                      break;
                   case "LAISIC_AIS_TRACK":
                      localStorage.setItem('laisicaistrack-'+vessel.trknum, "1");
@@ -1017,32 +1053,24 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, clearPre
                google.maps.event.addListener(marker, 'click', function () {
                   //Associate the infoBubble to the marker
                   clearInterval(vesselLastUpdated);
+
+                  //Draw the selection square
+                  selectionSquare.setPosition(point);
+                  selectionSquare.setMap(map);
+
+                  //Setup the infoBubble and show it
                   markerInfoBubble(marker, vessel, infoBubble);
-
-
-                  /*
-                  google.maps.event.addListener(marker, 'mouseover', function() {
-                     window.clearTimeout(markerMouseoutTimeout);
-                  });
-
-                  google.maps.event.addListener(marker, 'mouseout', function() {
-                     markerMouseoutTimeout = window.setTimeout(
-                        function closeInfoWindow() { 
-                           infoBubble.removeTab(1);
-                           infoBubble.removeTab(0);
-                           infoBubble.close(); 
-                        }, 
-                        3000);   //milliseconds
-                  });
-                  */
 
                   //Close the infoBubble if user clicks outside of infoBubble area
                   google.maps.event.addListenerOnce(map, 'click', function() {
-                     for (var i=0; i < NUM_INFO_BUBBLE; i++) {
-                        console.log('Removing tab ' + i);
-                        infoBubble.removeTab(0);
+                     if (enableIHSTabs) {
+                        for (var i=0; i < NUM_INFO_BUBBLE; i++) {
+                           console.log('Removing tab ' + i);
+                           infoBubble.removeTab(0);
+                        }
                      }
                      clearInterval(vesselLastUpdated);
+                     selectionSquare.setMap(null);
                      infoBubble.setMap(null);
                      infoBubble.close(); 
                   });
@@ -1284,10 +1312,33 @@ function getClustersFromDB(bounds, customQuery) {
 
          var totalsum = 0;
 
+
          $.each(response.cluster, function(key,cluster) {
+            var leftLon = parseFloat(cluster.leftLon);
+            var rightLon = parseFloat(cluster.rightLon);
+
+            if (leftLon > rightLon && (leftLon * rightLon) > 0) {
+               var temp = rightLon;
+               rightLon = leftLon;
+               leftLon = temp;
+            }
+
+            if (leftLon > 180) {
+               leftLon -= 360;
+            }
+            if (rightLon > 180) {
+               rightLon -= 360;
+            }
+            if (leftLon < -180) {
+               leftLon += 360;
+            }
+            if (rightLon < -180) {
+               rightLon += 360;
+            }
+
             var clusterBounds = new google.maps.LatLngBounds(
-                  new google.maps.LatLng(cluster.bottomLat, cluster.leftLon), 
-                  new google.maps.LatLng(cluster.topLat, cluster.rightLon));
+                  new google.maps.LatLng(cluster.bottomLat, leftLon), 
+                  new google.maps.LatLng(cluster.topLat, rightLon));
 
             var color;
             if (cluster.clustersum < 50) {
@@ -1308,7 +1359,13 @@ function getClustersFromDB(bounds, customQuery) {
                fillOpacity: 0.1,
                map: map,
                bounds: clusterBounds,
-               clickable: false
+               clickable: true
+            });
+
+            google.maps.event.addListener(clusterBox, 'click', function () {
+               console.log(cluster.leftLon + ', ' + cluster.rightLon);
+               console.log(leftLon + ', ' + rightLon);
+               console.log((leftLon > rightLon && (leftLon * rightLon) > 0));
             });
 
             var boxLabel = new MapLabel({
@@ -2178,18 +2235,30 @@ function typeSelectUpdated() {
 }
 
 /* -------------------------------------------------------------------------------- */
-function highlightMMSI(mmsi) {
+function selectVessel(mmsi) {
    for (var i=0; i < markersDisplayed.length; i++) {
       if (markersDisplayed[i].mmsi == mmsi) {
-         highlightCircle.setCenter(new google.maps.LatLng(markersDisplayed[i].lat, markersDisplayed[i].lon));
-         highlightCircle.setMap(map);
+         new google.maps.event.trigger(markerArray[i], 'click');
       }
    }
 }
 
 /* -------------------------------------------------------------------------------- */
 function hideHighlightMMSI() {
-   highlightCircle.setMap(null);
+   selectionCircle.setMap(null);
+}
+
+/* -------------------------------------------------------------------------------- */
+// Given the LatLng of a northwest corner, and the number of meters to
+// measure east and south, return the LatLngBounds for that rectangle
+function makeBounds(nw, metersEast, metersSouth) {
+    var ne = google.maps.geometry.spherical.computeOffset(
+        nw, metersEast, 90
+    );
+    var sw = google.maps.geometry.spherical.computeOffset(
+        nw, metersSouth, 180
+    );
+    return new google.maps.LatLngBounds( sw, ne );
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -3018,7 +3087,7 @@ function addDrawingManager() {
          google.maps.event.addListener(newShape, 'click', function (e) {
             setSelection(newShape);
          });
-         google.maps.event.addListener(map, 'click', clearSelection);
+         google.maps.event.addListener(map, 'click', clearSelection());
       //}
    });
 }
@@ -3394,8 +3463,10 @@ function tableUpdated(selected) {
    key = new String(selected.key);
    value = selected.newValue;
 
-   console.log("key is: " + key);
-   console.log("value is: " + value);
+   //console.log("key is: " + key);
+   //console.log("value is: " + value);
+
+   hideHighlightMMSI();
 
    //Handle AIS vessels
    if (key.indexOf("vessel-") === 0) {
@@ -3404,7 +3475,9 @@ function tableUpdated(selected) {
          if (e.mmsi == mmsi) {
             //(value == "1") ? markerArray[i].setMap(map) : markerArray[i].setMap(null);
             //(value == "1") ? markersDisplayed[i].vesselnameLabel.setMap(map) : markersDisplayed[i].vesselnameLabel.setMap(null);
-            if (value == "2") {
+            if (value == "1") {
+               selectVessel(mmsi);
+               /*
                if (selectionCircle != null) {
                   selectionCircle.setMap(null);
                   selectionCirle = null;
@@ -3422,6 +3495,7 @@ function tableUpdated(selected) {
                       map:            map,
                       zIndex:         0
                   });
+               */
             }
          }
       });
@@ -4039,7 +4113,7 @@ function codeAddress() {
   //Check if user entered a lat/lon pair, separated by comma, i.e. "-118, 32"
   if (address.match(/^[0-9\-\,\ \.]+$/) != null) {
      var latlonArray = address.split(',');
-     map.setCenter(new google.maps.LatLng(parseFloat(latlonArray[0]), parseFloat(latlonArray[1])));
+     map.panTo(new google.maps.LatLng(parseFloat(latlonArray[0]), parseFloat(latlonArray[1])));
      return;
   }
 
@@ -4048,7 +4122,7 @@ function codeAddress() {
      'bounds':  map.getBounds()
   }, function(results, status) {
     if (status == google.maps.GeocoderStatus.OK) {
-      map.setCenter(results[0].geometry.location);
+      map.panTo(results[0].geometry.location);
     } 
     else {
       alert('Geocode was not successful for the following reason: ' + status);

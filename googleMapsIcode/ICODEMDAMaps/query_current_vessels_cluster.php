@@ -32,6 +32,16 @@ if (!$connection) {
 //Query statement - default statement unless user inputs custom statement
 
 
+$iGridRows = 16;
+$iGridCols = 32;
+
+$iMinClusterSize = 10;
+$latestpositionsfrommemorytable = "SELECT * FROM vessels_memory WHERE RxStnID = 'Local'";
+//Add timestamp constraint
+if (!empty($_GET["vessel_age"])) {
+   $vessel_age = $_GET["vessel_age"];
+   $latestpositionsfrommemorytable = $latestpositionsfrommemorytable . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
+}
 
 //Count the number of arguments
 if(count($_GET) > 0) {
@@ -40,6 +50,7 @@ if(count($_GET) > 0) {
    $minlon = $_GET["minlon"];
    $maxlon = $_GET["maxlon"];
 
+   /*
    //Check if flipped, then probably crossed the meridian (> +180, or < -180)
    if ($minlon > $maxlon) {
       $meridianflag = true;
@@ -47,44 +58,59 @@ if(count($_GET) > 0) {
    else {
       $meridianflag = false;
    }
+   */
 
    if (!empty($minlat) && !empty($minlon) &&
        !empty($maxlat) && !empty($maxlon)) {
-      $divlat = round( ($maxlat - $minlat) / 16, 3 );
-      $divlon = round( ($maxlon - $minlon) / 16, 3 );
+      //$divlat = round( ($maxlat - $minlat) / 16, 3 );
+      //$divlon = round( ($maxlon - $minlon) / 16, 3 );
 
-      if ( ($minlon * $maxlon) > 0) {
-         $query = "SELECT $divlon * (Longitude div $divlon) - $divlon as 'leftLon', $divlon * (Longitude div $divlon) as 'rightLon', $divlat * (Latitude div $divlat) as 'bottomLat', $divlat * (Latitude div $divlat) + ($divlat) as 'topLat', count(*) as clustersum FROM (SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM $ais_database.vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI) AND";
+      //TEST VOLPE's method
+      /*
+         //max lat/lon
+         //difference 
+         //find a common number that matches cluster, 8x8, 0 1 2 3 4 etc 7, 3 degrees every grid
+         //div, round down
+         //x1000 big number, 1001;  turn map to whole numbers
+         //thousands = longitudes, 1's = latitude
+       */
+      $dlat = $maxlat-$minlat;
+      $dlon = $maxlon-$minlon;
+
+      if ($minlon > $maxlon) {
+         $geobounds = "Latitude > $minlat AND Latitude < $maxlat AND ((Longitude > $minlon AND Longitude <= 180.0) OR (Longitude < $maxlon AND Longitude >= -180.0))";
       }
       else {
-         $query = "SELECT $divlon * (Longitude div $divlon) as 'leftLon', $divlon * (Longitude div $divlon) + $divlon as 'rightLon', $divlat * (Latitude div $divlat) as 'bottomLat', $divlat * (Latitude div $divlat) + ($divlat) as 'topLat', count(*) as clustersum FROM (SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM $ais_database.vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM vessels_memory GROUP BY MMSI) AND";
+         $geobounds = "Latitude > $minlat AND Latitude < $maxlat AND Longitude > $minlon AND Longitude < $maxlon";
       }
 
-      if ($meridianflag == false) { //Handle normal case
-         $query = $query . " Latitude BETWEEN " . round($minlat,3) . " AND " . round($maxlat,3) . 
-                  " AND Longitude BETWEEN " .  round($minlon,3) . " AND " . round($maxlon,3);
-      }
-      else {   //Handle crossing over meridian case
-         $query = $query . " Latitude BETWEEN " . round($minlat,3) . " AND " . round($maxlat,3) . 
-                  " AND (Longitude BETWEEN -180 AND " . round($maxlon,3) .
-                  " OR Longitude BETWEEN " . round($minlon) . " AND 180 )";
-      }
+      //Build main cluster query
+      $query = "
+SELECT
+   $dlat * (FLOOR($iGridRows * (Latitude - $minlat) / $dlat) + 0.5) / $iGridRows + $minlat - $dlat/$iGridRows/2 AS bottomLat,
+   $dlat * (FLOOR($iGridRows * (Latitude - $minlat) / $dlat) + 0.5) / $iGridRows + $minlat + $dlat/$iGridRows/2 AS topLat,
+   $dlon * (FLOOR($iGridCols * (IF(Longitude > $minlon, Longitude, Longitude + 360.0) - $minlon) / $dlon) + 0.5) / $iGridCols + $minlon - $dlon/$iGridCols/2 AS leftLon,
+   $dlon * (FLOOR($iGridCols * (IF(Longitude > $minlon, Longitude, Longitude + 360.0) - $minlon) / $dlon) + 0.5) / $iGridCols + $minlon + $dlon/$iGridCols/2 AS rightLon,
+   count(*) AS clustersum
+FROM
+   (SELECT * FROM
+      ($latestpositionsfrommemorytable) AS tmp1
+   GROUP BY mmsi) AS tmp2
+WHERE ($geobounds)
+GROUP BY FLOOR($iGridRows * (latitude - $minlat) / $dlat) * 1000000 + FLOOR($iGridCols * (IF(Longitude > $minlon, Longitude, Longitude + 360.0) - $minlon) / $dlon);";
+//HAVING clustersum >= $iMinClusterSize;";
+//
 
-      //Add timestamp constraint
-      if (!empty($_GET["vessel_age"])) {
-         $vessel_age = $_GET["vessel_age"];
-         $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
-      }
-
-      $query = $query . ") VESSELS GROUP BY $divlon*(Longitude div $divlon), $divlat*(Latitude div $divlat)";
+      //Remove special characters
+      $query = trim(preg_replace('/\s+/', ' ', $query));
    }
 }
 else {
-   $limit = 10;
-   $query = $query . " limit " . $limit;
+   
 }
 
-$result = @odbc_exec($connection, $query) or die('Query error: '.htmlspecialchars(odbc_errormsg()).' // '.$query);;
+
+$result = @odbc_exec($connection, $query) or die('Query error: '.htmlspecialchars(odbc_errormsg()).' // '.$query);
 //-----------------------------------------------------------------------------
 
 
@@ -93,7 +119,7 @@ $mtime = microtime();
 $mtime = explode(" ",$mtime); 
 $mtime = $mtime[1] + $mtime[0]; 
 $endtime = $mtime; 
-$totaltime = ($endtime - $starttime); 
+$totaltime = ($endtime - $starttime);
 
 
 // Prevent caching.
@@ -110,6 +136,12 @@ $clusterarray = array();
 while (odbc_fetch_row($result)){
    $count_results = $count_results + 1;
 
+   /*
+   $cluster = array(lat=>odbc_result($result,"Lat"),
+                   lon=>odbc_result($result,"Lon"),
+                   clustersum=>odbc_result($result,"clustersum"),
+    */
+
    $cluster = array(leftLon=>odbc_result($result,"leftLon"),
                    rightLon=>odbc_result($result,"rightLon"),
                    bottomLat=>odbc_result($result,"bottomLat"),
@@ -122,7 +154,7 @@ while (odbc_fetch_row($result)){
 
 $memused = memory_get_usage(false);
 
-$data = array(basequery => $basequery, query => $query, resultcount => $count_results, exectime => $totaltime, memused => $memused, cluster => $clusterarray);
+$data = array(minlat => $minlat, maxlat => $maxlat, minlon => $minlon, maxlon => $maxlon, query => $query, resultcount => $count_results, exectime => $totaltime, memused => $memused, cluster => $clusterarray);
 echo json_encode($data, JSON_PRETTY_PRINT);
 ?>
 

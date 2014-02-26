@@ -2,17 +2,18 @@
 <html>
   <head>
      <title>ICODE-MDA Maps</title>
-     <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE9" >
+     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
      <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
 
      <link rel="stylesheet" type="text/css" href="css/mapstyle.css">
+     <link rel="stylesheet" type="text/css" href="css/alert.css">
 
      <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=geometry,drawing,weather,visualization&sensor=false"> </script>
-     <script type="text/javascript" src='scripts/icode-maps.js' ></script>
      <script type="text/javascript" src='scripts/infobubble.js' ></script>
 
      <script type="text/javascript" language="Javascript" src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
      <script>window.jQuery || document.write('<script src="scripts/jquery.min.js"><\/script>')</script>
+
 
      <!-- <link href='http://fonts.googleapis.com/css?family=Lato:400,900' rel='stylesheet' type='text/css'> -->
 
@@ -39,6 +40,9 @@
      http://www.geocodezip.com/v3_example_eshapes_ellipse_fromBounds.html
      -->
      <script src="scripts/v3_eshapes.js" type="text/javascript"></script>
+
+     <!-- Email Alerts -->
+     <script src="scripts/setup-alerts.js" type="text/javascript"></script>
 
      <!-- Theme downloaded from http://jqueryui.com/download/#!zThemeParams=5d00000100f405000000000000003d8888d844329a8dfe02723de3e5701fa198449035fc0613ff729a37dd818cf92b1f6938fefa90282d04ae436bb72367f5909357c629e832248af2c086db4ab730aa4cced933a88449eca61db9f7f3b23d47f58a712d809b6088edfb34ad39fdc365386d0fa05a1ac3ecd320d2c989729f79ebdc6c6c1efbdad4c8411d498f009ffe98fe129da7602fb950113abdae4a76a6c41a4b54b4f82bb8821d6d431cd3fdd76b9d621596a2728b93385f2e7aaf8ea6603553343d43829941536e2bdd3ed7d7d3207364bf351633b31b934a71523a88fa2058cdd4c2e0778cd56d6ccac254ddace19ff4460a100e2e6a52830d9063c6e328cc3cb5e3d6dbe1077ae8b7cc5fa6414eafd15883b40c6c3e71647031ce3da7038a945a5628669fbe0e5139dad7ce99c00f25c2cd40569bd2fe1b2caed45bf2b8943f6ac17215bd54437a0f739009848e80f1d5c00d99870e7258d07402af6b22872fdf8f2892a7e9274aaa9181573ddd8cd7788511b4459e736d76b3e64e015809712e904499648868a11e35b3bb8ee1168d6039c5a86eee8cf545c877dbdd0111ab04ede46a85a17baed0958026fe23d2e490cfa504ab598731d779a2434fa164085379d31e1ff08e2eeb9475cce3d5b3e9b2fd4df43dffe6cf0eda -->
      <script type="text/javascript" src="scripts/jquery-ui-1.10.3.custom.js"></script>
@@ -122,6 +126,23 @@
            });
         });
      </script>
+
+     <script>
+        $(document).ready(function() {
+           var $setupAlertDialog = $('#setup-alert-modal')
+                       .dialog({
+                          autoOpen: false,
+                          title: 'Setup an Alert',
+                          width: 700,
+                          height: 500,
+                          modal: false,
+                          position: [90,110]
+                       });
+        });
+     </script>
+
+     <!-- Main JavaScript for controlling map -->
+     <script type="text/javascript" src='scripts/icode-maps.js' ></script>
 
   </head>
 
@@ -334,9 +355,9 @@
                  </script>
                  Pick a date range:
                  <p align="center">
-                 <input type="text" id="datetimestart" size=18 />
+                 <input type="text" id="datetimestart" size="18" />
                  <br /> to <br />
-                 <input type="text" id="datetimeend" size=18 />
+                 <input type="text" id="datetimeend" size="18" />
 
                  <br />
                  <br />
@@ -345,11 +366,6 @@
                  Filtering MMSI: <input id="filterMMSITimeMachine" type="textbox" value="Enter MMSI to filter" onClick="document.getElementById('filterMMSITimeMachine').value= '';" onkeydown="if (event.keyCode == 13) {$('#queryTimeMachineButton').trigger('click');}"><br>
                  Custom filter: <input id="customQueryTimeMachine" type="textbox" value="i.e. 'SOG < 1'" onClick="document.getElementById('customQueryTimeMachine').value= '';" onkeydown="if (event.keyCode == 13) {$('#queryTimeMachineButton').trigger('click');}"><br>
               </div>
-
-              <!--
-              <h3>Current Vessel List</h3>
-              <div id="vessellist" class="vessellist"></div>
-              -->
 
               <h3>Other Options</h3>
               <div>
@@ -386,9 +402,10 @@
                  <hr>
                  History trail length: 
                  <select id="history_trail_length" onChange="history_trail_length_changed();">
+                    <option value="no limit">No limit</option>
                     <option value="0.25" selected="selected">6 hours</option>
                     <option value="0.5" selected="selected">12 hours</option>
-                    <option value="1" selected="selected">1 days</option>
+                    <option value="1" selected="selected">1 day</option>
                     <option value="2">2 days</option>
                     <option value="3">3 days</option>
                     <option value="4">4 days</option>
@@ -404,7 +421,6 @@
                     <option value="14">14 days</option>
                     <option value="15">15 days</option>
                     <option value="31">31 days</option>
-                    <option value="no limit">No limit</option>
                  </select>
                  <br>
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
@@ -428,6 +444,15 @@
                     <li>Click on track history markers to display dead-reckoning prediction to next point in history.</li>
                     <li>Press '?' for Keyboard shortcuts.</li>
                  </ul>
+              </div>
+
+              <h3>Geofencing Notifications</h3>
+              <div>
+                 <p align=center>
+                    Setup your email alerts here.
+                    <br>
+                    <input id="setupAlert" type="button" onClick="setupAlertInitialize(); return false;" value="Setup Alert">
+                 </p>
               </div>
            </div>
            <!-- END ACCORDION -->
@@ -482,6 +507,11 @@
   <b>ESC</b>&#9;&#9; Close this dialog box<br></pre>
         </p>
      </div>
+
+     <div id="setup-alert-modal">
+        <!-- Content here defined in separate alerts/setup-alerts.html file -->
+     </div>
+
 
      <div id="geocodepanel">
         <input id="geocodeAddress" type="textbox" value="San Diego, CA">
