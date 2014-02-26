@@ -36,11 +36,13 @@ $iGridRows = 16;
 $iGridCols = 32;
 
 $iMinClusterSize = 10;
-$latestpositionsfrommemorytable = "SELECT * FROM vessels_memory WHERE RxStnID = 'Local'";
+$latestpositionsfrommemorytable = "SELECT * FROM vessels_memory WHERE RxStnID = 'Local' OR RxStnID <> 'Local'";
+
 //Add timestamp constraint
 if (!empty($_GET["vessel_age"])) {
    $vessel_age = $_GET["vessel_age"];
-   $latestpositionsfrommemorytable = $latestpositionsfrommemorytable . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
+   $timeconstraint = " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
+   $latestpositionsfrommemorytable .= $timeconstraint;
 }
 
 //Count the number of arguments
@@ -85,6 +87,8 @@ if(count($_GET) > 0) {
          $geobounds = "Latitude > $minlat AND Latitude < $maxlat AND Longitude > $minlon AND Longitude < $maxlon";
       }
 
+      $vessel_age = $_GET["vessel_age"];
+
       //Build main cluster query
       $query = "
 SELECT
@@ -97,7 +101,7 @@ FROM
    (SELECT * FROM
       ($latestpositionsfrommemorytable) AS tmp1
    GROUP BY mmsi) AS tmp2
-WHERE ($geobounds)
+WHERE ($geobounds) $timeconstraint 
 GROUP BY FLOOR($iGridRows * (latitude - $minlat) / $dlat) * 1000000 + FLOOR($iGridCols * (IF(Longitude > $minlon, Longitude, Longitude + 360.0) - $minlon) / $dlon);";
 //HAVING clustersum >= $iMinClusterSize;";
 //
