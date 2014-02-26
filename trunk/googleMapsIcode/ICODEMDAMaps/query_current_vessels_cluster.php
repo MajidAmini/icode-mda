@@ -78,6 +78,7 @@ if(count($_GET) > 0) {
       $dlon = $maxlon-$minlon;
 
       if ($minlon > $maxlon) {
+         $dlon = $maxlon+360-$minlon;
          $geobounds = "Latitude > $minlat AND Latitude < $maxlat AND ((Longitude > $minlon AND Longitude <= 180.0) OR (Longitude < $maxlon AND Longitude >= -180.0))";
       }
       else {
