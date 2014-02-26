@@ -1299,10 +1299,7 @@ function getClustersFromDB(bounds, customQuery) {
          clearVesselMarkerArray();
          clearOutBoundMarkers();
          clearAllTracks();
-         for(var i=0; i < clusterBoxes.length; i++) {
-            clusterBoxes[i].setMap(null);
-            clusterBoxesLabels[i].setMap(null);
-         }
+         clearMarkerAndClusters();
 
          for (var i=0; i < markersDisplayed.length; i++) {
             markersDisplayed[i].vesselnameLabel.setMap(null);
@@ -1359,14 +1356,9 @@ function getClustersFromDB(bounds, customQuery) {
                fillOpacity: 0.1,
                map: map,
                bounds: clusterBounds,
-               clickable: true
+               clickable: false
             });
 
-            google.maps.event.addListener(clusterBox, 'click', function () {
-               console.log(cluster.leftLon + ', ' + cluster.rightLon);
-               console.log(leftLon + ', ' + rightLon);
-               console.log((leftLon > rightLon && (leftLon * rightLon) > 0));
-            });
 
             var boxLabel = new MapLabel({
                text: cluster.clustersum,
@@ -1413,6 +1405,8 @@ function clearMarkerAndClusters() {
       clusterBoxes[i].setMap(null);
       clusterBoxesLabels[i].setMap(null);
    }
+   clusterBoxes = [];
+   clusterBoxesLabels = [];
 }
 
 /* -------------------------------------------------------------------------------- */
