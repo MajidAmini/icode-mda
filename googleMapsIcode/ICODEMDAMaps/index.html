@@ -21,6 +21,8 @@
 
      <script type="text/javascript" src="scripts/ihs-table.js"></script>
 
+     <script type="text/javascript" src="scripts/distanceWidget.js"></script>
+
      <script type="text/javascript" src="scripts/geoxml3.js"></script>
      <script type="text/javascript" src="scripts/ProjectedOverlay.js"></script>
 
@@ -432,6 +434,13 @@
                     <option value="2">2</option>
                     <option value="3">3</option>
                  </select> seconds<br>
+                 Auto-refresh rate: 
+                 <select id="refresh_rate" onChange="refresh_rate_changed();">
+                    <option value="0.16">10 seconds</option>
+                    <option value="0.5">30 seconds</option>
+                    <option value="1" selected="selected">1 minute</option>
+                    <option value="5">5 minutes</option>
+                 </select><br>                 
                  <hr>
                  <p>
                  <b>Hidden Tricks:</b><br>
