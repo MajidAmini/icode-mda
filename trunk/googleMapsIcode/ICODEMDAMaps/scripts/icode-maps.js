@@ -31,6 +31,7 @@ var clusterBoxesLabels= [];
 var enableCluster;
 
 var autoRefresh;              //interval event handler of map auto refresh
+var autoRefreshRate;          //rate of auto refreshing
 var lastRefresh;              //time of last map refresh
 var vesselLastUpdated;        //time of last vessel report
 
@@ -260,7 +261,9 @@ function initialize() {
                       'OpenStreetMap'
                      ],
 			style: controlStyle
-   	}
+   	},
+      minZoom: 3,
+      maxZoom: 19,
 	};
 
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
@@ -343,6 +346,9 @@ function initialize() {
 
       //Initialize history trail length 
       history_trail_length_changed();
+
+      //Initialize auto refresh rate
+      refresh_rate_changed();
 
       //Check for TMACS layer toggle on load
       toggleTMACSHeadWMSLayer();
@@ -1350,13 +1356,14 @@ function getClustersFromDB(bounds, customQuery) {
 
             var clusterBox = new google.maps.Rectangle({
                strokeColor: color,
-               strokeOpacity: 0.8,
+               strokeOpacity: 1.0,
                strokeWeight: 1,
                fillColor: color,
-               fillOpacity: 0.1,
+               fillOpacity: 0.2,
                map: map,
                bounds: clusterBounds,
-               clickable: false
+               clickable: false,
+               zIndex: 2
             });
 
 
@@ -1366,7 +1373,7 @@ function getClustersFromDB(bounds, customQuery) {
                map: map,
                fontSize: 20,
                align: 'center',
-               zIndex: 0
+               zIndex: 1
             });
 
             clusterBoxes.push(clusterBox);
@@ -1479,7 +1486,8 @@ function markerInfoBubble(marker, vessel, infoBubble) {
       '<div id="content-sub" border=1>' +
       '<b>MMSI</b>: ' + vessel.mmsi + '<br>' +
       '<b>IMO</b>: ' + vessel.imo + (passIMOChecksum(vessel.imo)==true?'':' <font color="red">(invalid)</font>') + '<br>' +
-      '<b>Vessel Type</b>: ' + vesseltype + '<br>' +
+      //'<b>Vessel Type</b>: ' + vesseltype + '<br>' +
+      '<b>Vessel Type</b>: ' + vessel.vesseltypeint + '<br>' +
       '<b>Last Message Type</b>: ' + vessel.messagetype + '<br>' +
       '</div>' +
       '<div>' + 
@@ -3128,15 +3136,21 @@ function toggleDistanceTool() {
 
 /* -------------------------------------------------------------------------------- */
 function enableDistanceTool() {
+   //NEW METHOD
    //Distance label
    distanceLabel = new MapLabel({
             text: '',
             //position: new google.maps.LatLng(5.9,1.30),
             map: map,
             fontSize: 14,
-            align: 'left'
+            align: 'left',
+            map: map
    });
    
+   initializeDistanceWidget();
+
+   //OLD METHOD by right-clicking two points
+   /*
    google.maps.event.addListener(map,'rightclick',function(event) {
       prevlatLng = latLng;
       latLng = new google.maps.LatLng(event.latLng.lat(), event.latLng.lng());
@@ -3165,6 +3179,7 @@ function enableDistanceTool() {
             strokeColor:   "#04B4AE",
             strokeOpacity: 1.0,
             strokeWeight:  5,
+            geodesic: true
          });
          console.log('Distance between two clicks: ' + Math.round(dist*100)/100 + ' meters');
 
@@ -3205,10 +3220,27 @@ function enableDistanceTool() {
          }
       }
    });
+   */
 }
 
 /* -------------------------------------------------------------------------------- */
 function disableDistanceTool() {
+   //NEW METHOD
+   //Check for global object distanceWidget
+   if (distanceWidget != null) {
+      //Destroy the object to remove from maps
+      distanceWidget.destructor();
+   }
+
+   //Separately hide the distanceLabel
+   // Not done in distanceWidget.js to retain compability with old distance method
+   if (distanceLabel != null) {
+      distanceLabel.setMap(null);
+   }
+
+
+   //OLD METHOD
+   /*
    if (distPath != null) {
       distPath.setMap(null);
       distPath = null;
@@ -3228,6 +3260,7 @@ function disableDistanceTool() {
       distanceLabel.setMap(null);
    }
    google.maps.event.clearListeners(map,'rightclick');
+   */
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -3400,10 +3433,15 @@ function history_trail_length_changed() {
    refreshTracks();
 }
 
-
 /* -------------------------------------------------------------------------------- */
 function reload_delay_changed() {
    reloadDelay = parseInt($("#reload_delay option:selected").text())*1000;
+}
+
+/* -------------------------------------------------------------------------------- */
+function refresh_rate_changed() {
+   autoRefreshRate = parseFloat($("#refresh_rate option:selected").val())*1000;
+   refreshMaps(true);
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -3420,7 +3458,7 @@ function toggleAutoRefresh() {
 function autoRefreshOn() {
    autoRefresh = setInterval(function(){
          refreshMaps(true);
-      }, 1000*60*1);      //millisecs*secs*min
+      }, autoRefreshRate*60*1);      //millisecs*secs*min
 }
 
 /* -------------------------------------------------------------------------------- */
