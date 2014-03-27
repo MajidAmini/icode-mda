@@ -13,9 +13,20 @@ function DistanceWidget(map) {
    this.set('map', map);
    this.set('position', map.getCenter());
 
+   var pushpin = new google.maps.MarkerImage(
+         'http://maps.google.com/mapfiles/ms/micons/ltblu-pushpin.png',
+        // This marker is 20 pixels wide by 32 pixels tall.
+        null, 
+        // The origin for this image is 0,0.
+        new google.maps.Point(0,0),
+        // The anchor for this image is the base of the flagpole at 0,32.
+        new google.maps.Point(10, 32)
+    );
+
    var marker = new google.maps.Marker({
       draggable: true,
-      title: 'Distance Tool: Move me!'
+      title: 'Distance Tool: Move me!',
+      icon: pushpin
    });
 
    // Bind the marker map property to the DistanceWidget map property
@@ -105,7 +116,8 @@ RadiusWidget.prototype.distance_changed = function() {
 RadiusWidget.prototype.addSizer_ = function() {
    var sizer = new google.maps.Marker({
       draggable: true,
-       title: 'Distance Tool: Drag me!'
+      title: 'Distance Tool: Drag me!',
+      icon: 'http://maps.google.com/mapfiles/ms/micons/ltblue-dot.png'
    });
 
    sizer.bindTo('map', this);

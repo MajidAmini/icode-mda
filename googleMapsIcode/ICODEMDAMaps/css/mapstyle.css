@@ -161,13 +161,19 @@ table {
    display:      inline-block;
    min-width:    180px;
    border:       0px solid #cccccc;
-   margin-left: auto;
-   overflow:hidden;
+   margin-left:  auto;
+   overflow:     hidden;
    padding:      2px;
 }
 #content-sub {
    border:       1px solid #cccccc;
    padding:      2px;
+}
+#content-port {
+   display:      block;
+   border:       1px solid #cccccc;
+   padding:      2px;
+   max-width:    174px;
 }
 #shipdetails {
    float:        left;
