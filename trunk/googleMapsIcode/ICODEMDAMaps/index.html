@@ -180,12 +180,12 @@
               <div id="vessel_types">
                  <center><b>Vessel Types</b></center>
                  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="20" width="30" viewBox="-5 -10 20 20">
-                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#FFFF00;stroke:#222222;stroke-width:2;fill-rule:evenodd;">Browser does not support inline SVG.
+                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#FFFF00;stroke:#222222;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
                  </path>
                  </svg>
                  LAISIC AIS Track<br>
-                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
-                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#F078FF;stroke:#bd45cc;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="16" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0, -3 m -6, 0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0 m 8 0 l 10 0" style="fill:#F078FF;stroke:#222200;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
                  </path>
                  </svg>
                  Radar Vessels<br>
@@ -317,6 +317,7 @@
                  <input class="checkbox" id="enableCluster" name="Enable Clusters" type="checkbox" checked="checked" onclick="toggleCluster();"> Enable Clusters when zoomed out<br>
                  <!-- input class="checkbox" id="RadarLayer" name="RadarLayer" type="checkbox" checked="checked" onclick="toggleRadarLayer();"> <img align="top" src="icons/pink0.png" style="padding-bottom: 4px; vertical-align: middle;"> RADAR Contacts<br> -->
                  <!-- <input class="checkbox" id="HeatmapLayer" name="HeatmapLayer" type="checkbox" onclick="toggleHeatmapLayer();"> <img align="top" width="20px" src="icons/heatmap.png" style="padding-bottom: 4px; vertical-align: middle;"> Heatmap Layer<br> -->
+                 <input class="checkbox" id="EEZLayer" name="EEZLayer" type="checkbox" onclick="toggleEEZLayer();"> EEZ Layer<br>
                  <input class="checkbox" id="WeatherLayer" name="WeatherLayer" type="checkbox" onclick="toggleWeatherLayer();"> <img align="top" width="20px" src="icons/weather_icon.png" style="padding-bottom: 4px; vertical-align: middle;"> Weather Layer<br>
                  <!-- input class="checkbox" id="KMLLayer" name="KMLLayer" type="checkbox" onclick="toggleKMLLayer();"> <img align="top" width="20px" src="icons/kml.png" style="padding-bottom: 4px; vertical-align: middle;"> KML Layer<br> -->
                  <input class="checkbox" id="PortLayer" name="PortLayer" type="checkbox" onclick="togglePortLayer();"> <img align="top" height="20px" src="icons/anchor_port.png" style="padding-bottom: 4px; vertical-align: middle;"> Port Layer<br>
@@ -425,6 +426,7 @@
                     <option value="31">31 days</option>
                  </select>
                  <br>
+                 <input class="checkbox" id="showtrackicons" name="showtrackicons" type="checkbox" checked="checked" onclick="toggleTrackIcons();"> Enable track icons<br>
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
                  <hr>
                  Reload delay: 

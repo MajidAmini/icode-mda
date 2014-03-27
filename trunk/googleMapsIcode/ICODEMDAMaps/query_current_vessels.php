@@ -42,6 +42,10 @@ if(count($_GET) > 0) {
          case "LAISIC_AIS_OBS":
             $fromSources = "(SELECT obsguid, lat as Latitude, lon as Longitude, semimajor, semiminor, orientation, cog, sog, datetime, callsign, mmsi, vesselname, imo, streamid FROM " . $laisic_database . ".aisobservation_mem_track_heads) VESSELS";
             break;
+         case "RADAR":
+            $fromSources = "(SELECT * FROM icodemda.pvol_pdm_memory WHERE (`CommsID`, `TimeOfFix`) IN ( SELECT `CommsID`, max(`TimeOfFix`) FROM icodemda.pvol_pdm_memory GROUP BY `CommsID` )
+) VESSELS";
+            break;
          default: //AIS
             if (empty($_GET["risk"])) {
                //No risk query:
@@ -235,6 +239,27 @@ while (odbc_fetch_row($result)){
                    streamid=>htmlspecialchars(odbc_result($result,"streamid"))      
            );
     }
+    else if ($source === "RADAR") {
+       $vessel = array(mmsi=>odbc_result($result,"mmsi"),
+                   commsid=>odbc_result($result,"CommsID"),
+                   name=>odbc_result($result,"Name"),
+                   datetime=>odbc_result($result,"TimeOfFix"),
+                   lat=>odbc_result($result,"Latitude"),
+                   lon=>odbc_result($result,"Longitude"),
+                   sog=>odbc_result($result,"SOG"),
+                   heading=>odbc_result($result,"Heading"),
+                   streamid=>htmlspecialchars(odbc_result($result,"PosSource")),
+                   cog=>odbc_result($result,"COG"),
+                   opt1tag=>odbc_result($result,"Opt1Tag"),
+                   opt1val=>odbc_result($result,"Opt1Val"),
+                   opt2tag=>odbc_result($result,"Opt2Tag"),
+                   opt2val=>odbc_result($result,"Opt2Val"),
+                   opt3tag=>odbc_result($result,"Opt3Tag"),
+                   opt3val=>odbc_result($result,"Opt3Val"),
+                   opt4tag=>odbc_result($result,"Opt4Tag"),
+                   opt4val=>odbc_result($result,"Opt4Val")
+           );
+    }
     else {
        //Extract the vessel type number only
        $pos = strpos(odbc_result($result,"VesType"), '-');
@@ -252,7 +277,7 @@ while (odbc_fetch_row($result)){
              lon=>odbc_result($result,"Longitude"),
              lat=>odbc_result($result,"Latitude"),
              cog=>odbc_result($result,"COG"),
-             true_heading=>odbc_result($result,"Heading"),
+             heading=>odbc_result($result,"Heading"),
              datetime=>odbc_result($result,"TimeOfFix"),
              imo=>odbc_result($result,"IMONumber"),
              vesselname=>htmlspecialchars(odbc_result($result,"Name")),

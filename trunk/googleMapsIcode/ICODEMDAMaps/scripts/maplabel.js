@@ -120,9 +120,11 @@ MapLabel.prototype.onAdd = function() {
     panes.mapPane.appendChild(canvas);
   }
 
+  /*
   if (canvas.parentNode != null) {
     canvas.parentNode.style.zIndex = style.zIndex;
   }
+  */
 };
 MapLabel.prototype['onAdd'] = MapLabel.prototype.onAdd;
 
