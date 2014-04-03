@@ -384,7 +384,7 @@
                  <input class="checkbox" id="IHSTabs" name="IHSTabs" type="checkbox" onclick="toggleIHSTabs();"> Enable IHS Tabs<br>
                  <hr>
                  Only show vessels up to 
-                 <select id="vessel_age" onChange="vessel_age_changed();">
+                 <select id="vessel_age" onChange="vessel_age_changed(true);">
                     <option value="no limit">No limit</option>
                     <option value="0.25" selected="selected">15 mins</option>
                     <option value="1">1 hours</option>
@@ -438,7 +438,7 @@
                     <option value="3">3</option>
                  </select> seconds<br>
                  Auto-refresh rate: 
-                 <select id="refresh_rate" onChange="refresh_rate_changed();">
+                 <select id="refresh_rate" onChange="refresh_rate_changed(true);">
                     <option value="0.16">10 seconds</option>
                     <option value="0.5">30 seconds</option>
                     <option value="1" selected="selected">1 minute</option>
