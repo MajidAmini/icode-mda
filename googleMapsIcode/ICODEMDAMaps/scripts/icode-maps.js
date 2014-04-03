@@ -467,6 +467,7 @@ function initialize() {
                document.getElementById("enableCluster").checked = true;
             }
             toggleCluster();
+            refreshMaps(true);
             break;
          case 72: // h
             togglePanel();
@@ -633,6 +634,7 @@ function initialize() {
  * Handles refreshing map of all markers
  */
 function refreshMaps(forceRedraw) {
+   //alert("caller is " + arguments.callee.caller.toString()); //Find out who called this function
    console.log("Calling refreshMaps");
 
    //Update refresh time
@@ -3726,7 +3728,7 @@ function WMSTMACSHistoryGetTileUrl(tile, zoom) {
 }
 
 /* -------------------------------------------------------------------------------- */
-function vessel_age_changed() {
+function vessel_age_changed(refresh) {
    var vessel_age_selection = $("#vessel_age option:selected").val();
    if (vessel_age_selection == "no limit") {
       vessel_age = -1;
@@ -3735,7 +3737,9 @@ function vessel_age_changed() {
       vessel_age = parseFloat(vessel_age_selection);
    }
    //console.log(vessel_age);
-   refreshMaps(true);
+   if (refresh) {
+      refreshMaps(true);
+   }
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -3758,11 +3762,13 @@ function reload_delay_changed() {
 }
 
 /* -------------------------------------------------------------------------------- */
-function refresh_rate_changed() {
+function refresh_rate_changed(refresh) {
    autoRefreshRate = parseFloat($("#refresh_rate option:selected").val())*1000;
    autoRefreshOff();   
    autoRefreshOn();
-   refreshMaps(true);
+   if (refresh) {
+      refreshMaps(true);
+   }
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -4330,7 +4336,6 @@ function toggleCluster() {
       console.log("Turning off clusters");
       enableCluster = false;
    }
-   refreshMaps(true);
 }
 
 /* -------------------------------------------------------------------------------- */
@@ -4382,8 +4387,6 @@ function toggleTimeMachine() {
 
       document.getElementById('status-msg').innerHTML = "TIME MACHINE CURRENTLY TURNED ON";
       document.getElementById('status-msg').style.opacity = "1";
-
-      refreshMaps(true);
    }
    else {
       console.log("Turning off Time Machine");
@@ -4393,8 +4396,6 @@ function toggleTimeMachine() {
       timeend = null;
 
       document.getElementById('status-msg').style.opacity = "0";
-      
-      refreshMaps(true);
    }
 }
 
