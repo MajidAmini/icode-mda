@@ -11,7 +11,6 @@ $starttime = $mtime;
 //Keep database connection information secure
 require("phpsql_dbinfo.php");
 
-
 /* ************************************************** */
 
 /* Building DSN */
@@ -36,7 +35,7 @@ $iGridRows = 16;
 $iGridCols = 32;
 
 $iMinClusterSize = 10;
-$latestpositionsfrommemorytable = "SELECT * FROM vessels_memory WHERE (RxStnID = 'Local' OR RxStnID <> 'Local')";
+$latestpositionsfrommemorytable = "SELECT * FROM $ais_database.$vessels_table WHERE (RxStnID = 'Local' OR RxStnID <> 'Local')";
 
 //Add timestamp constraint
 if (!empty($_GET["vessel_age"])) {

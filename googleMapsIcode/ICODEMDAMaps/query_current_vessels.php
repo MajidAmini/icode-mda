@@ -11,7 +11,6 @@ $starttime = $mtime;
 //Keep database connection information secure
 require("phpsql_dbinfo.php");
 
-
 /* ************************************************** */
 
 /* Building DSN */
@@ -34,26 +33,30 @@ if(count($_GET) > 0) {
 
       switch ($source) {
          case "LAISIC_AIS_TRACK":
-            $fromSources = "(SELECT trkguid, trknum, updateguid, srcguid, datetime, lat as Latitude, lon as Longitude, cog, sog, stage, semimajor, semiminor, orientation, holdtime, hitscount, quality, source, inttype, callsign, mmsi, vesselname, imo FROM " . $laisic_database . ".trackdata_mem_track_heads) VESSELS";
+            $fromSources = "(SELECT trkguid, trknum, updateguid, srcguid, datetime, lat as Latitude, lon as Longitude, cog, sog, stage, semimajor, semiminor, orientation, holdtime, hitscount, quality, source, inttype, callsign, mmsi, vesselname, imo FROM $laisic_database.trackdata_mem_track_heads) VESSELS";
             break;
          case "LAISIC_RADAR":
-            $fromSources = "(SELECT mmsi, sog, lon as Longitude, lat as Latitude, cog, datetime, streamid, target_status, target_acq, trknum, sourceid FROM " . $laisic_database . ".radar_laisic_output_mem_track_heads) VESSELS";
+            $fromSources = "(SELECT mmsi, sog, lon as Longitude, lat as Latitude, cog, datetime, streamid, target_status, target_acq, trknum, sourceid FROM $laisic_database.radar_laisic_output_mem_track_heads) VESSELS";
             break;
          case "LAISIC_AIS_OBS":
-            $fromSources = "(SELECT obsguid, lat as Latitude, lon as Longitude, semimajor, semiminor, orientation, cog, sog, datetime, callsign, mmsi, vesselname, imo, streamid FROM " . $laisic_database . ".aisobservation_mem_track_heads) VESSELS";
+            $fromSources = "(SELECT obsguid, lat as Latitude, lon as Longitude, semimajor, semiminor, orientation, cog, sog, datetime, callsign, mmsi, vesselname, imo, streamid FROM $laisic_database.aisobservation_mem_track_heads) VESSELS";
             break;
          case "RADAR":
-            $fromSources = "(SELECT * FROM icodemda.pvol_pdm_memory WHERE (`CommsID`, `TimeOfFix`) IN ( SELECT `CommsID`, max(`TimeOfFix`) FROM icodemda.pvol_pdm_memory GROUP BY `CommsID` )
-) VESSELS";
+            $fromSources = "(SELECT * FROM icodemda.pvol_pdm_memory WHERE (`CommsID`, `TimeOfFix`) IN ( SELECT `CommsID`, max(`TimeOfFix`) FROM icodemda.pvol_pdm_memory GROUP BY `CommsID` )) VESSELS";
+            break;
+         case "LIVE_LAISIC":
+            $fromSources = "(SELECT mmsi, sog, lon as Longitude, lat as Latitude, cog, datetime, streamid, target_status, target_acq, trknum, sourceid FROM $laisic_live_database.radar_laisic_output_mem_track_heads WHERE mmsi != 0) VESSELS";
             break;
          default: //AIS
             if (empty($_GET["risk"])) {
                //No risk query:
-               $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM $ais_database.vessels_memory GROUP BY MMSI)) VESSELS";
+               //$fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM $ais_database.$vessels_table WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM $ais_database.$vessels_table GROUP BY MMSI)) VESSELS";
+               //TODO:TESTING FASTER QUERY below
+               $fromSources = "$ais_database.$vessels_table VESSELS";
             }
             else {
                //With risk query:
-               $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM vessels_memory WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM $ais_database.vessels_memory GROUP BY MMSI)) VESSELS LEFT OUTER JOIN `risk`.user_ship_risk ON VESSELS.mmsi = `risk`.user_ship_risk.mmsi";
+               $fromSources = "(SELECT `MMSI`, `CommsID`, `IMONumber`, `CallSign`, `Name`, `VesType`, `Cargo`, `AISClass`, `Length`, `Beam`, `Draft`, `AntOffsetBow`, `AntOffsetPort`, `Destination`, `ETADest`, `PosSource`, `PosQuality`, `FixDTG`, `ROT`, `NavStatus`, `Source`, `TimeOfFix`, `Latitude`, `Longitude`, `SOG`, `Heading`, `RxStnID`, `COG` FROM $ais_database.$vessels_table WHERE (`MMSI`, `TimeOfFix`) IN ( SELECT `MMSI`, max(`TimeOfFix`) FROM $ais_database.$vessels_table GROUP BY MMSI)) VESSELS LEFT OUTER JOIN `risk`.user_ship_risk ON VESSELS.mmsi = `risk`.user_ship_risk.mmsi";
             }
       }
    }
@@ -116,9 +119,13 @@ if(count($_GET) > 0) {
     */
 
     //Add timestamp constraint, only for AIS tracks
-    if (!empty($_GET["vessel_age"]) && $source === "AIS") {
+    if (!empty($_GET["vessel_age"]) && ($source === "AIS" || $source === "RADAR")) {
        $vessel_age = $_GET["vessel_age"];
        $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
+    }
+    else if (!empty($_GET["vessel_age"]) && ($source === "LIVE_LAISIC")) {
+       $vessel_age = $_GET["vessel_age"];
+       $query = $query . " AND datetime > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
     }
 
     //Add keyword search constraint
@@ -136,6 +143,11 @@ if(count($_GET) > 0) {
     if (!empty($_GET["limit"])) {
        $limit = $_GET["limit"];
        $query = $query . " limit " . $limit;
+    }
+
+    //Limit to messages that show unique RxStnID fields (requires TV32-Seavision.EXE)
+    if ($source == 'AIS') {
+       $query = $query . " AND Source='vdm0'";
     }
 
     //?
@@ -237,6 +249,20 @@ while (odbc_fetch_row($result)){
                    vesselname=>htmlspecialchars(odbc_result($result,"vesselname")),
                    imo=>odbc_result($result,"imo"),
                    streamid=>htmlspecialchars(odbc_result($result,"streamid"))      
+           );
+    }
+    else if ($source === "LIVE_LAISIC") {
+        $vessel = array(mmsi=>odbc_result($result,"mmsi"),
+                   sog=>odbc_result($result,"sog"),
+                   lon=>addslashes(odbc_result($result,"Longitude")),
+                   lat=>addslashes(odbc_result($result,"Latitude")),
+                   cog=>odbc_result($result,"cog"),
+                   datetime=>odbc_result($result,"datetime"),
+                   streamid=>htmlspecialchars(odbc_result($result,"streamid")),
+                   target_status=>htmlspecialchars(odbc_result($result,"target_status")),
+                   target_acq=>htmlspecialchars(odbc_result($result,"target_acq")),
+                   trknum=>odbc_result($result,"trknum"),
+                   sourceid=>htmlspecialchars(odbc_result($result,"sourceid"))
            );
     }
     else if ($source === "RADAR") {
