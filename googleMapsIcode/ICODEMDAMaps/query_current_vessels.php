@@ -127,6 +127,10 @@ if(count($_GET) > 0) {
        $vessel_age = $_GET["vessel_age"];
        $query = $query . " AND datetime > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
     }
+    else if (!empty($_GET["vessel_age"])) {
+       $vessel_age = $_GET["vessel_age"];
+       $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
+    }
 
     //Add keyword search constraint
     if (!empty($_GET["keyword"]) && $source === "AIS") {

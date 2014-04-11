@@ -316,7 +316,7 @@
                  <hr>
                  <center><b>Other Information</b></center>
                  <input class="checkbox" id="enableCountryBorders" name="enableCountryBorders" type="checkbox" onclick="toggleCountryBorders();"> Enable country borders<br>
-                 <input class="checkbox" id="enableCluster" name="Enable Clusters" type="checkbox" checked="checked" onclick="toggleCluster();"> Enable Clusters when zoomed out<br>
+                 <input class="checkbox" id="enableCluster" name="Enable Clusters" type="checkbox" checked="checked" onclick="toggleCluster(true);"> Enable Clusters when zoomed out<br>
                  <!-- <input class="checkbox" id="HeatmapLayer" name="HeatmapLayer" type="checkbox" onclick="toggleHeatmapLayer();"> <img align="top" width="20px" src="icons/heatmap.png" style="padding-bottom: 4px; vertical-align: middle;"> Heatmap Layer<br> -->
                  <input class="checkbox" id="EEZLayer" name="EEZLayer" type="checkbox" onclick="toggleEEZLayer();"> EEZ Layer<br>
                  <input class="checkbox" id="WeatherLayer" name="WeatherLayer" type="checkbox" onclick="toggleWeatherLayer();"> <img align="top" width="20px" src="icons/weather_icon.png" style="padding-bottom: 4px; vertical-align: middle;"> Weather Layer<br>
@@ -380,12 +380,12 @@
                  -->
                  <input class="checkbox" id="showvesselnames" name="Show Vessel Names" type="checkbox" checked="checked" onclick="toggleShowNames();"> Show vessel names<br>
                  <input class="checkbox" id="distancetooltoggle" name="distancetooltoggle" type="checkbox" onclick="toggleDistanceTool();"> Enable distance tool<br>
-                 <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh (1 min)<br>
                  <input class="checkbox" id="IHSTabs" name="IHSTabs" type="checkbox" onclick="toggleIHSTabs();"> Enable IHS Tabs<br>
                  <hr>
                  Only show vessels up to 
                  <select id="vessel_age" onChange="vessel_age_changed(true);">
                     <option value="no limit">No limit</option>
+                    <option value="0.0833333333333333">5 mins</option>
                     <option value="0.25" selected="selected">15 mins</option>
                     <option value="1">1 hours</option>
                     <option value="2">2 hours</option>
@@ -430,13 +430,7 @@
                  <input class="checkbox" id="showtrackicons" name="showtrackicons" type="checkbox" checked="checked" onclick="toggleTrackIcons();"> Enable track icons<br>
                  <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
                  <hr>
-                 Reload delay: 
-                 <select id="reload_delay" onChange="reload_delay_changed();">
-                    <option value="0" selected="selected">0</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                 </select> seconds<br>
+                 <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh (1 min)<br>
                  Auto-refresh rate: 
                  <select id="refresh_rate" onChange="refresh_rate_changed(true);">
                     <option value="0.16">10 seconds</option>
@@ -444,6 +438,13 @@
                     <option value="1" selected="selected">1 minute</option>
                     <option value="5">5 minutes</option>
                  </select><br>                 
+                 Reload delay: 
+                 <select id="reload_delay" onChange="reload_delay_changed();">
+                    <option value="0" selected="selected">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                 </select> seconds<br>
                  <hr>
                  <p>
                  <b>Hidden Tricks:</b><br>

@@ -457,7 +457,7 @@ function initialize() {
          case 69: // e
             $('#setupAlert').trigger( "click" );
             break;
-         case 71:
+         case 71: // g
             if (document.getElementById("enableCluster") != null &&
                 document.getElementById("enableCluster").checked) {
                document.getElementById("enableCluster").checked = false;
@@ -866,8 +866,20 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, thisquer
       }
       */
       else {
+         console.log('Entered custom query: ' + customQuery);
+
+         if (customQuery.indexOf('WHERE Latitude') != -1) {
+            customQuery = customQuery.substring(0, customQuery.indexOf('WHERE Latitude')-1)
+         }
+         console.log('Performing custom query on: ' + customQuery);
+
          //Custom SQL query statement
          phpWithArg = "query_current_vessels.php?query=" + customQuery + boundStr;
+         
+         //if vessel age limit was chosen, then add option
+         if (vessel_age != -1) {
+            phpWithArg += "&vessel_age=" + vessel_age;
+         }
       }
      
       //If not in Time Machine mode, change status display to custom query message
@@ -1063,7 +1075,7 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, thisquer
                         strokeWeight: 1,
                         fillColor:    iconColor,
                         fillOpacity:  0.8,
-                        rotation:     vessel.heading,
+                        rotation:     vessel.heading-90,
                         optimized:    false,
                      }
                   });
@@ -1287,7 +1299,8 @@ function getTargetsFromDB(bounds, customQuery, sourceType, forceRedraw, thisquer
          console.log('getTargetsFromDB(): ' + "Total number of markers = " + markerArray.length);
          document.getElementById('busy_indicator').style.visibility = 'hidden';
          document.getElementById('stats_nav').innerHTML = 
-            response.resultcount + " results<br>" + 
+            //response.resultcount + " results<br>" + 
+            markersDisplayed.length + " results<br>" + //Use markersDisplayed array length to include RADAR and LAISIC markers
             Math.round(response.exectime*1000)/1000 + " secs";
       }) //END .done()
       .fail(function() { 
@@ -1545,7 +1558,8 @@ function markerInfoBubble(marker, vessel, infoBubble) {
    var title, vesseltype;
 
    if (vessel.commsid != undefined) {
-      title = 'RADAR ' + vessel.commsid;
+      //title = 'RADAR ' + vessel.commsid;
+      title = vessel.source + ' ' + vessel.commsid;
       vesseltype = 'RADAR';
    }
    else if (vessel.trknum != undefined && vessel.streamid == 'shore-radar' || vessel.vesseltypeint == 888 || (vessel.streamid == 'r166710001' && vessel.vesseltypeint != 999)) {
@@ -1676,6 +1690,7 @@ function generateInfoHTML(vessel, vesseltype, title) {
       '<b>Risk Safety</b>: ' + vessel.risk_score_safety + '<br>'+	
       '</div>' +     //close for content-sub
       '<br><br>' +   
+      '<br>' +   
       '</div>' +     //close for content-right
       '</div>' +     //close for bodyContent
       '</div>';      //close for content
@@ -1694,14 +1709,14 @@ function generateInfoHTML(vessel, vesseltype, title) {
 function generateRadarInfoHTML(vessel) {
       var htmlTitle = 
       '<div id="content">'+
-      '<span style="vertical-align: middle;display:inline-block;height: 30px;"><span id="firstHeading" class="firstHeading"> RADAR ' + vessel.commsid + '</span></span>' +
+      '<span style="vertical-align: middle;display:inline-block;height: 30px;"><span id="firstHeading" class="firstHeading"> ' + vessel.streamid + ' ' + vessel.commsid + '</span></span>' +
       '<div id="bodyContent">';
 
    var htmlLeft = 
       '<div id="content-left">' +
       '<div id="content-sub" border=1>' +
       '<b>Track ID</b>: ' + vessel.commsid + '<br>' +
-      '<b>Vessel Type</b>: ' + 'RADAR' + '<br>' +
+      '<b>Vessel Type</b>: ' + vessel.streamid + '<br>' +
       '<b>Message Type</b>: ' + vessel.opt4val + '<br>' +
       '</div>' +
       '<div>' + 
@@ -1756,9 +1771,6 @@ function generateLAISICInfoHTML(vessel, vesseltype, title) {
       '<b>RADAR Track ID</b>: ' + vessel.trknum + '<br>' +
       '<b>Associated MMSI</b>: ' + vessel.mmsi + '<br>' +
       '<b>Vessel Type</b>: LAISIC<br>' +
-      '</div>' +
-      '<div>' + 
-      '<a id="showtracklink" link="" href="javascript:void(0);" onClick="getTrackByTrackIDandSource(\'' + vessel.mmsi + '\', \'' + vesseltype + '\');">Show vessel track history</a>' +
       '</div>' +
       (vesseltype=='AIS'?
       '<div id="content-port" border=1>' +
@@ -2554,7 +2566,8 @@ function typeSelectUpdated() {
    var entered_query;
 
    if ($.inArray(999, types) == -1) {
-      entered_query = mainQuery.substring(0,mainQuery.indexOf(') VESSELS')) + " AND VesType IN (";
+      //Massage mainQuery to add VesType filtering based on checkboxes selected
+      entered_query = "SELECT * from (" + mainQuery.substring(0,mainQuery.indexOf(' VESSELS')) + " WHERE VesType IN (";
    
       for (var i=0; i < types.length; i++) {
          entered_query = entered_query + types[i];
@@ -4327,7 +4340,7 @@ function toggleRisk() {
 }
 
 /* -------------------------------------------------------------------------------- */
-function toggleCluster() {
+function toggleCluster(refresh) {
    if (document.getElementById("enableCluster") && document.getElementById("enableCluster").checked) {
       console.log("Turning on clusters");
       enableCluster = true;
@@ -4335,6 +4348,9 @@ function toggleCluster() {
    else {
       console.log("Turning off clusters");
       enableCluster = false;
+   }
+   if (refresh) {
+      refreshMaps(true);
    }
 }
 
