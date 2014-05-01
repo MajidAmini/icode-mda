@@ -8,10 +8,10 @@
 * [HowTos]
 
 * Imagery and Data
-  * [LessonGeoRef How to georeference an Image]
+  * [LessonGeoRef How to georeference an image]
   * [LessonDataAccess Where to get satellite imagery]
   * [LessonESA Introduction to an ESA proposal for data]
-  * [LessonCannyHough Introduction to the Canny Edge Filter and Hough Transform]
+  * [LessonCannyHough Introduction to the Canny Edge filter and Hough Transform]
   * [LessonKmeans Introduction to k-means]
   * [LessonNDVI Introduction to NDVI]
   * [LessonAIS Introduction to AIS]
