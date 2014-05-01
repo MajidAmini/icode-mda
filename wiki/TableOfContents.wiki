@@ -15,7 +15,7 @@
   * [LessonKmeans Introduction to k-means]
   * [LessonNDVI Introduction to NDVI]
   * [LessonAIS Introduction to AIS]
-  * [LessonKernelProcessing Kernel Based Image Processing]
+  * [LessonKernelProcessing Kernel based image processing]
   * [LessonSatAisVmsLrit SatAIS, VMS, and LRIT differences]
   * [ICODEMDADevelopmentMappingTool ICODE-MDA Maps with Google Maps]
 
