@@ -1,0 +1,92 @@
+<html>
+   <head>
+      <!--<meta http-equiv="refresh" content="5" />-->
+      <title>Setup Alerts</title>
+
+      <script src="//cdnjs.cloudflare.com/ajax/libs/jquery-form-validator/2.1.38/jquery.form-validator.min.js"></script>
+      <script> $.validate({}); </script>
+   </head>
+   <body style="margin:0px; padding:0px;">
+        <table>
+           <td>
+              <p><b>Instructions for setting up an alert:</b>
+              <ul>
+                 <li>Define a ROI.</li>
+                 <li>Add additional criteria(s) if desired.</li>
+                 <li>Click "Save Alert" button.</li>
+              </ul>
+              </p>      
+           </td>
+
+           <td>
+              <p><b>Instructions For Defining ROI:</b>
+              <ul>
+                 <li>Click on the map to insert a vertex.</li>
+                 <li>Right-click on a vertex to remove it.</li>
+                 <li>Drag a vertex to move it.</li>
+              </ul>
+              </p>
+           </td>
+        </table>
+
+        
+        
+        <table>
+           <tr>
+              <td>
+              <form id="alert_definition" action="http://www.w3schools.com/tags/form_action.asp" method="get">
+                 <fieldset>
+
+                    <legend>Region-of-Interest Constraints and Filters:</legend>
+                    <label for="alertpolygon">POLYGON:</label> <textarea type="text" id="alertpolygon" name="alertpolygon" readonly="readonly" cols="50" rows="3" /></textarea /><input type="button" name="resetpolygon" value="Reset" onClick="resetPolygon(); return false;" /><br />
+                       <select class="label" id="alertfield">
+                          <option value='all'>ALL VESSEL</option>
+                          <option value='mmsi'>MMSI</option>
+                          <option value='imo'>IMO</option>
+                          <option value='vesselname'>VESSEL NAME</option>
+                          <option value='callsign'>CALLSIGN</option>
+                          <option value='destination'>DESTINATION</option>
+                          <option value='vesseltype'>VESSEL TYPE</option>
+                          <option value='length'>LENGTH</option>
+                          <option value='width'>WIDTH</option>
+                          <option value='draught'>DRAUGHT</option>
+                       </select>
+                       <select id="alertoperation">
+                          <option value='equals'>equals</option>
+                          <option value='contains'>contains</option>
+                          <option value='starts with'>starts with</option>
+                          <option value='ends with'>ends with</option>
+                       </select>
+                       <input type="text" id="alertvalue" size="30" /><br />
+                       <label for="alertenteringarea">ENTERING ROI:</label> <input id="alertentering" type="checkbox" checked="true" name="entering_area" /><br />
+                       <label for="alertexitingarea">EXITING ROI:</label> <input id="alertexiting" type="checkbox" checked="true" name="exiting_area" /><br />
+
+                 </fieldset>
+              </form>
+
+              <form id="alert_definition" action="http://www.w3schools.com/tags/form_action.asp" method="get">
+                 <fieldset>
+
+                    <legend>Notification Target</legend>
+                    <label>E-MAIL:</label><input type="text" id="emailaddress" name="emailaddress" size="50" data-validation="email" data-validation-error-msg="Invalid Email" /><br />
+                    <label>UPDATE INTERVAL:</label>
+                    <select id="frequency">
+                       <option value='15'>every 15 minutes</option>
+                       <option value='30'>every 30 minutes</option>
+                       <option value='60'>every 1 hour</option>
+                    </select>
+                 </fieldset>
+              </form>                 
+           </td>
+        </tr>
+        <tr>
+           <td align="right">
+              <!--  <input type="submit" value="Save Alert" /> -->
+              <!-- <input type="button" name="submit" value="Save Alert" onclick="showFormData(this.form);" /> -->
+              <input type="button" name="submit" value="Save Alert" onclick="saveAlert();" />
+           </td>
+        </tr>
+        </table>
+   </body>
+</html>
+
