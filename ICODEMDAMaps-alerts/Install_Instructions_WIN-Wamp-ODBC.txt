@@ -1,0 +1,37 @@
+Install Instructions for Windows - for PostgreSQL or MySQL database through ODBC connection
+(tested on Windows 7, 64-bit)
+
+
+1) Download Uniform Server (http://www.uniformserver.com/)
+  - does not require installation;  this is a portable application
+  - extract files and run "Start_as_program.exe"
+  - Click on "Start Apache" to start your server
+
+2) Install PostgreSQL driver for ODBC (http://www.postgresql.org/ftp/odbc/versions/msi/)
+  - this allows a single application to access multiple different databases through Microsoft's ODBC
+  - use 32- or 64-bit version, but make sure to update the phpsql_dbinfo.php file accordingly... more information on this below.
+
+3) Copy all files in this directory into a directory in your www directory of the UniSever folder
+
+
+4) Set up your databases
+
+[PostgreSQL version]
+- Open pgAdmin III to create and edit PostgreSQL AIS database/table
+  - push some data to your tables
+
+[MySQL version]
+- Open phpMyAdmin or MySQL Workbench and create and edit the AIS database/table
+  - push some data to your tables
+
+
+5) Edit phpsql_dbinfo.php in your www folder
+  - update the login information to match that for your database
+  - use 'PostgreSQL Unicode', 'PostgreSQL Unicode(x64)' or 'MySQL ODBC 5.2 Unicode Driver' as the odbc_driver
+    - bit version you require depends on whether your browser or client is 32- or 64-bits
+
+6) Edit query_current_vessels.php, query_track.php, and query_port.php
+  - update the database queries to match your database structure
+  - this is the file you would be updating a lot to customize your queries for the map
+
+7) Open a web browser and go to http://localhost to view your map with AIS points
