@@ -5,11 +5,6 @@ $mtime = explode(" ",$mtime);
 $mtime = $mtime[1] + $mtime[0]; 
 $starttime = $mtime; 
 
-//For comparing strings
-function startsWith($haystack, $needle)
-{
-    return $needle === "" || strpos($haystack, $needle) === 0;
-}
 
 //-----------------------------------------------------------------------------
 //Database execution
@@ -132,7 +127,7 @@ if(count($_GET) > 0) {
        $vessel_age = $_GET["vessel_age"];
        $query = $query . " AND datetime > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
     }
-    else if (!empty($_GET["vessel_age"]) && !startsWith($source,"LAISIC_")) {
+    else if (!empty($_GET["vessel_age"])) {
        $vessel_age = $_GET["vessel_age"];
        $query = $query . " AND TimeOfFix > (UNIX_TIMESTAMP(NOW()) - 60*60*$vessel_age)";
     }
