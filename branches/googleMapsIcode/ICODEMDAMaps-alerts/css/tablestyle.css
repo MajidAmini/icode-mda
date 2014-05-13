@@ -1,0 +1,211 @@
+/*------------------------------------*\
+    CSS for LAISIC Tables
+\*------------------------------------*/
+/*
+NOTES
+RESET
+SHARED     
+MAIN       
+*/
+
+html { 
+   height:       100%;
+}
+body {
+   height:       100%; 
+   width:        100%;
+   margin:       0px;
+   padding:      0px;
+   overflow:     hidden;
+   font:         12px/1.7 Verdana,'Lucida Grande', Arial, "Trebuchet MS", Helvetica, sans-serif;
+}
+table {
+   margin:       0;
+   padding:      0;
+   border:       0px solid black;
+   width:        100%;
+}
+.width10 {
+   width:        10%;
+}
+.width20 {
+   width:        20%;
+}
+#panel_top {
+   background:   #333333;
+   height:       60px;
+   color:        #ffffff;
+   position:     relative;
+   top:          0;
+   margin:       0;
+   z-index:      2;
+   box-shadow:   0px 3px 5px #888888;
+}
+#logo {
+   position:     absolute;
+   border:       0px solid red;
+   top:          0px;
+   left:         0px;
+   height:       58px;
+   width:        250px;
+   margin:       0;
+   padding:      0;
+   line-height:  20px;
+   vertical-align:middle;
+   text-align:   center;
+   font-size:    18px;
+   text-shadow:  gray 2px 2px 1px;
+}
+#top_nav {
+   position:     absolute;
+   height:       60px;
+   width:        -webkit-calc(100% - (400px));
+   width:        calc(100% - (400px));
+   line-height:  58px;
+   top:          4px;
+   left:         253px;
+   vertical-align:middle;
+   text-align:   left;
+   border:       0px solid red;
+}
+#stats_nav {
+   position:     absolute;
+   height:       40px;
+   width:        130px;
+   top:          12px;
+   right:        0px;
+   line-height:  20px;
+   vertical-align:middle;
+   text-align:   left;
+   border:       0px solid blue;
+}
+#busy_indicator{
+   width:        32px; 
+   position:     absolute; 
+   top:          16px;
+   right:        90px;
+   border:       0px red solid;
+   z-index:      2;
+   visibility:   visible;
+}
+#container {
+   overflow:     hidden;
+   position:     absolute;
+   padding:      0px;
+   border:       0px solid gray;
+   width:        100%;
+   height:       -webkit-calc(100% - (60px));
+   height:       calc(100% - (60px));
+   margin:       0 0 0 0;
+}
+#data_container {
+   position:     relative;
+   float:        left;
+   height:       100%;
+   max-width:    100%;
+   padding:      0px;
+   display:      block;
+   border:       0px solid red;
+}
+#historytrail_container {
+   float:        left;
+   height:       100%;
+   border:       0px solid gray; 
+}
+#raw_ais_container {
+   height:       -webkit-calc(100% - (60px));
+   height:       calc(100% - (60px));
+   max-width:    -webkit-calc(100% - (20px));
+   max-width:    calc(100% - (20px));
+   border:       0px solid red;
+}
+.table_container {
+   height:       -webkit-calc(100%/3 - (10px));
+   height:       calc(100%/3 - (10px));
+   max-width:    -webkit-calc(100% - (20px));
+   max-width:    calc(100% - (20px));
+   border:       0px solid red;
+}
+#title_container {
+   height:       40px;
+   width:        60%;
+   margin:       auto; 
+   padding:      0px 0px 0px 0px;
+   border:       0px solid blue;
+}
+#table_title {
+   border:       0px solid red; 
+   height:       40px;
+   width:        350px;
+   float:        left;
+}
+.laisic_status {
+   border:       0px solid red; 
+   display:      table-cell; 
+   vertical-align: bottom; 
+   height:       40px;
+}
+.table_style {
+   overflow-y:   scroll;
+   height:       100%;
+}
+#aisdatatable {
+   position:     relative;
+   border:       1px solid gray;
+   margin:       0px;
+   padding:      0px 0px;
+   height:       100%;
+/*   height:       -webkit-calc(100% - (5px));
+   height:       calc(100% - (5px));*/
+   top:          0px;
+   left:         0px;
+   overflow-y:   hidden;
+   overflow-x:   hidden;
+   line-height:  10px;
+   vertical-align:middle;
+   background-color: rgb(255, 255, 255);
+}
+#datatable {
+   position:     relative;
+   border:       1px solid gray;
+   margin:       0px;
+   padding:      0px 0px;
+   height:       -webkit-calc(100% - (40px));
+   height:       calc(100% - (40px));
+   top:          0px;
+   left:         0px;
+   overflow-y:   hidden;
+   overflow-x:   hidden;
+   line-height:  10px;
+   vertical-align:middle;
+   background-color: rgb(255, 255, 255);
+}
+#historytrailtable {
+   position:     relative;
+   border:       1px solid gray;
+   margin:       0px;
+   padding:      0px;
+   height:       -webkit-calc(100% - (105px));
+   height:       calc(100% - (105px));
+   top:          -11px;
+   left:         0px;
+   overflow-y:   hidden;
+   overflow-x:   hidden;
+   line-height:  10px;
+   vertical-align:middle;
+   background-color: rgb(255, 255, 255);
+}
+.tabs {
+   height:       100%;
+   padding:      0px;
+}
+a {
+   text-decoration: none;
+   color:        #0000FF;
+}
+input, textarea, select {
+   font-family:  inherit;
+}
+input[type="text"]  {
+   height:       22px;
+}

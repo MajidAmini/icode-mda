@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html>
+  <head>
+     <title>ICODE-MDA Maps</title>
+     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+
+     <link rel="stylesheet" type="text/css" href="css/mapstyle.css">
+     <link rel="stylesheet" type="text/css" href="css/alert.css">
+
+     <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=geometry,drawing,weather,visualization&sensor=false"> </script>
+     <script type="text/javascript" src='scripts/infobubble.js' ></script>
+
+     <script type="text/javascript" language="Javascript" src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+     <script>window.jQuery || document.write('<script src="scripts/jquery.min.js"><\/script>')</script>
+
+
+     <!-- <link href='http://fonts.googleapis.com/css?family=Lato:400,900' rel='stylesheet' type='text/css'> -->
+
+     <!-- script type="text/javascript" src='scripts/fade.js' ></script -->
+
+     <script type="text/javascript" src="scripts/ihs-table.js"></script>
+
+     <script type="text/javascript" src="scripts/distanceWidget.js"></script>
+
+     <script type="text/javascript" src="scripts/geoxml3.js"></script>
+     <script type="text/javascript" src="scripts/ProjectedOverlay.js"></script>
+
+     <script type="text/javascript" src="scripts/jQueryRotate.2.2.js"></script>
+     <script type="text/javascript" src="scripts/jquery.activity-indicator-1.0.0.js"></script>
+
+     <script type="text/javascript" src="scripts/ExtDraggableObject.js"></script>
+     <script type="text/javascript" src="scripts/trackTimeSlider.js"></script>
+     <script type="text/javascript" src="scripts/maplabel.js"></script>
+     <script type="text/javascript" src="scripts/infobox.js"></script>
+
+     <script type="text/javascript" src="scripts/CSJSRequestObject.js"></script>
+
+     <script type="text/javascript" src="scripts/fileUpload.js"></script>
+
+     <!-- Library for drawing error ellipse: 
+     http://www.geocodezip.com/v3_example_eshapes_ellipse_fromBounds.html
+     -->
+     <script src="scripts/v3_eshapes.js" type="text/javascript"></script>
+
+     <!-- Email Alerts -->
+     <script src="scripts/setup-alerts.js" type="text/javascript"></script>
+
+     <!-- Theme downloaded from http://jqueryui.com/download/#!zThemeParams=5d00000100f405000000000000003d8888d844329a8dfe02723de3e5701fa198449035fc0613ff729a37dd818cf92b1f6938fefa90282d04ae436bb72367f5909357c629e832248af2c086db4ab730aa4cced933a88449eca61db9f7f3b23d47f58a712d809b6088edfb34ad39fdc365386d0fa05a1ac3ecd320d2c989729f79ebdc6c6c1efbdad4c8411d498f009ffe98fe129da7602fb950113abdae4a76a6c41a4b54b4f82bb8821d6d431cd3fdd76b9d621596a2728b93385f2e7aaf8ea6603553343d43829941536e2bdd3ed7d7d3207364bf351633b31b934a71523a88fa2058cdd4c2e0778cd56d6ccac254ddace19ff4460a100e2e6a52830d9063c6e328cc3cb5e3d6dbe1077ae8b7cc5fa6414eafd15883b40c6c3e71647031ce3da7038a945a5628669fbe0e5139dad7ce99c00f25c2cd40569bd2fe1b2caed45bf2b8943f6ac17215bd54437a0f739009848e80f1d5c00d99870e7258d07402af6b22872fdf8f2892a7e9274aaa9181573ddd8cd7788511b4459e736d76b3e64e015809712e904499648868a11e35b3bb8ee1168d6039c5a86eee8cf545c877dbdd0111ab04ede46a85a17baed0958026fe23d2e490cfa504ab598731d779a2434fa164085379d31e1ff08e2eeb9475cce3d5b3e9b2fd4df43dffe6cf0eda -->
+     <script type="text/javascript" src="scripts/jquery-ui-1.10.3.custom.js"></script>
+     <link rel="stylesheet" href="css/custom-theme/jquery-ui-1.10.3.custom.css">
+     <script>
+        $(function() {
+           $( "#accordion" ).accordion({
+              collapsible: true,
+              heightStyle: "fill"
+           });
+           $(window).resize(function(){
+              $("#accordion").accordion("refresh");
+           });           
+        });
+     </script>
+
+     <script>
+        $(function() {
+           $('#busy_indicator').activity({segments: 8, steps: 3, opacity: 0.3, width: 4, space: 0, length: 5, color: '#fff', speed: 2.0});
+        });
+     </script>
+
+     <script>
+        $(function() {
+           $( "#dialog" ).dialog({
+              autoOpen: true,
+              modal: true,
+              hide: "fade",
+           });
+           setTimeout(function(){ $( "#dialog" ).dialog("close")}, 2000);
+        });
+     </script>
+
+     <style>
+        #feedback { font-size: 1em; }
+        #selectable .ui-selecting { background: #FECA40; }
+        #selectable .ui-selected { background: #F39814; color: white; }
+        #selectable { list-style-type: none; margin: 0; padding: 0; width: 100%; }
+        #selectable li { margin: 0px; padding: 0.5em; font-size: 1em; height: 10px; }
+     </style>
+     <script>
+        $(function() {
+           $( "#selectable" ).selectable({
+              stop: function() { 
+                 var result = [];
+                 $( ".ui-selected", this ).each(function() {
+                    var index = $( "#selectable li" ).index( this );
+                    result.push( index + 1 );
+                 });                 
+
+                 clearOverlays();
+                 clearAllTracks();
+                 markersDisplayed = [];
+
+                 if (markerArray) {
+                    for (var i=0; i < markerArray.length; i++) {
+                       if ($.inArray(i+1,result) != -1) {
+                          markerArray[i].setMap(map);
+                          var marker = markersQueried[i];
+                          markersDisplayed.push(marker);
+                       }
+                    }
+                 }
+              }
+           });           
+        });
+     </script>
+
+     <script>
+        //Select all text if query bar comes into focus
+        $(document).ready(function() {
+           $("#query:text").focus(function() { 
+              $(this).one('mouseup', function(event){
+                 event.preventDefault();
+              }).select();
+           });
+           $("#geocodeAddress").focus(function() { 
+              $(this).one('mouseup', function(event){
+                 event.preventDefault();
+              }).select();
+           });
+        });
+     </script>
+
+     <script>
+        $(document).ready(function() {
+           var $setupAlertDialog = $('#setup-alert-modal')
+                       .dialog({
+                          autoOpen: false,
+                          title: 'Setup an Alert',
+                          width: 700,
+                          height: 500,
+                          modal: false,
+                          position: [90,110]
+                       });
+        });
+     </script>
+
+     <!-- Main JavaScript for controlling map -->
+     <script type="text/javascript" src='scripts/icode-maps.js' ></script>
+
+  </head>
+
+  <body onload="initialize()">
+
+     <!--
+     <div id="dialog" title="Welcome to ICODE-MDA Maps">
+        <p>Use the query bar for SQL searches and the side menu for options. <br>
+        Message will disappear in 2 seconds...</p>
+     </div>
+     -->
+
+     <div id="panel_top">
+        <div id="logo">
+           <h2><a style="color: rgb(255,255,255)" href=".">ICODE-MDA</a></h2>
+        </div>
+        <div id="top_nav">
+           <div>
+              <form name="query_form"><input id="query" type="text" name="query" style="width:100%" onkeypress="if (event.which == 13) {enteredQuery();return false;}" value="QUERY RUNNING..."><input hidden="true" type="hidden"></form>
+           </div>
+        </div>
+        <div id="stats_nav">
+           <!-- result count and query time to be shown here -->
+        </div>
+     </div>
+
+     <div id="container">
+        <!-- BEGIN LEFT PANEL -->  
+        <div id="panel">
+
+           <div id="accordion" class="accordion">
+              <h3>Legend</h3>
+              <div id="vessel_types">
+                 <center><b>Vessel Types</b></center>
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#3333FF;stroke:#3333FF;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 LAISIC AIS Observation<br>
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="20" width="30" viewBox="-5 -10 20 20">
+                 <path d="m -6 0 6 -6 6 6 -6 6 z m 12 0 l 8 0" style="fill:#FFFF00;stroke:#222222;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 LAISIC AIS Track<br>
+                 <input class="checkboxtype" id="radarvessels" name="radarvessels" checked="checked" type="checkbox" onclick="refreshMaps(true);"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="16" width="30" viewBox="-6 -12 15 16">
+                 <path d="M 0, -3 m -6, 0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0 m 8 0 l 10 0" style="fill:#F078FF;stroke:#222200;stroke-width:1;fill-rule:evenodd;">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 RADAR Vessels<br>
+                 <input class="checkboxtype" id="livelaisic" name="livelaisic" checked="checked" type="checkbox" onclick="refreshMaps(true);">
+                 <svg width="26" height="15" version="1.1" xmlns="https://svgwg.org/svg2-draft/"  viewBox="0 3 20 10"><path d="M 12,0 22,15 19,21 12,24 6,21 3,15 Z" fill="#FF0000" stroke="#000000" stroke-width="3" transform="rotate(90 6 6) scale(0.5) translate(5 -4)"></path></svg>
+                 Live LAISIC Correlations<br>
+                 <input class="checkboxallships" id="All Ships" name="All Ships" checked="false" type="checkbox" onclick="typeSelectedAllShips();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#444444;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 All Ships<br>
+                 <input class="checkboxtype" id="0-Unspecified Ships" name="0-Unspecified Ships" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#F78181;stroke:#780202;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 0 - Unspecified Ships<br>
+                 <input class="checkboxtype" id="30-Fishing" name="30-Fishing" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DFD7;stroke:#006058;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 30 - Fishing<br>
+                 <input class="checkboxtype" id="31-Towing" name="31-Towing" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#600000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 31 - Towing<br>
+                 <input class="checkboxtype" id="32-Big Tow" name="32-Big Tow" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#600000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 32 - Big Tow<br>
+                 <input class="checkboxtype" id="35-Military" name="35-Military" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#0000FF;stroke:#000080;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 35 - Military<br>
+                 <input class="checkboxtype" id="37-Pleasure Craft" name="37-Pleasure Craft" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#8904B1;stroke:#0a0032;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 37 - Pleasure Craft<br>
+                 <input class="checkboxtype" id="51-Search and Rescue" name="51-Search and Rescue" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#BE3C14;stroke:#3f0000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 51 - Search & Rescue<br>
+                 <input class="checkboxtype" id="52-Tug" name="52-Tug" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#600000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 52 - Tug<br>
+                 <input class="checkboxtype" id="33-Dredge" name="33-Dredge" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#600000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 33 - Dredge<br>
+                 <input class="checkboxtype" id="50-Pilot" name="50-Pilot" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#DF7401;stroke:#600000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 50 - Pilot<br>
+                 <input class="checkboxtype" id="55-Law Enforcement" name="55-Law Enforcement" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#0000FF;stroke:#000080;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 55 - Law Enforcement<br>
+                 <input class="checkboxtype" id="6x-Passenger Vessels" name="6x-Passenger Vessels" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DF01;stroke:#006000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 6x - Passenger Vessels<br>
+                 <input class="checkboxtype" id="7x-Cargo Vessels" name="7x-Cargo Vessels" checked="checked" type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DF01;stroke:#006000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 7x - Cargo Vessels<br>
+                 <input class="checkboxtype" id="8x-Tankers" name="8x-Tankers" checked="checked"  type="checkbox" onclick="typeSelectUpdated();"> 
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#01DF01;stroke:#006000;stroke-width:1;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 8x - Tankers<br>
+                 <hr>
+                 <center><b>Risk Level</b><br>(vessel outline)</center>
+                 <input class="checkbox" id="Risk" name="Risk" type="checkbox" onclick="toggleRisk();refreshMaps(true);"> Enable risk information<br>
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#00F014;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 Low Risk<br>
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#F0FF78;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 Medium Risk<br>
+                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" height="14" width="30" viewBox="-5 -10 15 15">
+                 <path d="M 0,10 4,10 4,-3 0,-10 -4,-3 -4,10 z" style="fill:#FFFFFF;stroke:#FF0014;stroke-width:2;fill-rule:evenodd;" transform="rotate(90 0 0)">Browser does not support inline SVG.
+                 </path>
+                 </svg>
+                 High Risk<br>
+              </div>
+
+              <h3>Layer Types</h3>
+              <div id="layer_types">
+                 <center><b>TMACS WMS</b></center>
+                 <input class="checkbox" id="TMACShead" name="TMACShead" type="checkbox" onclick="toggleTMACSHeadWMSLayer();"> TMAC Trackheads<br>
+                 <input class="checkbox" id="TMACShistory" name="TMACShistory" type="checkbox" onclick="toggleTMACSHistoryWMSLayer();"> Track History<br>
+                 <br>
+                 <hr>
+                 <center><b>Other Information</b></center>
+                 <input class="checkbox" id="enableCountryBorders" name="enableCountryBorders" type="checkbox" onclick="toggleCountryBorders();"> Enable country borders<br>
+                 <input class="checkbox" id="enableCluster" name="Enable Clusters" type="checkbox" checked="checked" onclick="toggleCluster(true);"> Enable Clusters when zoomed out<br>
+                 <!-- <input class="checkbox" id="HeatmapLayer" name="HeatmapLayer" type="checkbox" onclick="toggleHeatmapLayer();"> <img align="top" width="20px" src="icons/heatmap.png" style="padding-bottom: 4px; vertical-align: middle;"> Heatmap Layer<br> -->
+                 <input class="checkbox" id="EEZLayer" name="EEZLayer" type="checkbox" onclick="toggleEEZLayer();"> EEZ Layer<br>
+                 <input class="checkbox" id="WeatherLayer" name="WeatherLayer" type="checkbox" onclick="toggleWeatherLayer();"> <img align="top" width="20px" src="icons/weather_icon.png" style="padding-bottom: 4px; vertical-align: middle;"> Weather Layer<br>
+                 <!-- input class="checkbox" id="KMLLayer" name="KMLLayer" type="checkbox" onclick="toggleKMLLayer();"> <img align="top" width="20px" src="icons/kml.png" style="padding-bottom: 4px; vertical-align: middle;"> KML Layer<br> -->
+                 <input class="checkbox" id="PortLayer" name="PortLayer" type="checkbox" onclick="togglePortLayer();"> <img align="top" height="20px" src="icons/anchor_port.png" style="padding-bottom: 4px; vertical-align: middle;"> Port Layer<br>
+                 <input class="checkbox" id="HeatmapLayer" name="HeatmapLayer" type="checkbox" onclick="toggleHeatmapLayer();"> Heatmap Layer<br>
+                 </p>
+              </div>
+
+              <h3>LAISIC Tables</h3>
+              <div>
+                 <input class="checkbox" id="LAISIC_TARGETS" name="LAISIC_TARGETS" type="checkbox" onclick="refreshMaps(true);"> Display LAISIC targets<br><br>
+                 <center><a href="laisictables.html" target="_blank">Click here to open <br>LAISIC Tables in a new window</a></center>
+                 <br>
+                 <input class="checkbox" id="error ellipses" name="error ellipses" type="checkbox" checked="checked" onclick=";"> Draw error ellipses on trackicons<br><br>
+              </div>
+
+              <h3>Upload KMZ</h3>
+              <div>
+                 Upload KMZ: <br />
+                 <form id="kmlform" >
+                    <input class="inputfilebutton" type="file" name="file" size="5" />
+                    <input class="inputfilebutton" type="button" onClick="fileUpload(this.form,'kml/kmzextract.php','upload'); return false;" value="Upload">
+                 </form>
+                 <div id="upload"></div>
+              </div>
+
+              <h3>Time Machine</h3>
+              <div>
+                 <input class="checkbox" id="enabletimemachine" name="Enable Time Machine" type="checkbox" onclick="toggleTimeMachine();"> Enable Time Machine
+                 <br>
+                 <br>
+                 <!-- http://trentrichardson.com/examples/timepicker/ -->
+                 <script src="scripts/jquery-ui-timepicker-addon-cus.js"></script>
+                 <script>
+                    $(function() {
+                       $('#datetimestart').datetimepicker({timeFormat: 'hh:mm tt z'});
+                       $('#datetimeend').datetimepicker({timeFormat: 'hh:mm tt z'});
+                    });
+                 </script>
+                 Pick a date range:
+                 <p align="center">
+                 <input type="text" id="datetimestart" size="18" />
+                 <br /> to <br />
+                 <input type="text" id="datetimeend" size="18" />
+
+                 <br />
+                 <br />
+                 <input id="queryTimeMachineButton" type="button" onClick="if ($('#datetimestart').datetimepicker('getDate') == null || $('#datetimeend').datetimepicker('getDate') == null) {$('#datetimestart').datetimepicker('setDate', (new Date(Math.round(new Date().getTime()/1000/86400)*86400*1000 + new Date().getTimezoneOffset()*60*1000 - 86400*1000)));$('#datetimeend').datetimepicker('setDate', (new Date(Math.round(new Date().getTime()/1000/86400)*86400*1000 + new Date().getTimezoneOffset()*60*1000)));} TimeMachineLookup(($('#datetimestart').datetimepicker('getDate').getTime()/1000), ($('#datetimeend').datetimepicker('getDate').getTime()/1000)); return false;" value="Query">
+                 </p>
+                 Filtering MMSI: <input id="filterMMSITimeMachine" type="textbox" value="Enter MMSI to filter" onClick="document.getElementById('filterMMSITimeMachine').value= '';" onkeydown="if (event.keyCode == 13) {$('#queryTimeMachineButton').trigger('click');}"><br>
+                 Custom filter: <input id="customQueryTimeMachine" type="textbox" value="i.e. 'SOG < 1'" onClick="document.getElementById('customQueryTimeMachine').value= '';" onkeydown="if (event.keyCode == 13) {$('#queryTimeMachineButton').trigger('click');}"><br>
+              </div>
+
+              <h3>Other Options</h3>
+              <div>
+                 <!--
+                 <form id="distancetoolform" >
+                    <input class="inputfilebutton" id="distancetooltoggle" type="button" onClick="toggleDistanceTool();" value="Enable distance tool">
+                 </form>
+                 -->
+                 <input class="checkbox" id="showvesselnames" name="Show Vessel Names" type="checkbox" checked="checked" onclick="toggleShowNames();"> Show vessel names<br>
+                 <input class="checkbox" id="distancetooltoggle" name="distancetooltoggle" type="checkbox" onclick="toggleDistanceTool();"> Enable distance tool<br>
+                 <input class="checkbox" id="IHSTabs" name="IHSTabs" type="checkbox" onclick="toggleIHSTabs();"> Enable IHS Tabs<br>
+                 <hr>
+                 Only show vessels up to 
+                 <select id="vessel_age" onChange="vessel_age_changed(true);">
+                    <option value="no limit">No limit</option>
+                    <option value="0.0833333333333333">5 mins</option>
+                    <option value="0.25" selected="selected">15 mins</option>
+                    <option value="1">1 hours</option>
+                    <option value="2">2 hours</option>
+                    <option value="3">3 hours</option>
+                    <option value="4">4 hours</option>
+                    <option value="5">5 hours</option>
+                    <option value="6">6 hours</option>
+                    <option value="7">7 hours</option>
+                    <option value="8">8 hours</option>
+                    <option value="9">9 hours</option>
+                    <option value="10">10 hours</option>
+                    <option value="11">11 hours</option>
+                    <option value="12">12 hours</option>
+                    <option value="24">24 hours</option>
+                    <option value="48">48 hours</option>
+                    <option value="72">72 hours</option>
+                 </select>
+                 <hr>
+                 History trail length: 
+                 <select id="history_trail_length" onChange="history_trail_length_changed();">
+                    <option value="no limit">No limit</option>
+                    <option value="0.25" selected="selected">6 hours</option>
+                    <option value="0.5" selected="selected">12 hours</option>
+                    <option value="1" selected="selected">1 day</option>
+                    <option value="2">2 days</option>
+                    <option value="3">3 days</option>
+                    <option value="4">4 days</option>
+                    <option value="5">5 days</option>
+                    <option value="6">6 days</option>
+                    <option value="7">7 days</option>
+                    <option value="8">8 days</option>
+                    <option value="9">9 days</option>
+                    <option value="10">10 days</option>
+                    <option value="11">11 days</option>
+                    <option value="12">12 days</option>
+                    <option value="13">13 days</option>
+                    <option value="14">14 days</option>
+                    <option value="15">15 days</option>
+                    <option value="31">31 days</option>
+                 </select>
+                 <br>
+                 <input class="checkbox" id="showtrackicons" name="showtrackicons" type="checkbox" checked="checked" onclick="toggleTrackIcons();"> Enable track icons<br>
+                 <input class="checkbox" id="queryalltracks" name="queryalltracks" type="checkbox" onclick="toggleQueryAllTracks();"> Query tracks for vessels in view<br>
+                 <hr>
+                 <input class="checkbox" id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked" onclick="toggleAutoRefresh();"> Automatically refresh (1 min)<br>
+                 Auto-refresh rate: 
+                 <select id="refresh_rate" onChange="refresh_rate_changed(true);">
+                    <option value="0.16">10 seconds</option>
+                    <option value="0.5">30 seconds</option>
+                    <option value="1" selected="selected">1 minute</option>
+                    <option value="5">5 minutes</option>
+                 </select><br>                 
+                 Reload delay: 
+                 <select id="reload_delay" onChange="reload_delay_changed();">
+                    <option value="0" selected="selected">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                 </select> seconds<br>
+                 <hr>
+                 <p>
+                 <b>Hidden Tricks:</b><br>
+                 <ul>
+                    <li>Right click a target to quickly acquire track history.</li>
+                    <li>Right click track history to delete.</li>
+                    <li>Don't query tracks for vessels in view if many vessels are in view!</li>
+                    <li>Click the black vertical bar on the right to hide this menu.</li>
+                    <li>Click anywhere on the map to hide a visible infoBubble.</li>
+                    <li>Click on track history markers to display dead-reckoning prediction to next point in history.</li>
+                    <li>Press '?' for Keyboard shortcuts.</li>
+                 </ul>
+              </div>
+
+              <h3>Geofencing Notifications</h3>
+              <div>
+                 <p align=center>
+                    Setup your email alerts here.
+                    <br>
+                    <input id="setupAlert" type="button" onClick="setupAlertInitialize(); return false;" value="Setup Alert">
+                 </p>
+              </div>
+           </div>
+           <!-- END ACCORDION -->
+
+        </div>
+        <!-- END LEFT PANEL -->  
+
+        <!-- BEGIN MAP AREA -->
+        <div id="map_canvas">
+        </div> 
+        <!-- END MAP AREA -->
+
+        <div id="showpanel" onmouseover="" style="cursor: pointer;">
+           ><br>><br>>
+        </div>
+     </div>
+
+     <div id="busy_indicator"><div style="width: 32px; height: 32px;"></div></div>
+
+     <div id="shipdetails">
+     </div>
+
+     <div id="latlong">
+     </div>
+
+     <div id="lastUpdated">
+        <div id="lastUpdatedText"></div>
+     </div>
+
+     <div id="status-msg">
+        Currently showing RADAR and raw full AIS
+     </div>
+
+     <div id="keyboard-shortcut-modal" title="Keyboard Shortcuts">
+        <p>
+        <pre>
+  <b>?</b>&#9;&#9; Display this shortcut dialog box<br>
+  <b>Spacebar</b>&#9; Refresh targets in current view<br>
+  <b>A</b>&#9;&#9; Toggle auto-refresh targets<br>
+  <b>C</b>&#9;&#9; Clear all tracks<br>
+  <b>G</b>&#9;&#9; Toggle clustering<br>
+  <b>H</b>&#9;&#9; Hide/show menu panel<br>
+  <b>L</b>&#9;&#9; Toggle LAISIC/AIS targets<br>
+  <b>N</b>&#9;&#9; Toggle showing vessel names<br>
+  <b>P</b>&#9;&#9; Toggle port layer<br>
+  <b>Q</b>&#9;&#9; Select the query bar<br>
+  <b>R</b>&#9;&#9; Refresh browser<br>
+  <b>W</b>&#9;&#9; Toggle weather layer<br>
+  <b>-</b>&#9;&#9; Zoom out<br>
+  <b>+</b>&#9;&#9; Zoom in<br>
+  <b>Arrows keys</b>&#9; Pan around map<br>
+  <b>ESC</b>&#9;&#9; Close this dialog box<br></pre>
+        </p>
+     </div>
+
+     <div id="setup-alert-modal">
+        <!-- Content here defined in separate alerts/setup-alerts.html file -->
+     </div>
+
+
+     <div id="geocodepanel">
+        <input id="geocodeAddress" type="textbox" value="San Diego, CA">
+        <input type="button" value="Set Map Center" onclick="codeAddress()">
+     </div>
+
+  </body>
+</html>
+
