@@ -5,15 +5,17 @@ import sys, time
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+sys.path.append('../DB_common/')
 import GetInfo
 import ICODE_DB as IB
+import ICODE_repo as IR
 
 if __name__ == "__main__":
 
 	f= open("barcos_test.txt", 'r')
 	Nf= open("vessels_out_marinetraffic.txt", 'w')
 	IB.dbConnection('127.0.0.1', 'antonio', 'icodeantonio', 'ICODE')
-	IB.createTable('vessels_from_marinetraffic', """CREATE TABLE vessels_from_marinetraffic (MMSI int primary key, Flag varchar (25), AISType varchar (20), IMO int, CallSign varchar (10), GrossTonnage int, DeadWeight int, Length double, Breadth double, YearBuilt int, Status varchar (25), InfoReceived varchar (20), Area varchar (25), Latitude double, Longitude double, StatusLPR varchar (30), Speed double, Course double, AISSource varchar (40), Destination varchar (30),ETA varchar (25), LastKnownPort varchar (30), LastKnownPortdate varchar(25), PreviousPort varchar (30), PreviousPortdate varchar (25),Draught double, SpeedRecordedMax double, SpeedRecordedAverage double, InfoReceivedVRI varchar (20));""")
+	IB.createTable('vessels_from_marinetraffic', """(MMSI int primary key, Flag varchar (25), AISType varchar (20), IMO int, CallSign varchar (10), GrossTonnage int, DeadWeight int, Length double, Breadth double, YearBuilt int, Status varchar (25), InfoReceived int, Area varchar (25), Latitude double, Longitude double, StatusLPR varchar (30), Speed double, Course double, AISSource varchar (40), Destination varchar (30),ETA varchar (25), LastKnownPort varchar (30), LastKnownPortdate int, PreviousPort varchar (30), PreviousPortdate int, Draught double, SpeedRecordedMax double, SpeedRecordedAverage double, InfoReceivedVRI int)""")
 	IB.createTable('vessels_RecentPortCalls_from_marinetraffic',
 					"""CREATE TABLE vessels_RecentPortCalls_from_marinetraffic (id BIGINT NOT NULL AUTO_INCREMENT, MMSI int, Port varchar (25), Arrival varchar (25), Departure varchar (25), primary key(id));""")
 
@@ -152,7 +154,8 @@ if __name__ == "__main__":
 									else:										
 										temp1= str(datosLPR[h+1].text).split(' min ago (')
 										temp2= temp1[1].split(')')
-										toDb.append(temp2[0])
+										toDb.append(time2unix(temp2[0], '%Y-%m-%d %H:%M'))
+#										toDb.append(temp2[0])
 								aux=11
 							if i==1 and aux==-1:
 								toDb.append('None')
