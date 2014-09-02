@@ -1,4 +1,5 @@
 ###############################################################Libraries
+import sys
 import numpy as np
 import MySQLdb as msq
 import ICODE_DBD as DBD
@@ -148,7 +149,7 @@ def columnNames (tablename, col, sta):
 		print "*** ERROR: The DB doesn't exists. ***" 
         
 #-----------------------------------------------------------------------
-def uploadtoDB (tablename, data):
+def upload2DB (tablename, data):
 	"""
 	Upload data to a table in host. The data can be a list or
 	an array.
@@ -185,7 +186,7 @@ def uploadtoDB (tablename, data):
 		dbcon.commit()
 	else: #-----------------------------------------------
 		print "*** ERROR: The DB doesn't exists. ***"
-        
+	    
 #-----------------------------------------------------------------------
 def readfromDB (tablename, select='*', query=''):
 	"""
