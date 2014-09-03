@@ -1,7 +1,0 @@
-- Create a Google Earth KML file with one polygon saved it in of the ROI
-- edit the checkinROI.bat file to make sure the correct KML file is used
-- run the checkinROI.bat file
-- the program will output to screen (or you can pipe to a file) all the images within your ROI.  You can then use this list to copy the images to a different directory, etc.
-
-Resources:
-http://gsak.net/google/polygoneditor.html
