@@ -194,7 +194,7 @@ def upload2DB_ai (tablename, data, columns):
 	The data can be a list or an array.
 	--------------------------------------------------------
 	Syntax:
-		uploadtoDB (tablename, data, columns)
+		uploadtoDB_ai (tablename, data, columns)
 	--------------------------------------------------------
 	Parameters:
 		- tablename: is the name of the table.
@@ -205,7 +205,7 @@ def upload2DB_ai (tablename, data, columns):
 		Supose that testtbl has 3 columns: Id (int) with auto increment, 
 		name (varchar) and age (int):
 		
-		uploadtoDB ('testtbl', [['Juan',20],['Ana',3]], 0)
+		uploadtoDB_ai ('testtbl', [['Juan',20],['Ana',3]], 0)
 		
 		The function upload the info to DB, avoiding the first column.
 		Note that you can define more than one auto incremental column
