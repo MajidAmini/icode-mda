@@ -8,6 +8,7 @@ sys.setdefaultencoding('utf-8')
 sys.path.append('../DB_common/')
 import GetInfo
 import ICODE_DB
+import ICODE_RP as RP
 #import ICODE_repo as IR
 
 if __name__ == "__main__":
@@ -53,7 +54,7 @@ if __name__ == "__main__":
 
                 datos= DataBasic.body.find_all("b")
                 metadata= DataBasic.body.find_all("span")
-                names = []
+                """ names = []
                 values = []                
                 for item in metadata:
                     names.append(item.text.lower().translate(': '))
@@ -65,77 +66,79 @@ if __name__ == "__main__":
                 print "The index of the mmsi: " + names.index("mmsi")
                     
                 print "=======metadata==========" + str(metadata)
-                print "=========datos===========" + str(datos)
+                print "=========datos===========" + str(datos)"""
                 toDb=[]
                 aux=1
-                #for i in range(len(datos)):
-                for l in range(len(metadata)):
-                    print metadata[l].text
-                    if str(metadata[l].text) == 'MMSI: ':
-                        toDb.append(int(datos[l].text))
-                        aux=2
-                    if i==1 and aux==1:
-                        toDb.append(int('-'+str(datos[l].text)+'00'))
-                        aux=2
-
-                    if str(metadata[l].text) == 'Flag: ' and aux==2:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append('None')
-                        else:
-                            toDb.append(str(datos[l].text))
-                        aux=3
-                    if str(metadata[l].text) == 'AIS Type: ' and aux==3:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append('None')
-                        else:
-                            toDb.append(str(datos[l].text))
-                        aux=4
-                    if str(metadata[l].text) == 'IMO: ' and aux==4:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append(-1)
-                        else:
+                for i in range(len(datos)):
+                    for l in range(len(metadata)):
+                        print metadata[l].text
+                        if str(metadata[l].text) == 'MMSI: ' and aux==1:
                             toDb.append(int(datos[l].text))
-                        aux=5
-                    if str(metadata[l].text) == 'Call Sign: ' and aux==5:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append('None')
-                        else:
-                            toDb.append(str(datos[l].text))
-                        aux=6
-                    if str(metadata[l].text) == 'Gross Tonnage: ' and aux==6:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append(-1)
-                        else:
-                            toDb.append(int(datos[l].text))
-                        aux=7
-                    if str(metadata[l].text) == 'DeadWeight: ' and aux==7:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append(-1)
-                        else:
-                            toDb.append(int(datos[l].text))
-                        aux=8
-                    if str(metadata[l].text) == 'Length x Breadth: ' and aux==8:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append(-1)
-                            toDb.append(-1)
-                        else:
-                            temp1= str(datos[l].text).split('m \xc4\x82\xc2\x97 ')
-                            temp2= temp1[1].split('m')
-                            toDb.append(float(temp1[0]))
-                            toDb.append(float(temp2[0]))
-                        aux=9
-                    if str(metadata[l].text) == 'Year Built: ' and aux==9:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append(-1)
-                        else:
-                            toDb.append(int(datos[l].text))
-                        aux=10
-                    if str(metadata[l].text) == 'Status: ' and aux==10:
-                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                            toDb.append('None')
-                        else:
-                            toDb.append(str(datos[l].text))
-                        aux=-1
+                            aux=2
+                        if i==1 and aux==1:
+                            toDb.append(int('-'+str(datos[l].text)+'00'))
+                            aux=2
+    
+                        if str(metadata[l].text) == 'Flag: ' and aux==2:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append('None')
+                            else:
+                                toDb.append(str(datos[l].text))
+                            aux=3
+                        if str(metadata[l].text) == 'AIS Type: ' and aux==3:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append('None')
+                            else:
+                                toDb.append(str(datos[l].text))
+                            aux=4
+                        if str(metadata[l].text) == 'IMO: ' and aux==4:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append(-1)
+                            else:
+                                toDb.append(int(datos[l].text))
+                            aux=5
+                        if str(metadata[l].text) == 'Call Sign: ' and aux==5:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append('None')
+                            else:
+                                toDb.append(str(datos[l].text))
+                            aux=6
+                        if str(metadata[l].text) == 'Gross Tonnage: ' and aux==6:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append(-1)
+                            else:
+                                toDb.append(int(datos[l].text))
+                            aux=7
+                        if str(metadata[l].text) == 'Deadweight: ' and aux==7:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append(-1)
+                            else:
+                                temp1=str(datos[l].text).split(' t')
+                                temp2=temp1[0]
+                                toDb.append(int(temp2))
+                            aux=8
+                        if str(metadata[l].text).split(' ')[0] == 'Length' and aux==8:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append(-1)
+                                toDb.append(-1)
+                            else:
+                                temp1= str(datos[l].text).split('m \xc3\x97 ')
+                                temp2= temp1[1].split('m')
+                                toDb.append(float(temp1[0]))
+                                toDb.append(float(temp2[0]))
+                            aux=9
+                        if str(metadata[l].text) == 'Year Built: ' and aux==9:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append(-1)
+                            else:
+                                toDb.append(int(datos[l].text))
+                            aux=10
+                        if str(metadata[l].text) == 'Status: ' and aux==10:
+                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                                toDb.append('None')
+                            else:
+                                toDb.append(str(datos[l].text))
+                            aux=-1
 
                 datosLPR= DataLastPositionRecibe.body.find_all("span")
                 metaDb=[]
@@ -162,11 +165,11 @@ if __name__ == "__main__":
                                     toDb.append('None')
                                 else:
                                     if str(datosLPR[h+1].text)[4] == '-':
-                                        toDb.append(str(datosLPR[h+1].text))
+                                        toDb.append(RP.time2unix(str(datosLPR[h+1].text), '%Y-%m-%d %H:%M'))
                                     else:                                        
                                         temp1= str(datosLPR[h+1].text).split(' min ago (')
                                         temp2= temp1[1].split(')')
-                                        toDb.append(time2unix(temp2[0], '%Y-%m-%d %H:%M'))
+                                        toDb.append(RP.time2unix(temp2[0], '%Y-%m-%d %H:%M'))
 #                                        toDb.append(temp2[0])
                                 aux=11
                             if i==1 and aux==-1:
@@ -188,8 +191,9 @@ if __name__ == "__main__":
                                     toDb.append(-1)
                                     toDb.append(-1)
                                 else:
-                                    temp1= str(datosLPR[h+1].text).split('\xec\xa7\xb8 / ')
-                                    temp2= temp1[1].split('\xec\xa7\xb8')
+                                    temp1= str(datosLPR[h+1].text).split('\xc2\xb0 / ')
+                                    print temp1
+                                    temp2= temp1[1].split('\xc2\xb0')
                                     toDb.append(float(temp1[0]))
                                     toDb.append(float(temp2[0]))
                                 aux=13
@@ -214,7 +218,7 @@ if __name__ == "__main__":
                                     toDb.append(-1)
                                 else:
                                     temp1= str(datosLPR[h+1].text).split('kn / ')
-                                    temp2= temp1[1].split('\xec\xa7\xb8')
+                                    temp2= temp1[1].split('\xc2\xb0')
                                     if temp1[0] == '-':
                                         toDb.append(-1)
                                     else:
@@ -299,32 +303,32 @@ if __name__ == "__main__":
                             if str(datosRPC[h].text) =='Last Known Port' and aux==21:
                                 if str(datosRPC[h+1].text) == '-' or str(datosRPC[h+1].text) == '' or str(datosRPC[h+1].text) == '-------' or str(datosRPC[h+1].text) == '?' or str(datosRPC[h+1].text) == 'N/A':
                                     extraDb.append('None')
-                                    extraDb.append('None')
+                                    extraDb.append(-1)
                                 else:
-                                    temp1= str(datosRPC[h+1].text).split(' (')
-                                    temp2= temp1[1].split(')')
+                                    temp1= str(datosRPC[h+1].text).split('\xc2\xa0')
+                                    temp2= temp1[1].split(') (')
                                     extraDb.append(temp1[0])                                    
-                                    extraDb.append(temp2[0])
+                                    extraDb.append(RP.time2unix(temp2[1].split(')')[0], '%Y-%m-%d %H:%M:%S'))
                                 aux=22
                             if i==3 and aux==21:
                                 extraDb.append('None')
-                                extraDb.append('None')
+                                extraDb.append(-1)
                                 aux=22
 
                             if str(datosRPC[h].text) =='Previous Port' and aux==22:
                                 if str(datosRPC[h+1].text) == '-' or str(datosRPC[h+1].text) == '' or str(datosRPC[h+1].text) == '-------' or str(datosRPC[h+1].text) == '?' or str(datosRPC[h+1].text) == 'N/A':
                                     extraDb.append('None')
-                                    extraDb.append('None')
+                                    extraDb.append(-1)
 
                                 else:
-                                    temp1= str(datosRPC[h+1].text).split(' (')
-                                    temp2= temp1[1].split(')')
+                                    temp1= str(datosRPC[h+1].text).split('\xc2\xa0')
+                                    temp2= temp1[1].split(') (')
                                     extraDb.append(temp1[0])                                    
-                                    extraDb.append(temp2[0])
+                                    extraDb.append(RP.time2unix(temp2[1].split(')')[0], '%Y-%m-%d %H:%M:%S'))
                                 aux=23
                             if i==4 and aux==22:
                                 extraDb.append('None')
-                                extraDb.append('None')
+                                extraDb.append(-1)
                                 aux=23
 
                             if str(datosRPC[h].text) =='Draught' and aux==23:
@@ -355,16 +359,19 @@ if __name__ == "__main__":
 
                             if str(datosRPC[h].text) =='Info Received' and aux==25:
                                 if str(datosRPC[h+1].text) == '-' or str(datosRPC[h+1].text) == '' or str(datosRPC[h+1].text) == '-------' or str(datosRPC[h+1].text) == '?' or str(datosRPC[h+1].text) == 'N/A':
-                                    extraDb.append('None')
+                                    extraDb.append(-1)
                                 else:
-                                    extraDb.append(str(datosRPC[h+1].text))
+                                    temp1=str(datosRPC[h+1].text).split(' (')
+                                    extraDb.append(RP.time2unix(temp1[0], '%Y-%m-%d %H:%M'))
                                 aux=26
                             h+=1
                         i+=1
                     if i==7 and aux==25:
-                        extraDb.append('None')
+                        extraDb.append(-1)
                         aux=26
-                    print str(extraDb)
+                    print "=========== toDb ======== " + str(toDb)
+                    print "=========== extraDb ======== " + str(extraDb)
+                    
                     IB.uploadToDB('vessels_from_marinetraffic', [toDb+extraDb])
 #                    QueryInsertVessel.InsertTable(toDb[0], toDb[1], toDb[2], toDb[3], toDb[4], toDb[5], toDb[6], toDb[7], toDb[8],
 #                    toDb[9], toDb[10], toDb[11], toDb[12], toDb[13], toDb[14], toDb[15], toDb[16], toDb[17], toDb[18], extraDb[0],
@@ -372,15 +379,15 @@ if __name__ == "__main__":
                 elif len(datosLPR)!=0:
                     IB.uploadToDB('vessels_from_marinetraffic',
                     [toDb+['None', 'None',
-                    'None', 'None', 'None', 'None', -1, -1, -1, 'None']])
+                    'None', -1, 'None', -1, -1, -1, -1, -1]])
 #                    QueryInsertVessel.InsertTable(toDb[0], toDb[1], toDb[2], toDb[3], toDb[4], toDb[5], toDb[6], toDb[7], toDb[8],
 #                    toDb[9], toDb[10], toDb[11], toDb[12], toDb[13], toDb[14], toDb[15], toDb[16], toDb[17], toDb[18], 'None', 'None',
 #                    'None', 'None', 'None', 'None', -1, -1, -1, 'None')
                 else:
                     IB.uploadToDB('vessels_from_marinetraffic',
                     [toDb+['None',
-                    'None', -1, -1, 'None', -1, -1, 'None', 'None', 'None', 'None', 'None',
-                    'None', 'None', -1, -1, -1, 'None']])
+                    'None', -1, -1, 'None', -1, -1, 'None', 'None', 'None', 'None', -1,
+                    'None', -1, -1, -1, -1, -1]])
 #                    QueryInsertVessel.InsertTable(toDb[0], toDb[1], toDb[2], toDb[3], toDb[4], toDb[5], toDb[6], toDb[7], toDb[8],
 #                    toDb[9], toDb[10], 'None', 'None', -1, -1, 'None', -1, -1, 'None', 'None', 'None', 'None', 'None',
 #                    'None', 'None', -1, -1, -1, 'None')
@@ -403,7 +410,8 @@ if __name__ == "__main__":
                                 dataRPCtoDb.append('None')
                             else:
                                 dataRPCtoDb.append(str(datosRPC[m-1].text))
-                            IB.uploadToDB('vessels_RecentPortCalls_from_marinetraffic', [ "default", toDb[0], dataRPCtoDb[0], dataRPCtoDb[1], dataRPCtoDb[2] ])
+                            temp1= [ toDb[0], dataRPCtoDb[0], dataRPCtoDb[1], dataRPCtoDb[2] ]
+                            IB.uploadToDB_ai('vessels_RecentPortCalls_from_marinetraffic', temp1, 0)
 #                            QueryInsertRPC.InsertTableRecentPortCall(toDb[0], dataRPCtoDb[0], dataRPCtoDb[1], dataRPCtoDb[2])
                         m+=1
             else:
