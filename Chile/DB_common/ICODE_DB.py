@@ -186,6 +186,60 @@ def upload2DB (tablename, data):
 		dbcon.commit()
 	else: #-----------------------------------------------
 		print "*** ERROR: The DB doesn't exists. ***"
+
+#-----------------------------------------------------------------------
+def upload2DB_ai (tablename, data, columns):
+	"""
+	Upload data to a table in host, avoiding columns. 
+	The data can be a list or an array.
+	--------------------------------------------------------
+	Syntax:
+		uploadtoDB (tablename, data, columns)
+	--------------------------------------------------------
+	Parameters:
+		- tablename: is the name of the table.
+		- data: is the info that you want to upload
+		- columns: the columns to avoid
+	--------------------------------------------------------	
+	Example:
+		Supose that testtbl has 3 columns: Id (int) with auto increment, 
+		name (varchar) and age (int):
+		
+		uploadtoDB ('testtbl', [['Juan',20],['Ana',3]], 0)
+		
+		The function upload the info to DB, avoiding the first column.
+		Note that you can define more than one auto incremental column
+		changing column = 0 for column = [0, 1,....]
+		
+	"""
+	if checkTableExists(tablename): #---------------------
+		#----------------------------------------------avoid autoinc par
+		npam = np.array([columnNames(tablename,0,1),columnNames(tablename,1,1)], dtype=str)
+		npam = np.delete(npam, columns, axis = 1)
+		out = []
+		for n in range(2):
+			for i in range(len(npam[0,:])):
+				if i == 0:
+					aux = npam[n,i]
+				else:
+					aux += ',' + npam[n,i]
+			out += [aux]
+		#----------------------------------------------like upload2DB fx
+		sql = "insert into "+tablename+"("+out[0]+") values("+out[1]+")"
+		if not(isinstance(data,list)):
+			data = data.tolist()
+		for line in data:
+			try:
+				msql = sql % tuple(line)
+			except:
+				msql = sql % line
+			try:
+				cursor.execute(msql)
+			except:
+				dbcon.rollback()
+		dbcon.commit()
+	else: #-----------------------------------------------
+		print "*** ERROR: The DB doesn't exists. ***"
 	    
 #-----------------------------------------------------------------------
 def readfromDB (tablename, select='*', query=''):
