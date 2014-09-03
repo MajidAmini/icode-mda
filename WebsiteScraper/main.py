@@ -53,80 +53,89 @@ if __name__ == "__main__":
 
                 datos= DataBasic.body.find_all("b")
                 metadata= DataBasic.body.find_all("span")
+                names = []
+                values = []                
+                for item in metadata:
+                    names.append(item.text.lower().translate(': '))
+                for item in datos:
+                    values.append(item.text.lower())
+                    
+                print str(names)
+                print str(values)
+                print "The index of the mmsi: " + names.index("mmsi")
+                    
                 print "=======metadata==========" + str(metadata)
                 print "=========datos===========" + str(datos)
                 toDb=[]
                 aux=1
-                for i in range(len(datos)):
-                    for l in range(len(metadata)):
-                        print metadata[l].text
-                        if str(metadata[l].text) == 'MMSI: ' and aux==1:
-                            toDb.append(int(datos[l].text))
-                            aux=2
-                        if i==1 and aux==1:
-                            toDb.append(int('-'+str(datos[l].text)+'00'))
-                            aux=2
+                #for i in range(len(datos)):
+                for l in range(len(metadata)):
+                    print metadata[l].text
+                    if str(metadata[l].text) == 'MMSI: ':
+                        toDb.append(int(datos[l].text))
+                        aux=2
+                    if i==1 and aux==1:
+                        toDb.append(int('-'+str(datos[l].text)+'00'))
+                        aux=2
 
-                        if str(metadata[l].text) == 'Flag: ' and aux==2:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append('None')
-                            else:
-                                toDb.append(str(datos[l].text))
-                            aux=3
-                        if str(metadata[l].text) == 'AIS Type: ' and aux==3:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append('None')
-                            else:
-                                toDb.append(str(datos[l].text))
-                            aux=4
-                        if str(metadata[l].text) == 'IMO: ' and aux==4:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append(-1)
-                            else:
-                                toDb.append(int(datos[l].text))
-                            aux=5
-                        if str(metadata[l].text) == 'Call Sign: ' and aux==5:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append('None')
-                            else:
-                                toDb.append(str(datos[l].text))
-                            aux=6
-                        if str(metadata[l].text) == 'Gross Tonnage: ' and aux==6:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append(-1)
-                            else:
-                                toDb.append(int(datos[l].text))
-                            aux=7
-                        if str(metadata[l].text) == 'DeadWeight: ' and aux==7:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append(-1)
-                            else:
-                                toDb.append(int(datos[l].text))
-                            aux=8
-                        if str(metadata[l].text) == 'Length x Breadth: ' and aux==8:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append(-1)
-                                toDb.append(-1)
-                            else:
-                                temp1= str(datos[l].text).split('m \xc4\x82\xc2\x97 ')
-                                temp2= temp1[1].split('m')
-                                toDb.append(float(temp1[0]))
-                                toDb.append(float(temp2[0]))
-                            aux=9
-                        if str(metadata[l].text) == 'Year Built: ' and aux==9:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append(-1)
-                            else:
-                                toDb.append(int(datos[l].text))
-                            aux=10
-                        if str(metadata[l].text) == 'Status: ' and aux==10:
-                            if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
-                                toDb.append('None')
-                            else:
-                                toDb.append(str(datos[l].text))
-                            aux=-1
-                        l+=1
-                    i+=1
+                    if str(metadata[l].text) == 'Flag: ' and aux==2:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append('None')
+                        else:
+                            toDb.append(str(datos[l].text))
+                        aux=3
+                    if str(metadata[l].text) == 'AIS Type: ' and aux==3:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append('None')
+                        else:
+                            toDb.append(str(datos[l].text))
+                        aux=4
+                    if str(metadata[l].text) == 'IMO: ' and aux==4:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append(-1)
+                        else:
+                            toDb.append(int(datos[l].text))
+                        aux=5
+                    if str(metadata[l].text) == 'Call Sign: ' and aux==5:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append('None')
+                        else:
+                            toDb.append(str(datos[l].text))
+                        aux=6
+                    if str(metadata[l].text) == 'Gross Tonnage: ' and aux==6:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append(-1)
+                        else:
+                            toDb.append(int(datos[l].text))
+                        aux=7
+                    if str(metadata[l].text) == 'DeadWeight: ' and aux==7:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append(-1)
+                        else:
+                            toDb.append(int(datos[l].text))
+                        aux=8
+                    if str(metadata[l].text) == 'Length x Breadth: ' and aux==8:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append(-1)
+                            toDb.append(-1)
+                        else:
+                            temp1= str(datos[l].text).split('m \xc4\x82\xc2\x97 ')
+                            temp2= temp1[1].split('m')
+                            toDb.append(float(temp1[0]))
+                            toDb.append(float(temp2[0]))
+                        aux=9
+                    if str(metadata[l].text) == 'Year Built: ' and aux==9:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append(-1)
+                        else:
+                            toDb.append(int(datos[l].text))
+                        aux=10
+                    if str(metadata[l].text) == 'Status: ' and aux==10:
+                        if str(datos[l].text) == '-' or str(datos[l].text) == '' or str(datos[l].text) == '-------' or str(datos[l].text) == '?' or str(datos[l].text) == 'N/A':
+                            toDb.append('None')
+                        else:
+                            toDb.append(str(datos[l].text))
+                        aux=-1
 
                 datosLPR= DataLastPositionRecibe.body.find_all("span")
                 metaDb=[]
