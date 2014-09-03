@@ -191,7 +191,7 @@ def upload2DB (tablename, data):
 def upload2DB_ai (tablename, data, columns):
 	"""
 	Upload data to a table in host, avoiding columns. 
-	The data can be a list or an array.
+	The data can be a list or an array.pene
 	--------------------------------------------------------
 	Syntax:
 		uploadtoDB_ai (tablename, data, columns)
