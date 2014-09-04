@@ -79,17 +79,16 @@ class ICODE_DB:
 				if find(aidx == 'AUTO_INCREMENT'):
 					ot = i
 			try:
-				if ot:
-					npam = np.array([self.columnNames(tablename,0,1),self.columnNames(tablename,1,1)], dtype = str)
-					npam = np.delete(npam,ot,axis = 1)
-					out = []
-					for n in range(2):
-						for i in range(len(npam[0,:])):
-							if i == 0:
-								aux = npam[n,i]
-							else:
-								aux += ',' + npam[n,i]
-						out += [aux]
+				npam = np.array([self.columnNames(tablename,0,1),self.columnNames(tablename,1,1)], dtype = str)
+				npam = np.delete(npam,ot,axis = 1)
+				out = []
+				for n in range(2):
+					for i in range(len(npam[0,:])):
+						if i == 0:
+							aux = npam[n,i]
+						else:
+							aux += ',' + npam[n,i]
+					out += [aux]
 			except:
 				out[0] = self.columnNames(tablename, 0, 0)
 				out[1] = self.columnNames(tablename, 1, 0)
