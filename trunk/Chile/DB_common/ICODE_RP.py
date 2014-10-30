@@ -3,9 +3,9 @@ import os
 import csv
 import time 
 import xlrd
+import pylab as pl
 import numpy as np
 import datetime as dt
-from pylab import find
 
 #############################################################Definitions
 
@@ -161,10 +161,10 @@ class ICODE_RP:
 			except:
 				print '*** Error: dform (date format) is missing, cannot convert the data ***'
 			#--------------------------------------------------------find errors
-			nst = find((data[:,4]<-1)|(data[:,4]>15))
-			trh = find((data[:,8]<0)|(data[:,8]>359)&(data[:,8]!=511))
-			lon = find(abs(data[:,10])>=180)
-			lat = find(abs(data[:,11])>=180)
+			nst = pl.find((data[:,4]<-1)|(data[:,4]>15))
+			trh = pl.find((data[:,8]<0)|(data[:,8]>359)&(data[:,8]!=511))
+			lon = pl.find(abs(data[:,10])>=180)
+			lat = pl.find(abs(data[:,11])>=180)
 			tot = np.unique(np.hstack((nst, trh, lon, lat)))				
 			#--------------------------------------------------delete the errors
 			for i in range(len(tot)):					
@@ -229,12 +229,21 @@ class ICODE_RP:
 			print 'Number of days stored exceeded, try with a lower ndy'
 			xfile.close()
 			return finfo, None
+		elif ndy == 0:
+			print 'ndy has to be greater than 0'
+			xfile.close()
+			return finfo, None
 		else:
 			for i in range(ndy):
 				out = np.load(xfile)
 			xfile.close()
 			return finfo, out
-			
+	
+	#-------------------------------------------------------------------
+	def histplot(self, hist):
+		temp = np.ma.masked_where(hist == 0,hist)
+		pl.imshow(temp)
+		pl.show()
 			
 		
 		

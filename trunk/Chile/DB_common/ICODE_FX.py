@@ -32,7 +32,7 @@ def AIS_upload_DD(files, dform = '%Y-%m-%d %H:%M:%S.0', dbtable = 'vessel_histor
 		print "*** ERROR: files has to be a list or table "+dbtable+" doesn't exists ***"
 
 #-----------------------------------------------------------------------
-def AIS_date_hist(sdy, ndy = 0, bins = 1000, plim = [-90, 90, -180, 180], dform = '%Y-%m-%d', dbtable = 'vessel_history', folder = 'histograms'):
+def AIS_date_hist(sdy, ndy = 0, bins = 1000, plim = [-90, 90,-180, 180], dform = '%Y-%m-%d', dbtable = 'vessel_history', folder = 'histograms'):
 	#For initial date: UNIX if int or float, else convert---------------
 	try:
 		sdy = float(sdy)
@@ -47,7 +47,7 @@ def AIS_date_hist(sdy, ndy = 0, bins = 1000, plim = [-90, 90, -180, 180], dform 
 	#Prepare a file to save all histograms
 	filename = RP.foldrv(folder)+'AIShist_%s_+%ddays.bin' % (date,ndy)
 	xfile = file(filename, 'wb')
-	np.save(xfile, np.hstack((np.array([bins,ndy],dtype=float),np.array(plim,dtype=float))))
+	np.save(xfile, np.hstack((np.array([bins/2,bins,ndy],dtype=float),np.array(plim,dtype=float))))
 	xfile.close()
 	
 	#For each day (ndy + 1 days in total)-------------------------------
@@ -59,21 +59,21 @@ def AIS_date_hist(sdy, ndy = 0, bins = 1000, plim = [-90, 90, -180, 180], dform 
 		
 		#For the histogram----------------------------------------------
 		#Create the matrix for the final hist
-		hdat = np.zeros((bins,bins))
+		hdat = np.zeros((bins/2,bins))			#Make an proportional histogram (rows: y axis, columns: x axis)
 		#Size of each bin
-		dx = float(plim[1] - plim[0])/bins
-		dy = float(plim[3] - plim[2])/bins
+		dx = float(plim[3] - plim[2])/bins		#For Longitude values (x axis)		
+		dy = float(plim[1] - plim[0])/(bins/2)	#For Latitude values (y axis) 
 		#Make the histogram
-		data[:,1:3] -= [plim[0], plim[2]]	#Set te initial value on te bin 0,0
-		data[:,1:3] /= [dx, dy]				#Amplify the values to put all data in bins range (1 to 1000)
-		data[:,1:3] -= [1, 1]				#Substract 1 to change the limits to be friendly to matrix manipulation (0 to 999)
-		data[:,1:3] = np.floor(data[:,1:3])	#Delete the decimal part
-		data = RP.unrows(data)				#Delete all the repeated rows
+		data[:,1:3] -= [plim[0], plim[2]]		#Set te initial value on te bin 0,0
+		data[:,1:3] /= [dy, dx]					#Amplify the values to put all data in bins range
+		data[:,1:3] -= [1, 1]					#Substract 1 to change the limits to be friendly to matrix manipulation
+		data[:,1:3] = np.floor(data[:,1:3])		#Delete the decimal part
+		data = RP.unrows(data)					#Delete all the repeated rows
 		#Put all together in one common matrix
 		for i in range(len(data)):
-			hdat[[data[i,1]],[data[i,2]]] += 1
+			hdat[[data[i,1]],[data[i,2]]] += 1	#Prepare the Histogram
 		#And fix the direction of the axis
-		hdat = np.flipud(hdat)
+		hdat = np.flipud(hdat)					#y axis is flipped, this fix that
 		
 		#Save the histogram in the file---------------------------------
 		xfile = file(filename, 'ab+')
