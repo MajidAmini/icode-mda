@@ -63,7 +63,6 @@ init_vhtable = {
 }
 
 ############################################################Repositories
-
 class ICODE_DB:
 	#-------------------------------------------------------------------
 	def __init__(self):
@@ -71,6 +70,14 @@ class ICODE_DB:
         
 	#-------------------------------------------------------------------
 	def dbConnection (self, host, user, password, dbname):
+		"""
+		Description: Allows the connection with a DB
+		Parameters:					
+			- host: the name/direction/server that runs the DB.	(type:string)
+			- user: the user to enter the database.				(type:string)			
+			- password: of the user.							(type:string)
+			- dbname: the name of the database.					(type:string)
+		"""
 		try:
 			self.dbcon = msq.connect(host=host,user=user,password=password,database=dbname, buffered=True) 
 			self.cursor = self.dbcon.cursor()
@@ -80,6 +87,11 @@ class ICODE_DB:
     
     #-------------------------------------------------------------------        
 	def dbDisconnect (self):
+		"""
+		Description: Disconnect from the current database.
+		Parameters:
+			- void
+		"""
 		try:
 			self.cursor.close()
 			self.dbcon.close()
@@ -89,6 +101,11 @@ class ICODE_DB:
 
 	#-------------------------------------------------------------------
 	def checkTableExists (self,tablename):
+		"""
+		Description: If already exists a DB connection, check if the a table exists. Return a boolean value.
+		Parameters:
+			- tablename: The name of the table.			(type:string)
+		"""
 		try:
 			cursor = self.cursor
 			cursor.execute("select * from %s limit 0,1" % tablename)
@@ -98,6 +115,13 @@ class ICODE_DB:
     
     #-------------------------------------------------------------------        
 	def columnNames (self,tablename, col, sta):
+		"""
+		Description: Returns as string or array the names (or types) for each column in the table.
+		Parameters:
+			- tablename: The name of the table.			(type:string)
+			- col: 0 for names, 1 for types.			(type:int)
+			- sta: 0 for string, 1 for list.			(type:int)
+		"""
 		if self.checkTableExists(tablename): #---------------------
 			cursor = self.cursor
 			cursor.execute("select * from %s limit 0,1" % tablename)
@@ -124,6 +148,12 @@ class ICODE_DB:
 	
 	#-------------------------------------------------------------------	        
 	def createTable (self,tablename,sql):
+		"""
+		Description: Creates a table in DB.
+		Parameters:
+			- tablename: The name of the table to create.					(type:string)
+			- sql: The characteristics of the table (as columns or types).	(type:string) 
+		"""
 		if (not(self.checkTableExists(tablename))):
 			cursor = self.cursor
 			qsql = 'create table %s ' % tablename 
@@ -133,6 +163,12 @@ class ICODE_DB:
 	
 	#-------------------------------------------------------------------
 	def uploadToDB (self,tablename, data):
+		"""
+		Description: Uploads data to a table.
+		Parameters:
+			- tablename: The name of the receiver table.					(type:string)
+			- data: The info to upload (has to be ordered like the table).	(type:depends on data)
+		"""
 		if self.checkTableExists(tablename): #---------------------
 			cursor = self.cursor
 			#----------------------------------------------avoid autoinc
@@ -176,6 +212,13 @@ class ICODE_DB:
     
     #-------------------------------------------------------------------        
 	def readfromDB (self,tablename, select='*', query=''):
+		"""
+		Description: Reads the selected data from a table.
+		Parameters:
+			- tablename: The name of the source table.						(type:string)
+			- select: Restrictions to retrieve the data (MySQL formatting).	(type:string)
+			- query:  The info that you want to retrieve.					(type:string)
+		"""
 		if self.checkTableExists(tablename): #---------------------
 			cursor = self.cursor
 			sql = "select "+select+" from %s "+query+""
@@ -187,6 +230,12 @@ class ICODE_DB:
     
     #-------------------------------------------------------------------        
 	def updateDB (self,tablename, option = ''):
+		"""
+		Description: Update a table
+		Parameters:
+			- tablename: The name of the table that want to update.		(type:string)
+			- option: Sql code for change the table or data.			(type:string)
+		"""
 		if self.checkTableExists(tablename): #---------------------
 			try:
 				cursor = self.cursor
@@ -200,6 +249,12 @@ class ICODE_DB:
     
     #-------------------------------------------------------------------        
 	def deleteDB (self,tablename, option = ''):
+		"""
+		Description: Deletes data from a table.
+		Parameters:
+			- tablename: The name of the table.							(type:string)
+			- option: Which data you want to delete.					(type:string)
+		"""
 		if self.checkTableExists(tablename): #---------------------
 			try:
 				cursor = self.cursor

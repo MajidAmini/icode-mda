@@ -220,41 +220,22 @@ class ICODE_RP:
 		"""
 		uniq = np.unique(data.view(data.dtype.descr * data.shape[1]))
 		return uniq.view(data.dtype).reshape(-1,data.shape[1])
-	
-	#-------------------------------------------------------------------
-	def AISHist(self, data, xdat = None, ydat = None, bins = 100):
-		if not(xdat):
-			xdat = [data[:,1].min(), data[:,1].max()]
-		if not(ydat):
-			ydat = [data[:,2].min(), data[:,2].max()]
-		dx = (xdat[1] - xdat[0])/bins
-		dy = (ydat[1] - ydat[0])/bins
-		hdata = np.zeros((bins,bins))	
-		unmmsi = np.unique(data[:,0])
-		count = 0
-		for i in range(len(unmmsi)):
-			index = find(data[:,0] == unmmsi[i])
-			xydat = np.take(data[:,1:3], index, axis = 0)
-			xydat -= [xdat[0], ydat[0]]
-			xydat /= [dx, dy]
-			xydat = self.unrows(np.floor(xydat))
-			xydat -= [1, 1]
-			if not(count):
-				out = xydat
-				count += 1
-			else:
-				out = np.vstack((out,xydat))
-		for i in range(len(out[:,0])):
-			hdata[int(out[i,1]), int(out[i,0])] += 1
 			
-		return np.flipud(hdata.T), np.linspace(xdat[0], xdat[1], bins), np.linspace(ydat[0], ydat[1], bins)
-		
 	#-------------------------------------------------------------------
-	def hist2file(self, hdata, lx, ly, name, folder = None):
-		svdata = np.vstack((np.hstack((len(lx),lx)),np.column_stack((ly,hdata))))
-		self.dat2text(svdata, name, folder)
+	def histfromfile(self, filename, ndy = 1):
+		xfile = file(filename, 'rb')
+		finfo = np.load(xfile)
+		if ndy > finfo[1]+1:
+			print 'Number of days stored exceeded, try with a lower ndy'
+			xfile.close()
+			return finfo, None
+		else:
+			for i in range(ndy):
+				out = np.load(xfile)
+			xfile.close()
+			return finfo, out
+			
+			
 		
-	#-------------------------------------------------------------------
-	def histfromfile(self, histfile):
-		hdata = np.load(histfile)
-		return hdata[1:,1:], hdata[0,0], hdata[0,1:], hdata[1:,0]
+		
+		
