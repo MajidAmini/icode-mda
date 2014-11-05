@@ -23,9 +23,9 @@ Applications for the tool include:
 
 = Simulation Environment =
 
-The tool shall be developed using an agent based simulation environment. The simulation environment is developed using a novel dynamic Bayesian network (DBN). The simulation environment may be configured over a particular region with a set of vessels that operate within the region. The DBN is applied to model vessel behaviour. A preprint of a manuscript submitted to Elsevier's Information Fusion journal of this work may be downloaded at the following location:
+The tool shall be developed using an agent based simulation environment. The simulation environment is developed using a novel dynamic Bayesian network (DBN). The simulation environment may be configured over a particular region with a set of vessels that operate within the region. The DBN is applied to model vessel behaviour. The manuscript describing this work may be obtained at the following location:
 
-[https://icode-mda.googlecode.com/svn/wiki/scripts/JJD/Dab13MaritimePreprint.pdf J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, preprint submitted to Information Fusion, July 2013 (July 2013).]
+[http://www.sciencedirect.com/science/article/pii/S1566253514000840 J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, Information Fusion 23 (2015) 116 – 130.]
 
 = Maritime Vessel Classification =
 
@@ -53,4 +53,4 @@ The following google gadget provides an example of a simulation where a pirate v
 
 =References=
 
- # J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, preprint submitted to Information Fusion, July 2013 (July 2013). [https://icode-mda.googlecode.com/svn/wiki/scripts/JJD/Dab13MaritimePreprint.pdf (link to pdf)]
+ # J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, Information Fusion 23 (2015) 116 – 130. [http://www.sciencedirect.com/science/article/pii/S1566253514000840 (link][https://icode-mda.googlecode.com/svn/wiki/scripts/JJD/Dab13MaritimePreprint.pdf (link to preprint)]
