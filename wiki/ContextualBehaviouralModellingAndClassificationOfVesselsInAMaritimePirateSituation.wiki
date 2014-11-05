@@ -53,4 +53,7 @@ The following google gadget provides an example of a simulation where a pirate v
 
 =References=
 
- # J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, Information Fusion 23 (2015) 116 – 130. [http://www.sciencedirect.com/science/article/pii/S1566253514000840 (link][https://icode-mda.googlecode.com/svn/wiki/scripts/JJD/Dab13MaritimePreprint.pdf (link to preprint)]
+ # J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, Information Fusion 23 (2015) 116 – 130. [http://www.sciencedirect.com/science/article/pii/S1566253514000840 (link)]
+<wiki:comment>
+[https://icode-mda.googlecode.com/svn/wiki/scripts/JJD/Dab13MaritimePreprint.pdf (link to an old preprint)]
+</wiki:comment>
