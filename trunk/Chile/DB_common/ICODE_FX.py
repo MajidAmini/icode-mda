@@ -55,13 +55,14 @@ def AIS_date_hist(sdy, ndy = 0, bins = 1000, plim = [-90, 90,-180, 180], dform =
 	else:
 		ybins = bins
 		xbins = np.ceil(ybins*(dx/dy))
+
 	#Size of each bin (bin size is proportional to side large and number of bins)
 	dx = dx/xbins	
 	dy = dy/ybins
 	
 	#Prepare a file to save all histograms------------------------------
 	#prepare info
-	info = np.hstack(np.array([sdy, ndy, xbins, ybins], dtype = float), plim)
+	info = np.hstack((np.array([sdy, ndy, xbins, ybins], dtype = float), plim))
 	#make file
 	filename = RP.foldrv(folder)+'AIShist_%s_+%ddays.bin' % (date,ndy)
 	xfile = file(filename, 'wb')
@@ -71,14 +72,15 @@ def AIS_date_hist(sdy, ndy = 0, bins = 1000, plim = [-90, 90,-180, 180], dform =
 	#For each day (ndy + 1 days in total)-------------------------------
 	for n in range(ndy+1):
 		#For each day the hist starts empty
-		hdat = np.zeros((bins/2,bins))				#Makes a proportional hist (rows: y axis, columns: x axis)
+		hdat = np.zeros((ybins,xbins))				#Makes a proportional hist (rows: y axis, columns: x axis)
 		
 		#Obtain the data (per day and place) for the vessels
 		#Prepare the date data
 		sday = sdy + n*spd							#start day for histogram	(at 00:00)
 		eday = sdy + (n+1)*spd						#next day 					(at 00:00)
 		#Make the full query and obtain the data
-		query = 'where TimeOfFix between %d and %d' + geo_query % (sday, eday)
+		query = 'where TimeOfFix between %d and %d' % (sday, eday)
+		query += geo_query
 		data = np.array(DB.readfromDB(dbtable, 'MMSI, Latitude, Longitude', query), dtype = float)
 		
 		#For the histogram
@@ -121,7 +123,7 @@ def histfromfile(filename, ndy = 1):
 #-----------------------------------------------------------------------
 def histplot(hist):
 		temp = np.ma.masked_where(hist == 0, hist)
-		pl.imshow(temp, cmap = pl.cm.Reds)
+		pl.imshow(temp, cmap = pl.cm.hot)
 		pl.show()
 					
 
