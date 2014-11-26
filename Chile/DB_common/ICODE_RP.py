@@ -221,30 +221,6 @@ class ICODE_RP:
 		uniq = np.unique(data.view(data.dtype.descr * data.shape[1]))
 		return uniq.view(data.dtype).reshape(-1,data.shape[1])
 			
-	#-------------------------------------------------------------------
-	def histfromfile(self, filename, ndy = 1):
-		xfile = file(filename, 'rb')
-		finfo = np.load(xfile)
-		if ndy > finfo[1]+1:
-			print 'Number of days stored exceeded, try with a lower ndy'
-			xfile.close()
-			return finfo, None
-		elif ndy == 0:
-			print 'ndy has to be greater than 0'
-			xfile.close()
-			return finfo, None
-		else:
-			for i in range(ndy):
-				out = np.load(xfile)
-			xfile.close()
-			return finfo, out
-	
-	#-------------------------------------------------------------------
-	def histplot(self, hist):
-		temp = np.ma.masked_where(hist == 0,hist)
-		pl.imshow(temp)
-		pl.show()
-			
 		
 		
 		
