@@ -1,10 +1,22 @@
-###############################################################Libraries
+#!/usr/bin/python2.7
+
+"""
+
+@file ICODE_DB.py
+@date Dic 2014 
+
+"""
+
+#-*- coding: utf-8 -*-
+
+# Libraries
 import numpy as np
 from pylab import find
 import mysql.connector as msq
+from mysql.connector import errorcode
 
-#############################################################Definitions
-#---------------------------------------------------field type for mySQL
+# Definitions
+# Field type for mySQL
 field_type = {
 	 0: '%f',				#DECIMAL
 	 1: '%d',				#TINY
@@ -35,7 +47,7 @@ field_type = {
 	 255: 'GEOMETRY' 			#GEOMETRY
 }
 
-#-------------------------------------------navigation status dictionary
+# Navigation status dictionary
 nav_stat = {
 	-1: 'Not sending',
 	0: 'Under way using engine',
@@ -56,13 +68,13 @@ nav_stat = {
 	15: 'Nod defined (default for test)'
 }
 
-#--------------------------------initialization for vessel history table
+# Initialization for vessel history table
 init_vhtable = {
 	0:	"vessel_history",
 	1:	"""(MMSI int(11) NOT NULL DEFAULT '0',TimeOfFix int(11) NOT NULL DEFAULT '0',Latitude double NOT NULL,Longitude double NOT NULL,SOG double DEFAULT NULL,Heading double DEFAULT NULL,RxStnID varchar(32) DEFAULT NULL,PRIMARY KEY (MMSI,TimeOfFix),KEY lat_lon (Latitude,Longitude),KEY MMSI (MMSI),KEY RxStnID_2 (RxStnID),KEY TimeOfFix (TimeOfFix)) ENGINE=MyISAM DEFAULT CHARSET=latin1"""
 }
 
-############################################################Repositories
+# Repositories
 class ICODE_DB:
 	#-------------------------------------------------------------------
 	def __init__(self):
@@ -71,26 +83,40 @@ class ICODE_DB:
 	#-------------------------------------------------------------------
 	def dbConnection (self, host, user, password, dbname):
 		"""
-		Description: Allows the connection with a DB
-		Parameters:					
-			- host: the name/direction/server that runs the DB.	(type:string)
-			- user: the user to enter the database.				(type:string)			
-			- password: of the user.							(type:string)
-			- dbname: the name of the database.					(type:string)
+		Descripcion: Funcion para conectarse a la BD.
+		
+		Parametros:					
+			- host: Nombre/direccion/servidor donde esta alojada la BD. (type:string)
+			- user: Usuario para ingresar a la base de datos.           (type:string)			
+			- password: Contrasena asociada al usuario.                 (type:string)
+			- dbname: Nombre de la BD.                                  (type:string)
+		
+		Ejemplo:
+			-> dbConnection('localhost','root','rootpass','test_DB')
+			La funcion anterior se conectara entonces a la base de datos 
+			'test_DB' en 'localhost' con las credenciales usr:'root' y 
+			pass:'rootpass'.  
 		"""
 		try:
 			self.dbcon = msq.connect(host=host,user=user,password=password,database=dbname, buffered=True) 
 			self.cursor = self.dbcon.cursor()
-		except msq.Error, e:
-			print "*** ERROR %d: %s ***" % (e.args[0], e.args[1])
-			sys.exit (1)
+		except msq.Error as err:
+			if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+				print '*** ERROR: Something is wrong with your user name or password. ***'
+			elif err.errno == errorcode.ER_BAD_DB_ERROR:
+				print '*** ERROR: Database does not exists. ***'
+			else:
+				print '*** ERROR: Check your connection or host name. ***'
     
     #-------------------------------------------------------------------        
 	def dbDisconnect (self):
 		"""
-		Description: Disconnect from the current database.
-		Parameters:
-			- void
+		Descripcion: Desconecta al usuario de la base de datos y elimina 
+		los cursores asociados.
+		
+		Parametros:
+			- No tiene (void).
+		
 		"""
 		try:
 			self.cursor.close()
@@ -102,9 +128,16 @@ class ICODE_DB:
 	#-------------------------------------------------------------------
 	def checkTableExists (self,tablename):
 		"""
-		Description: If already exists a DB connection, check if the a table exists. Return a boolean value.
-		Parameters:
-			- tablename: The name of the table.			(type:string)
+		Descripcion: Verifica si existe o no una tabla determinada en la 
+		DB. Retorna un valor booleano.
+		
+		Parametros:
+			- tablename: El nombre de la tabla de interes.              (type:string)
+		
+		Ejemplo:
+			-> checkTableExists('test_table')
+			Si la tabla 'test_table' existe en la base de datos, la
+			funcion anterior retornara TRUE, si no, FALSE.
 		"""
 		try:
 			cursor = self.cursor
@@ -114,13 +147,33 @@ class ICODE_DB:
 			return False
     
     #-------------------------------------------------------------------        
-	def columnNames (self,tablename, col, sta):
+	def columnNames (self,tablename, col = 0, sta = 0):
 		"""
-		Description: Returns as string or array the names (or types) for each column in the table.
-		Parameters:
-			- tablename: The name of the table.			(type:string)
-			- col: 0 for names, 1 for types.			(type:int)
-			- sta: 0 for string, 1 for list.			(type:int)
+		Descripcion: Entrega la metadata de una tabla en especifico 
+		(nombres de columna o tipos de dato) como string o arreglo.
+		
+		Parametros:
+			- tablename: Nombre de la tabla de interes.                 (type:string)
+			- col: determina si se recibiran los nombres de la columna 
+			(0) o sus tipos de dato (1).                                (type:int)
+			- sta: determina como seran solicitados los datos, como 
+			string (0) o como lista (1).                                (type:int)
+		
+		Ejemplos: Suponga para el ejemplo que se tiene una tabla con 3
+		parametros: Nombre (string), Edad (int) y Peso (int) llamada
+		'Datos'.
+			1)	-> columnNames('test_table', col = 0, sta = 0)
+				En este caso, se espera que la salida de la sea	un string 
+				con los nombres de las columnas:
+					-> 'Nombre, Edad, Peso'
+			2)	-> columnNames('test_table', col = 0, sta = 1)
+				En este caso, tambien se espera que la salida corresponda
+				a los nombres de las columnas, pero como una lista:
+					-> ['Nombre','Edad','Peso']
+			3)	-> columnNames('test_table', col = 1, sta = 0)
+				En este caso se espera recibir el tipo de dato de cada
+				columna como un string:
+					-> '%s, %d, %d'
 		"""
 		if self.checkTableExists(tablename): #---------------------
 			cursor = self.cursor
@@ -149,10 +202,20 @@ class ICODE_DB:
 	#-------------------------------------------------------------------	        
 	def createTable (self,tablename,sql):
 		"""
-		Description: Creates a table in DB.
-		Parameters:
-			- tablename: The name of the table to create.					(type:string)
-			- sql: The characteristics of the table (as columns or types).	(type:string) 
+		Descripcion: Crea una tabla en la BD simpre que no exista otra 
+		con el mismo nombre.
+		
+		Parametros:
+			- tablename: Nombre que tendra la tabla creada.             (type:string)
+			- sql: Las caracteristicas de la tabla (columnas y tipos de 
+			dato).	                                                    (type:string)
+			
+		Ejemplo: 
+			->  sql = '(ID int(11) NOT NULL PRIMARY KEY AUTO_INCREMENT, Name varchar(20))'
+			->  createTable('test_table',sql)
+		En caso de existir una tabla con ese nombre, se arroja un mensaje
+		de error.
+		
 		"""
 		if (not(self.checkTableExists(tablename))):
 			cursor = self.cursor
@@ -164,10 +227,21 @@ class ICODE_DB:
 	#-------------------------------------------------------------------
 	def uploadToDB (self,tablename, data):
 		"""
-		Description: Uploads data to a table.
-		Parameters:
-			- tablename: The name of the receiver table.					(type:string)
-			- data: The info to upload (has to be ordered like the table).	(type:depends on data)
+		Descripcion: Funcion para subir datos a una determinada tabla.
+		
+		Parametros:
+			- tablename: Nombre de la tabla destino.                    (type:string)
+			- data: Datos a ser subidos.                                (type:depends on data)
+		Note que se espera que data sea una lista o un arreglo, en caso 
+		de necesitar ingresar solo un dato, es necesario representarlo de
+		esa forma. 
+		
+		Ejemplo:
+			1) En caso de una sola columna de datos:
+				-> uploadToDB('test_table',[dato1,dato2,...])
+			2) En caso de mas de una columna de datos:
+				-> uploadToDB('test_table',[[dato1, dato2,...],[dato1, dato2,...],...])
+				
 		"""
 		if self.checkTableExists(tablename): #---------------------
 			cursor = self.cursor
@@ -213,11 +287,19 @@ class ICODE_DB:
     #-------------------------------------------------------------------        
 	def readfromDB (self,tablename, select='*', query=''):
 		"""
-		Description: Reads the selected data from a table.
-		Parameters:
-			- tablename: The name of the source table.						(type:string)
-			- select: Restrictions to retrieve the data (MySQL formatting).	(type:string)
-			- query:  The info that you want to retrieve.					(type:string)
+		Descripcion: Funcion para leer datos de una determinada tabla.
+		
+		Parametros:
+			- tablename: Nombre de la tabla a ser leida.                (type:string)
+			- select: Columnas de interes (formato SQL).                (type:string)
+			- query:  Restricciones a la solicitud (formato SQL).       (type:string)
+			
+		Ejemplo:
+			->  result = readfromDB('test_table',select = 'dato1, dato5',query = 'where dato1 between...')
+		Note que en caso de no especificar 'select', se leeran todas las 
+		columnas. De forma similar, si no se especifica 'query' se leeran
+		todas las filas.
+		
 		"""
 		if self.checkTableExists(tablename): #---------------------
 			cursor = self.cursor
@@ -231,10 +313,17 @@ class ICODE_DB:
     #-------------------------------------------------------------------        
 	def updateDB (self,tablename, option = ''):
 		"""
-		Description: Update a table
-		Parameters:
-			- tablename: The name of the table that want to update.		(type:string)
-			- option: Sql code for change the table or data.			(type:string)
+		Descripcion: Permite modificar los datos de la tabla.
+		
+		Parametros:
+			- tablename: Nombre de la tabla a ser modificada.           (type:string)
+			- option: Cambios a realizar en la tabla (formato SQL).     (type:string)
+		
+		Ejemplo:
+			-> updateDB('test_table', option = "set dato1 = 2 where dato2 = 'test'")
+		Luego, para todas las coincidencias del dato2, el dato1 sera
+		reemplazado por un 2.
+		
 		"""
 		if self.checkTableExists(tablename): #---------------------
 			try:
@@ -250,10 +339,16 @@ class ICODE_DB:
     #-------------------------------------------------------------------        
 	def deleteDB (self,tablename, option = ''):
 		"""
-		Description: Deletes data from a table.
-		Parameters:
-			- tablename: The name of the table.							(type:string)
-			- option: Which data you want to delete.					(type:string)
+		Descripcion: Permite eliminar datos de una tabla determinada.
+		
+		Parametros:
+			- tablename: Nombre de la tabla.                            (type:string)
+			- option: Caracteristicas de las filas a ser borradas.      (type:string)
+			
+		Ejemplo:
+			-> deleteDB('test_table', option = 'dato1 = 2')
+		Para todas las coincidencias de dato 1, la fila entera sera 
+		eliminada.
 		"""
 		if self.checkTableExists(tablename): #---------------------
 			try:
