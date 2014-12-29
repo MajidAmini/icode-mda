@@ -479,12 +479,125 @@ def annexedData(mmsi, datosRPC, dataRPCtoDb, IB):
             IB.ai( mmsi, dataRPCtoDb[0], dataRPCtoDb[1], dataRPCtoDb[2])
         m+=1
 
+def WebsiteScraper(auxmmsi, Obj, IB, Nf, args):
+    """Funcion que guarda en la base de datos la informacion parseada.
+    
+    Llamada desde main, se encarga de llamar a las funciones especificas de
+    parseo de la pagina web de marinetraffic y luego con la informacion
+    recolectada la guarda en la base de datos.
+    
+    Parametros:
+    auxmmsi -- Valor mmsi, barco a buscar.
+    Obj     -- Objeto de la clase GetInfo, realiza las consultas a la pagina
+               web de marinetraffic.
+    IB      -- Objeto de la clase ICODE_DB, inicializado con los datos de la
+               base de datos.
+    Nf      -- Archivo en el cual se guardan los barcos que no se encuentran en
+               la pagina web de marinetraffic.
+    args    -- Corresponde a los parametros por consola, indican como funciona
+               el programa, vienen de sys.argv[] de main:
+                 * args[0] == sys.argv[1]
+                 * args[1] == sys.argv[2]
+                 * args[2] == sys.argv[3]
+    
+    """
+    strmmsi = str(auxmmsi)
+    sleep_time= random.randint(1, 3)
+    print("Sleeping for "+str(sleep_time)+" seconds")
+    time.sleep(sleep_time)
+
+#   Descarga el html desde www.marinetraffic.com
+    Source= Obj.OpenUrl(strmmsi)
+    if Source != None:
+
+#       Herramienta para debuggear.
+        mmsi= int(strmmsi)
+        print ("MMSI: "+ str(mmsi))
+
+#       Setea con la informacion del parseo las variables.
+        DataBasic= Obj.ReadInfo(Source, 1)
+        DataLastPositionRecibe= Obj.ReadInfo(Source, 2)
+        DataVoyageRelatedInfo= Obj.ReadInfo(Source, 3)
+        DataRecentPortCall= Obj.ReadInfo(Source, 4)
+
+#       Extrae datos basicos de un barco en marinetraffic.
+        datos= DataBasic.body.find_all("b")
+        metadata= DataBasic.body.find_all("span")
+        toDb= []
+        toDb, aux = basicData(datos, metadata, toDb)
+        
+#       Extrae datos desde Last Position Received en marinetraffic. 
+        datosLPR= DataLastPositionRecibe.body.find_all("span")
+        metaDb= []
+        toDb, aux = mediumData(datosLPR, metaDb, toDb, aux)
+
+#       Extrae datos desde Voyage Related Info en marinetraffic.
+        datosRPC= DataVoyageRelatedInfo.body.find_all("td")
+        extrametaDb=[]
+        extraDb=[]
+        
+#       Guarda en la base de datos la informacion obtenida. 
+        if (len(datosRPC)!= 0):
+            extraDb, aux= lastData(datosRPC, extrametaDb, extraDb, aux)
+            print "=========== toDb =========== \n" + str(toDb)
+            print "=========== extraDb ======== \n" + str(extraDb)
+            
+            IB.uploadToDB(args[1], [toDb+extraDb])
+        else:
+            print "=========== toDb =========== \n" + str(toDb)
+            print "=========== extraDb ======== \n" + str(extraDb)
+
+            IB.uploadToDB(args[1],
+            [toDb+['None', -1, 'None', -1, 'None', -1, -1, -1, -1, -1]])
+        
+#       Extrae y guarda en la base de datos desde marinetraffic
+#       la informacion contenida en Recent Port Call.                 
+        datosRPC= DataRecentPortCall.body.find_all("span")
+        dataRPCtoDb=[]
+        if len(datosRPC)!=0:
+            print "=========== RPCtoDb ==========="
+            annexedData( toDb[0], datosRPC, dataRPCtoDb, IB)
+    else:
+#       Si el barco no fue encontrado se guarda su mmsi.            
+        Nf.write(strmmsi)
+    return
+
+def SelectScraperType(k, mmsi, IB, args, Obj, Nf):
+    """Llama en forma correcta a WebsiteScraper para guardar en base de datos.
+    
+    Funcion que sirve para encapsular el mismo procedimiento que tiene buscar
+    datos a partir de un archivo de texto y de una base de datos.
+
+    Parametros:
+    k    -- Contador incremental que muestra actual iteracion.
+    mmsi -- Valor mmsi, barco a buscar.
+    IB   -- Objeto de la clase ICODE_DB, inicializado con los datos de la base 
+            de datos.
+    args -- Corresponde a los parametros por consola, indican como funciona el
+            programa, vienen de sys.argv[] de main:
+                 * args[0] == sys.argv[1]
+                 * args[1] == sys.argv[2]
+                 * args[2] == sys.argv[3]
+    Obj  -- Objeto de la clase GetInfo, realiza las consultas a la pagina web de
+            marinetraffic.
+    Nf   -- Archivo en el cual se guardan los barcos que no se encuentran en la
+            pagina web de marinetraffic.
+    
+    """
+    k+= 1
+    print("Iteracion #"+str(k))
+
+    sql='WHERE MMSI= '+mmsi
+    if IB.readfromDB(args[1], '*', sql)== []:
+        WebsiteScraper(mmsi, Obj, IB, Nf, args)
+    return k
+
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
 
 def main(argv = None):
-    """Website Scraper para marinetraffic que guarda en una base de datos.
+    """Un Website Scraper para marinetraffic que guarda en una base de datos.
     
     A partir de un archivo de texto o una base de datos, toma el numero 
     correspondiente al MMSI de un AIS para conectarse via http con la pagina
@@ -514,6 +627,10 @@ def main(argv = None):
                    archivo de texto.  Con '1' toma los datos desde una base de
                    datos.
     
+    Excepciones:
+    IndexError  -- Si no fueron entregados los 3 argumentos para que el
+                   programa funcione.
+        
     """
     if argv is None:
         argv = sys.argv
@@ -522,111 +639,28 @@ def main(argv = None):
             opts, args = getopt.getopt(argv[1:], "h", ["help"])
         except getopt.error, msg:
             raise Usage(msg)
-    #   Conexion con la base de datos y creacion de las tablas.
-#        if args[1] == '--help':
-#            help(main)
-#            return 0
         IB = ICODE_DB.ICODE_DB()
         IB.dbConnection('127.0.0.1', 'root', 'icoderoot', 'ICODE')
         IB.createTable(args[1], """(MMSI int primary key, Flag varchar (25), AISType varchar (20), IMO int, CallSign varchar (10), GrossTonnage int, DeadWeight int, Length double, Breadth double, YearBuilt int, Status varchar (25), InfoReceived int, Area varchar (25), Latitude double, Longitude double, StatusLPR varchar (30), Speed double, Course double, AISSource varchar (40), Destination varchar (30),ETA int, LastKnownPort varchar (30), LastKnownPortdate int, PreviousPort varchar (30), PreviousPortdate int, Draught double, SpeedRecordedMax double, SpeedRecordedAverage double, InfoReceivedVRI int)""")
-        IB.createTable('PortCalls'+args[1],
+        IB.createTable(args[1]+'PortCalls',
                         """(id SERIAL NOT NULL AUTO_INCREMENT primary key, MMSI int, Port varchar (25), Arrival int, Departure int)""")
 
-    #   Crea archivo para datos fuera de www.marinetraffic.com durante ejecucion.
-        Nf= open("out.txt", 'w')
-
-    #   Crea e inicializa el objeto GetInfo.
         Obj=GetInfo.GetInfo()
-
-        if int(args[2]) == 0:
-        
-    #       Lee desde el archivo entregado
+    #   Crea archivo para datos fuera de www.marinetraffic.com durante ejecucion.
+        Nf= open("outMarineTraffic.txt", 'w')
+    #   Variable que lleva el registro del numero actual de iteracion.    
+        k=0
+        if int(args[2]) == 0:        
             f= open(args[0], 'r')
-            
-    #       Variable que lleva el registro del numero actual de iteracion.    
-            k=0
             for line in f:
-
-    #           Herramienta para debuggear saber en cual barco se encuentra de la lista.
-                k+= 1
-                print("Iteracion #"+str(k))
-
-    #           Comprobar que el MMSI no se encuentra guardado ya en la base de datos.        
-                sql='WHERE MMSI= '+str(line)
-                if IB.readfromDB(args[1], '*', sql)== []:
-
-    #               Calcula, imprime y duerme por una cantidad random de segundos.
-                    sleep_time= random.randint(1, 3)
-                    print("Sleeping for "+str(sleep_time)+" seconds")
-                    time.sleep(sleep_time)
-
-    #               Descarga el html desde www.marinetraffic.com
-                    Source= Obj.OpenUrl(line)
-                    if Source != None:
-
-    #                   Herramienta para debuggear.
-                        mmsi= int(line)
-                        print ("MMSI: "+ str(mmsi))
-
-    #                   Setea con la informacion del parseo las variables.
-                        DataBasic= Obj.ReadInfo(Source, 1)
-                        DataLastPositionRecibe= Obj.ReadInfo(Source, 2)
-                        DataVoyageRelatedInfo= Obj.ReadInfo(Source, 3)
-                        DataRecentPortCall= Obj.ReadInfo(Source, 4)
-
-    #                   Extrae datos basicos de un barco en marinetraffic.
-                        datos= DataBasic.body.find_all("b")
-                        metadata= DataBasic.body.find_all("span")
-                        toDb= []
-                        toDb, aux = basicData(datos, metadata, toDb)
-                        
-    #                   Extrae datos desde Last Position Received en marinetraffic. 
-                        datosLPR= DataLastPositionRecibe.body.find_all("span")
-                        metaDb= []
-                        toDb, aux = mediumData(datosLPR, metaDb, toDb, aux)
-
-    #                   Extrae datos desde Voyage Related Info en marinetraffic.
-                        datosRPC= DataVoyageRelatedInfo.body.find_all("td")
-                        extrametaDb=[]
-                        extraDb=[]
-                        
-    #                   Guarda en la base de datos la informacion obtenida. 
-                        if (len(datosRPC)!= 0):
-                            extraDb, aux= lastData(datosRPC, extrametaDb, extraDb, aux)
-                            print "=========== toDb =========== \n" + str(toDb)
-                            print "=========== extraDb ======== \n" + str(extraDb)
-                            
-                            IB.uploadToDB(args[1], [toDb+extraDb])
-                        else:
-                            print "=========== toDb =========== \n" + str(toDb)
-                            print "=========== extraDb ======== \n" + str(extraDb)
-
-                            IB.uploadToDB(args[1],
-                            [toDb+['None', -1, 'None', -1, 'None', -1, -1, -1, -1, -1]])
-                        
-    #                   Extrae y guarda en la base de datos desde marinetraffic
-    #                   la informacion contenida en Recent Port Call.                 
-                        datosRPC= DataRecentPortCall.body.find_all("span")
-                        dataRPCtoDb=[]
-                        if len(datosRPC)!=0:
-                            print "=========== RPCtoDb ==========="
-                            annexedData( toDb[0], datosRPC, dataRPCtoDb, IB)
-                    else:
-    #                   Si el barco no fue encontrado se guarda su mmsi.            
-                        Nf.write(line)
+                k = SelectScraperType(k, line, IB, args, Obj, Nf)
             f.close()
-        elif int(args[2]) == 1:
-        
-            IB.readfromDB(args[0],,)
-    #	    QuerySelect= query_sql.query_sql()
-    #	    Array_MMSI=  QuerySelect.SelectMMSI()    
-
-    #	    for cell in Array_MMSI:
-    #		    temp=   str(cell)
-    #		    mmsi=   temp[1:10]
-    #		    Source= Obj.OpenUrl(mmsi)
-    #		    if Source != None:
-    #            # aqui procedimiento para rellenar        
+        elif int(args[2]) == 1:        
+            Array_mmsi = IB.readfromDB(args[0], 'MMSI')
+            for cell in Array_mmsi:
+                temp = str(cell)
+                mmsi = temp[1:10]
+                k = SelectScraperType(k, mmsi, IB, args, Obj, Nf)
         else:
             print "Valor de parametro no valido."
         IB.dbDisconnect()
