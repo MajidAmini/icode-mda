@@ -2,7 +2,7 @@
 
 """
 
-@file WebsiteScrapper.py
+@file WebsiteScraper.py
 @date Dic 2014
 
 Futuros trabajos: - Agregar parseo a vesseltracker:
@@ -11,7 +11,7 @@ Futuros trabajos: - Agregar parseo a vesseltracker:
 """
 
 #-*- coding: utf-8 -*-
-import sys, time, random
+import sys, time, random, getopt
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -479,7 +479,11 @@ def annexedData(mmsi, datosRPC, dataRPCtoDb, IB):
             IB.ai( mmsi, dataRPCtoDb[0], dataRPCtoDb[1], dataRPCtoDb[2])
         m+=1
 
-if __name__ == "__main__":
+class Usage(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+def main(argv = None):
     """Website Scraper para marinetraffic que guarda en una base de datos.
     
     A partir de un archivo de texto o una base de datos, toma el numero 
@@ -511,12 +515,21 @@ if __name__ == "__main__":
                    datos.
     
     """
+    if argv is None:
+        argv = sys.argv
     try:
+        try:
+            opts, args = getopt.getopt(argv[1:], "h", ["help"])
+        except getopt.error, msg:
+            raise Usage(msg)
     #   Conexion con la base de datos y creacion de las tablas.
+#        if args[1] == '--help':
+#            help(main)
+#            return 0
         IB = ICODE_DB.ICODE_DB()
         IB.dbConnection('127.0.0.1', 'root', 'icoderoot', 'ICODE')
-        IB.createTable(sys.argv[2], """(MMSI int primary key, Flag varchar (25), AISType varchar (20), IMO int, CallSign varchar (10), GrossTonnage int, DeadWeight int, Length double, Breadth double, YearBuilt int, Status varchar (25), InfoReceived int, Area varchar (25), Latitude double, Longitude double, StatusLPR varchar (30), Speed double, Course double, AISSource varchar (40), Destination varchar (30),ETA int, LastKnownPort varchar (30), LastKnownPortdate int, PreviousPort varchar (30), PreviousPortdate int, Draught double, SpeedRecordedMax double, SpeedRecordedAverage double, InfoReceivedVRI int)""")
-        IB.createTable('PortCalls'+sys.argv[2],
+        IB.createTable(args[1], """(MMSI int primary key, Flag varchar (25), AISType varchar (20), IMO int, CallSign varchar (10), GrossTonnage int, DeadWeight int, Length double, Breadth double, YearBuilt int, Status varchar (25), InfoReceived int, Area varchar (25), Latitude double, Longitude double, StatusLPR varchar (30), Speed double, Course double, AISSource varchar (40), Destination varchar (30),ETA int, LastKnownPort varchar (30), LastKnownPortdate int, PreviousPort varchar (30), PreviousPortdate int, Draught double, SpeedRecordedMax double, SpeedRecordedAverage double, InfoReceivedVRI int)""")
+        IB.createTable('PortCalls'+args[1],
                         """(id SERIAL NOT NULL AUTO_INCREMENT primary key, MMSI int, Port varchar (25), Arrival int, Departure int)""")
 
     #   Crea archivo para datos fuera de www.marinetraffic.com durante ejecucion.
@@ -525,10 +538,10 @@ if __name__ == "__main__":
     #   Crea e inicializa el objeto GetInfo.
         Obj=GetInfo.GetInfo()
 
-        if int(sys.argv[3]) == 0:
+        if int(args[2]) == 0:
         
     #       Lee desde el archivo entregado
-            f= open(sys.argv[1], 'r')
+            f= open(args[0], 'r')
             
     #       Variable que lleva el registro del numero actual de iteracion.    
             k=0
@@ -540,7 +553,7 @@ if __name__ == "__main__":
 
     #           Comprobar que el MMSI no se encuentra guardado ya en la base de datos.        
                 sql='WHERE MMSI= '+str(line)
-                if IB.readfromDB(sys.argv[2], '*', sql)== []:
+                if IB.readfromDB(args[1], '*', sql)== []:
 
     #               Calcula, imprime y duerme por una cantidad random de segundos.
                     sleep_time= random.randint(1, 3)
@@ -583,12 +596,12 @@ if __name__ == "__main__":
                             print "=========== toDb =========== \n" + str(toDb)
                             print "=========== extraDb ======== \n" + str(extraDb)
                             
-                            IB.uploadToDB(sys.argv[2], [toDb+extraDb])
+                            IB.uploadToDB(args[1], [toDb+extraDb])
                         else:
                             print "=========== toDb =========== \n" + str(toDb)
                             print "=========== extraDb ======== \n" + str(extraDb)
 
-                            IB.uploadToDB(sys.argv[2],
+                            IB.uploadToDB(args[1],
                             [toDb+['None', -1, 'None', -1, 'None', -1, -1, -1, -1, -1]])
                         
     #                   Extrae y guarda en la base de datos desde marinetraffic
@@ -602,10 +615,9 @@ if __name__ == "__main__":
     #                   Si el barco no fue encontrado se guarda su mmsi.            
                         Nf.write(line)
             f.close()
-        elif int(sys.argv[3]) == 1:
+        elif int(args[2]) == 1:
         
-            print "Actualizar forma de tomar datos\n"
-    #       Mecanismo para tomar desde base de datos, ACTUALIZAR ANTES DE USAR.
+            IB.readfromDB(args[0],,)
     #	    QuerySelect= query_sql.query_sql()
     #	    Array_MMSI=  QuerySelect.SelectMMSI()    
 
@@ -619,6 +631,18 @@ if __name__ == "__main__":
             print "Valor de parametro no valido."
         IB.dbDisconnect()
         Nf.close()
-    except IndexError as e:
-        print "Ocurrio un error entregando argumentos: " + str(e)
-        help(__main__)
+        return 1
+    except Usage, e:
+        print >>sys.stderr, err.msg
+        print >>sys.stderr, "for help use --help"
+        return 2
+    except IndexError, err:
+        print "argv[]: " + str(err)
+        print >>sys.stderr, "Redireccionando al archivo de ayuda. . ."
+        time.sleep(3)
+        help(main)
+        return 3
+        
+if __name__ == "__main__":
+    sys.exit(main())
+
