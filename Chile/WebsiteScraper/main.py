@@ -5,8 +5,6 @@
 @file WebsiteScrapper.py
 @date Dic 2014
 
-Falta la integración con la última versión de ICODE_DB.
-Falta la actualización de la toma de MMSI usando ICODE_DB.
 Futuros trabajos: - Agregar parseo a vesseltracker:
                     https://www.vesseltracker.com/es/Home.html
 
@@ -17,7 +15,7 @@ import sys, time, random
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-sys.path.append('../icode-mda/DB_common/')
+sys.path.append('../DB_common/')
 import GetInfo
 import ICODE_DB
 import ICODE_RP
@@ -25,18 +23,18 @@ import ICODE_RP
 def basicData(datos, metadata, toDb):
     """Extrae desde 'datos' y guarda ordenadamente, usando metadata, en 'toDb'.
     
-    Corresponde a la data básica que se encuentra al inicio en marinetraffic.
+    Corresponde a la data basica que se encuentra al inicio en marinetraffic.
     
     Devuelve una tupla de 'toDb' y 'aux' como resultado de obtener en forma
-    ordenada la extracción desde 'datos'.
+    ordenada la extraccion desde 'datos'.
     
     El acceso a los datos se basa en la estructura de los objetos del modulo
     BeautifulSoup.
     
-    Parámetros:
+    Parametros:
     datos    -- data recibida del proceso de parsear el html
     metadata -- contiene los nombres de los tipos de 'datos', ej: 'MMSI: '
-    toDb     -- aquí se van guardando los datos en forma ordenada y limpia.
+    toDb     -- aqui se van guardando los datos en forma ordenada y limpia.
      
     """
     aux=1
@@ -124,16 +122,16 @@ def mediumData(datosLPR, metaDb, toDb, aux):
     Corresponde a la data de 'Last Position Received' en marinetraffic.
     
     Devuelve una tupla de 'toDb' y 'aux' como resultado de obtener en forma
-    ordenada la extracción desde 'datosLPR'.
+    ordenada la extraccion desde 'datosLPR'.
     
     El acceso a los datos se basa en la estructura de los objetos del modulo
     BeautifulSoup.
     
-    Parámetros:
+    Parametros:
     datosLPR -- data recibida del proceso de parsear el html
     metaDb   -- contiene los nombres de los tipos de 'datos', ej: 'Area: '
                 usada para analizar como parsear
-    toDb     -- aquí se van guardando los datos en forma ordenada y limpia.
+    toDb     -- aqui se van guardando los datos en forma ordenada y limpia.
     aux      -- variable auxiliar usada para garantizar que los datos se van
                 guardando en forma ordenada
      
@@ -154,9 +152,9 @@ def mediumData(datosLPR, metaDb, toDb, aux):
 def mediumMetaData(datosLPR, metaDb):
     """Guarda en forma ordenada desde 'datosLPR' a 'metaDb'.
     
-    Función usada para analizar el parseo del programa actual.
+    Funcion usada para analizar el parseo del programa actual.
     
-    Parámetros:
+    Parametros:
     datosLPR -- data recibida del proceso de parsear el html
     metaDb   -- contiene los nombres de los tipos de 'datos', ej: 'Area: '
                 usada para analizar como parsear
@@ -185,14 +183,14 @@ def mediumParseData(datosLPR, toDb, aux):
     Llamada por la funcion mediumData.
         
     Devuelve una tupla de 'toDb' y 'aux' como resultado de obtener en forma
-    ordenada la extracción desde 'datosLPR'.
+    ordenada la extraccion desde 'datosLPR'.
     
     El acceso a los datos se basa en la estructura de los objetos del modulo
     BeautifulSoup.
     
-    Parámetros:
+    Parametros:
     datosLPR -- data recibida del proceso de parsear el html
-    toDb     -- aquí se van guardando los datos en forma ordenada y limpia.
+    toDb     -- aqui se van guardando los datos en forma ordenada y limpia.
     aux      -- variable auxiliar usada para garantizar que los datos se van
                 guardando en forma ordenada    
     
@@ -298,16 +296,16 @@ def lastData(datosRPC, extrametaDb, extraDb, aux):
     Corresponde a la data de 'Recent Port Calls' en marinetraffic.
     
     Devuelve una tupla de 'extraDb' y 'aux' como resultado de obtener en forma
-    ordenada la extracción desde 'datosRPC'.
+    ordenada la extraccion desde 'datosRPC'.
     
     El acceso a los datos se basa en la estructura de los objetos del modulo
     BeautifulSoup.
     
-    Parámetros:
+    Parametros:
     datosRPC    -- data recibida del proceso de parsear el html
     extrametaDb -- contiene los nombres de los tipos de 'datos', ej: 'ETA'
                    usada para analizar como parsear
-    extraDb     -- aquí se van guardando los datos en forma ordenada y limpia.
+    extraDb     -- aqui se van guardando los datos en forma ordenada y limpia.
     aux         -- variable auxiliar usada para garantizar que los datos se van
                    guardando en forma ordenada
      
@@ -419,9 +417,9 @@ def lastData(datosRPC, extrametaDb, extraDb, aux):
 def lastMetaData(extrametaDb, datosRPC):
     """Guarda en forma ordenada desde 'datosRPC' a 'extrametaDb'.
     
-    Función usada para analizar el parseo del programa actual.
+    Funcion usada para analizar el parseo del programa actual.
     
-    Parámetros:
+    Parametros:
     datosRPC    -- data recibida del proceso de parsear el html
     extrametaDb -- contiene los nombres de los tipos de 'datos', ej: 'ETA'
                    usada para analizar como parsear
@@ -446,14 +444,14 @@ def lastMetaData(extrametaDb, datosRPC):
     return extrametaDb    
 
 def annexedData(mmsi, datosRPC, dataRPCtoDb, IB):
-    """Guarda directamente en la database la extracción desde datosRPC.
+    """Guarda directamente en la database la extraccion desde datosRPC.
     
-    Guarda en la tabla de datos anexa la información relativa a todos los
+    Guarda en la tabla de datos anexa la informacion relativa a todos los
     puertos recorridos, asocia a un barco mediante MMSI diferentes puertos.
     
     Por cada vuelta en el 'for' guarda un puerto diferente.
     
-    Parámetros:
+    Parametros:
     datosRPC    -- fuente de datos con los puertos asociados a un barco
     dataRPCtoDb -- variable que guarda los datos en forma ordenada
     IB          -- Base de datos en la cual se guarda 'dataRPCtoDb'
@@ -484,11 +482,11 @@ def annexedData(mmsi, datosRPC, dataRPCtoDb, IB):
 if __name__ == "__main__":
     """Website Scraper para marinetraffic que guarda en una base de datos.
     
-    A partir de un archivo de texto o una base de datos, toma el número 
-    correspondiente al MMSI de un AIS para conectarse via http con la página
+    A partir de un archivo de texto o una base de datos, toma el numero 
+    correspondiente al MMSI de un AIS para conectarse via http con la pagina
     web www.marinetraffic.com. Descarga el html completo y lo parsea para
-    obtener toda la información relevante al barco, como sus datos básicos,
-    última posición recibida, información de rutas relacionadas y puertos 
+    obtener toda la informacion relevante al barco, como sus datos basicos,
+    ultima posicion recibida, informacion de rutas relacionadas y puertos 
     anteriores en los que haya estado.
     
     La descarga del html y el objeto para parsear de tipo 'BeautifulSoup' son
@@ -496,31 +494,31 @@ if __name__ == "__main__":
     
     El manejo de las bases de datos es a partir de ICODE_DB.
     
-    Utilidades, como transformar el formato hora común a hora unix es a partir
+    Utilidades, como transformar el formato hora comun a hora unix es a partir
     de ICODE_RP.
     
     Los barcos no encontrados en marinetraffic son guardados en out.txt.
     
-    Parámetros:
-    sys.argv[1] -- Archivo del cual se extraerán los valores mmsi
-    sys.argv[2] -- Nombre de la tabla de datos que se creará con los datos de
+    Parametros:
+    sys.argv[1] -- Archivo del cual se extraeran los valores mmsi
+    sys.argv[2] -- Nombre de la tabla de datos que se creara con los datos de
                    marinetraffic y nombre base de la tabla de datos anexa con
                    los puertos en que ha estado un barco ej:
                    test -- nombre de tabla principal con los datos
                    PortCallstest -- nombre de la tabla de datos anexa
-    sys.argv[3] -- Toma los valores 0 ó 1. Con '0' toma los datos desde un
+    sys.argv[3] -- Toma los valores 0 o 1. Con '0' toma los datos desde un
                    archivo de texto.  Con '1' toma los datos desde una base de
                    datos.
     
     """
-#   Conexión con la base de datos y creación de las tablas.
+#   Conexion con la base de datos y creacion de las tablas.
     IB = ICODE_DB.ICODE_DB()
     IB.dbConnection('127.0.0.1', 'root', 'icoderoot', 'ICODE')
     IB.createTable(sys.argv[2], """(MMSI int primary key, Flag varchar (25), AISType varchar (20), IMO int, CallSign varchar (10), GrossTonnage int, DeadWeight int, Length double, Breadth double, YearBuilt int, Status varchar (25), InfoReceived int, Area varchar (25), Latitude double, Longitude double, StatusLPR varchar (30), Speed double, Course double, AISSource varchar (40), Destination varchar (30),ETA int, LastKnownPort varchar (30), LastKnownPortdate int, PreviousPort varchar (30), PreviousPortdate int, Draught double, SpeedRecordedMax double, SpeedRecordedAverage double, InfoReceivedVRI int)""")
     IB.createTable('PortCalls'+sys.argv[2],
                     """(id SERIAL NOT NULL AUTO_INCREMENT primary key, MMSI int, Port varchar (25), Arrival int, Departure int)""")
 
-#   Crea archivo para datos fuera de www.marinetraffic.com durante ejecución.
+#   Crea archivo para datos fuera de www.marinetraffic.com durante ejecucion.
     Nf= open("out.txt", 'w')
 
 #   Crea e inicializa el objeto GetInfo.
@@ -531,7 +529,7 @@ if __name__ == "__main__":
 #       Lee desde el archivo entregado
         f= open(sys.argv[1], 'r')
         
-#       Variable que lleva el registro del número actual de iteración.    
+#       Variable que lleva el registro del numero actual de iteracion.    
         k=0
         for line in f:
 
@@ -556,13 +554,13 @@ if __name__ == "__main__":
                     mmsi= int(line)
                     print ("MMSI: "+ str(mmsi))
 
-#                   Setea con la información del parseo las variables.
+#                   Setea con la informacion del parseo las variables.
                     DataBasic= Obj.ReadInfo(Source, 1)
                     DataLastPositionRecibe= Obj.ReadInfo(Source, 2)
                     DataVoyageRelatedInfo= Obj.ReadInfo(Source, 3)
                     DataRecentPortCall= Obj.ReadInfo(Source, 4)
 
-#                   Extrae datos básicos de un barco en marinetraffic.
+#                   Extrae datos basicos de un barco en marinetraffic.
                     datos= DataBasic.body.find_all("b")
                     metadata= DataBasic.body.find_all("span")
                     toDb= []
@@ -578,7 +576,7 @@ if __name__ == "__main__":
                     extrametaDb=[]
                     extraDb=[]
                     
-#                   Guarda en la base de datos la información obtenida. 
+#                   Guarda en la base de datos la informacion obtenida. 
                     if (len(datosRPC)!= 0):
                         extraDb, aux= lastData(datosRPC, extrametaDb, extraDb, aux)
                         print "=========== toDb =========== \n" + str(toDb)
@@ -593,7 +591,7 @@ if __name__ == "__main__":
                         [toDb+['None', -1, 'None', -1, 'None', -1, -1, -1, -1, -1]])
                     
 #                   Extrae y guarda en la base de datos desde marinetraffic
-#                   la información contenida en Recent Port Call.                 
+#                   la informacion contenida en Recent Port Call.                 
                     datosRPC= DataRecentPortCall.body.find_all("span")
                     dataRPCtoDb=[]
                     if len(datosRPC)!=0:
@@ -615,9 +613,9 @@ if __name__ == "__main__":
 #		    mmsi=   temp[1:10]
 #		    Source= Obj.OpenUrl(mmsi)
 #		    if Source != None:
-#            # aquí procedimiento para rellenar        
+#            # aqui procedimiento para rellenar        
     else:
-        print "Valor de parámetro no válido."
+        print "Valor de parametro no valido."
     IB.dbDisconnect()
     Nf.close()
     
