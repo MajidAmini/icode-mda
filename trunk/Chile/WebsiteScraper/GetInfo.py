@@ -1,5 +1,12 @@
 #!/usr/bin/python2.7
 
+"""
+
+@file WebsiteScraper.py
+@date Dic 2014
+
+"""
+
 #-*- coding: utf-8 -*-
 
 from bs4 import BeautifulSoup
