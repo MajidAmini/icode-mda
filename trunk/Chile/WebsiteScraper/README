@@ -1,0 +1,13 @@
+Programa Principal:
+    marinetraffic.py
+    
+Instrucciones para ejecutar:
+
+$ chmod 777 marinetraffic.py
+$ ./marinetraffic.py [fuente_mmsi] [Base_de_datos_destino] [opcion: 1 o 0]
+
+Nota: La fuente_mmsi puede ser una base de datos o un archivo de texto con una unica
+columna que contenga solo los mmsi, cada mmsi debe ir en una fila, como muestra
+el archivo barcos.txt o barcos_test.txt
+
+
