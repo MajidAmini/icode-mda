@@ -1,16 +1,42 @@
-###############################################################Libraries
+#!/usr/bin/python2.7
+
+"""
+
+@file ICODE_RP.py
+@date Dic 2014 
+
+"""
+
+#-*- coding: utf-8 -*-
+
+# Libraries
 import os
 import csv
 import time 
 import xlrd
+import string
 import pylab as pl
 import numpy as np
 import datetime as dt
 
-#############################################################Definitions
+# Definitions
+def normalize(s):
+	"""
+	Descripcion: Quita puntuaciones a una palabra y la deja en minusculas.
+	
+	Parametros:
+		- s: Palabra a convertir.
+	
+	Ejemplo:
+		-> normalize('H.e.l.L,o')
+		El resultado es:
+			-> hello
+	"""
+	for p in string.punctuation:
+		s = s.replace(p, '')
+	return s.lower().strip()
 
-############################################################Repositories
-
+# Repositories
 class ICODE_RP:
 	#-------------------------------------------------------------------
 	def __init__(self):
@@ -19,70 +45,136 @@ class ICODE_RP:
 	#-------------------------------------------------------------------
 	def time2unix(self, strdate, formdate):
 		"""
-		Description:
-			Function to convert a date string into UNIX stamp.
-		Sintax:
-			time2unix(strdate, formdate)
-		Parameters:
-			- strdate: the date string.
-			- formdate: the format of the date string.
-		Example:
-			time2unix('2014-03-25 12:34:06.0', '%Y-%m-%d %H:%M:%S.0')
+		Descripcion: Convierte una fecha a tiempo UNIX.
+		
+		Parametros:
+			- strdate: La fecha a convertir.                            (type:string)
+			- formdate: El formato de la fecha ingresada.               (type:string)
 			
-			This function returns: 1395761646.0
+		Ejemplo:
+			-> time2unix('2014-03-25 12:34:06.0', '%Y-%m-%d %H:%M:%S.0')
+			La funcion deberia retornar un resultado de tipo float:
+				-> 1395761646.0
 		"""
 		return time.mktime(dt.datetime.strptime(strdate,formdate).timetuple())
 
 	#------------------------------------------------------------------- 
 	def unix2time(self, flounix, formdate):
 		"""
-		Description:
-			Function to convert a UNIX stamp into time.
-		Sintax:
-			unix2time(flounix, formdate)
-		Parameters:
-			- strdate: the UNIX stamp.
-			- formdate: the format of the date result.
-		Example:
-			unix2time(1395761646.0, '%Y-%m-%d %H:%M:%S.0')
+		Descripcion: Convierte tiempo UNIX a fecha.
+		
+		Parametros:
+			- flounix: tiempo UNIX.                                     (type:float/int)
+			- formdate: El formato de la fecha deseada.                 (type:string)
 			
-			This function returns: '2014-03-25 12:34:06.0'
+		Ejemplo:
+			-> unix2time(1395761646, '%Y-%m-%d %H:%M:%S')
+			La funcion deberia retornar:
+				-> '2014-03-25 12:34:06'
 		"""
 		return dt.datetime.fromtimestamp(flounix).strftime(formdate)
-		
-	#-------------------------------------------------------------------	
-	def fname(self, fnam):
+
+	#-------------------------------------------------------------------
+	def unrows(self, data):
 		"""
-		Description:
-			Function to obtain the name of a file.
-		Sintax:
-			fname(fnam)
-		Parameters:
-			- fnam: the file path.
-		Example:
-			fname('xls_files/example.xls')
+		Autor: Joe Kingston
+		
+		Descripcion: Busca filas unicas en un arreglo numpy.
+		 
+		Parametros:
+			- data: Arreglo a revisar.                                  (type: numpy array)
+			 
+		Ejemplo:
+			-> data = np.array([[0,1],[1,1],[1,0],[0,1],[0,0]])
+			-> unrows(data)
+			La funcion deberia retornar:
+				-> array([[0, 0],[0, 1],[1, 0],[1, 1]])
+			Que corresponde a las filas unicas del arreglo.
+
+		"""
+		uniq = np.unique(data.view(data.dtype.descr * data.shape[1]))
+		return uniq.view(data.dtype).reshape(-1,data.shape[1])
+	
+	#-------------------------------------------------------------------
+	def AIS2list(self, xfiles, formdate = '%Y-%m-%d %H:%M:%S.0'):
+		"""
+		Descripcion: Para archivos con info AIS (xls o texto) extrae las
+		columnas MMSI, RecvTime, Latitude, Longitude, SOG, ROT y RxStnID. 
+		Para que el programa funcione los archivos deben tener en la 
+		primera fila los nombres de las columnas (igual a las indicadas).
+		Si alguna de las columnas a extraer no existe sera rellenada con
+		0. 
+
+		Parametros:
+			- xfiles: Direccion y nombre del archivo.                   (type:string)
+			- formdate: Formato de fecha del archivo.                   (type:string)     
+		
+		Ejemplo:
+			-> AIS2list('xls_files/test1.xls', '%Y-%m-%d %H:%M:%S.0')
+		"""
+		
+		#Extract the data from the file
+		#in case of an xls file...
+		try:
+			xfile = xlrd.open_workbook(xfiles)			
+			count = 0 				
+			for i in range(len(xfile.sheet_names())):	
+				aux = xfile.sheet_by_index(i)			
+				if not(count):
+					data = np.array(aux._cell_values[:][:])			
+					count = 1
+				else:
+					data = np.vstack((data, np.array(aux._cell_values[:][:])))
+		#in case of a text file
+		except:
+			#open the file and extract the data
+			xfile = open(xfiles, 'r')
+			xfile = csv.reader(xfile, delimiter = ',')
+			data = []
+			for row in xfile:
+				data.append(row)
+			data = np.array(data)
+		
+		#Prepare the data of interest
+		coi = np.array(['mmsi','recvtime','latitude','longitude','sog','rot','rxstnid'])
+		
+		final_data = np.empty((len(data),len(coi)), dtype=object)
+		
+		for i in range(len(coi)):
+			for j in range(len(data[0,:])):
+				if normalize(data[0,j]) == coi[i]:
+					final_data[:,i] = data[:,j]
+		
+		#Convert the data to float
+		data = final_data[1:,:]
+		for i in range(len(data)):
+			data[i,1] = self.time2unix(data[i,1], formdate)
+		data = np.array(data, dtype = float)
+		data = np.nan_to_num(data)
+		
+		#Filter the data
+		lon = pl.find(abs(data[:,3])>=180)
+		lat = pl.find(abs(data[:,2])>=90)
+		tot = np.unique(np.hstack((lon, lat)))
+		data = np.delete(data, tot, axis = 0)
 			
-			This function returns: 'example'
-		"""
-		x = os.path.splitext(os.path.basename(fnam))
-		return x[0]
-		
+		return data
+	
 	#-------------------------------------------------------------------
 	def foldrv(self, folder):
 		"""
-		Description:
-			Function to give format to a folder and create if necessary.
-			This program is usefull to save files.
-		Sintax:
-			foldrv(folder, sv = 1)
-		Parameters:
-			- folder: the name of the folder.
-			- sv: 1: save mode, 0: read mode
-		Example:
-			foldrv('example', )
+		Descripcion: Crea, en caso de ser necesario, una carpeta. Ademas,
+		en caso de que el nombre sea incluido en una direccion verifica
+		que tenga un slash al final.
+		
+		Parametros:
+			- folder: Nombre de la carpeta.
 			
-			If the folder doesn't exists, the function creates it, 
-			besides, the function return is 'example/'
+		Ejemplo:
+			-> foldrv('example')
+			
+			Si la carpeta 'example' no existe, la crea, ademas retorna el
+			nombre como 'example/'.
 	
 		"""
 		if folder[len(folder)-1] != '/':
@@ -92,135 +184,4 @@ class ICODE_RP:
 		except:
 			os.mkdir(folder)
 		return folder
-		
-	#-------------------------------------------------------------------
-	def AIS2list(self, xfiles):
-		"""
-		Description:
-			Function to retrieve a list from an excel or text file. Note 
-			that each row in the excel file is a row in the list. this is
-			usefull to give format to data or upload it into a database.
-		Sintax:
-			AIS2list(xfiles)
-		Parameters:
-			- xfiles: the location and name of the file.
-		Example:
-			
-			xfile('xls_files/test1.xls') 	
-		"""
-		count = 0
-		try:
-			xfile = xlrd.open_workbook(xfiles)			#open the file
-			for i in range(len(xfile.sheet_names())):	#for each sheet
-				aux = xfile.sheet_by_index(i)			#save the values into a list
-				if not(count):
-					out = aux._cell_values[:][:]			
-					count = 1
-				else:
-					out += aux._cell_values[:][:]
-		except:
-			xfile = open(xfiles, 'r')
-			xfile = csv.reader(xfile, delimiter = ',')
-			out = []
-			for row in xfile:
-				out.append(row)
-		return out
-				
-	#-------------------------------------------------------------------
-	def AISfilter(self, data, dform = None):
-		"""
-		Description:
-			function for give format to an AIS list with the next 
-			parameters:
-				MMSI, RecvTime, LocalRecvTime, NavigationalStatus, ROT, 
-				SOG, COG, TrueHeading, PositionAccuracy, Longitude, 
-				Latitude and CRC
-		Sintax:
-			AISfilter(data, dform = None)
-		Parameters:
-			- data: A list with the AIS data.
-			- dform: The format of the date string. 
-		Example:
-			AISfilter(data, dform = '%Y-%m-%d %H:%M:%S.0')
-			
-			This funtion will return a numpy array with all the data as
-			floats. The function deletes all the rows that have a format
-			error as an invalid navigation status, latitude or longitude,
-			etc. 
-		"""
-		if isinstance(data,list):
-			try:
-				a = int(data[0][1])
-			except:
-				data = data[1:][:]
-			if dform:
-				for i in range(0,len(data)):
-					data[i][1:3] = [self.time2unix(data[i][1],dform),self.time2unix(data[i][2],dform)]
-			try:
-				data = np.array(data, dtype = float)
-			except:
-				print '*** Error: dform (date format) is missing, cannot convert the data ***'
-			#--------------------------------------------------------find errors
-			nst = pl.find((data[:,4]<-1)|(data[:,4]>15))
-			trh = pl.find((data[:,8]<0)|(data[:,8]>359)&(data[:,8]!=511))
-			lon = pl.find(abs(data[:,10])>=180)
-			lat = pl.find(abs(data[:,11])>=180)
-			tot = np.unique(np.hstack((nst, trh, lon, lat)))				
-			#--------------------------------------------------delete the errors
-			for i in range(len(tot)):					
-				data = np.delete(data, tot[:], axis = 0) 
-			return data
-		else:
-			print '*** Error: The input must be a list ***'
-				   
-	#-------------------------------------------------------------------
-	def dat2text(self, data, name, folder = None):
-		"""
-		Description:
-			function for save a list or numpy array into a file. If the
-			folder doesn't exists, the function will create it.
-		Sintax:
-			dat2text(data, name, folder = None)
-		Parameters:
-			- data: A list or numpy array.
-			- name: The name of the output file.
-			- folder: The place to save the file. 
-		Example:
-			dat2text(data, 'example', folder = 'tests')
-			
-			This funtion will save the data in 'tests/' folder with the
-			name 'example.csv' if it's a list or 'example.npy' if it's a
-			numpy array 
-		"""
-		if folder:
-			name = self.foldrv(folder) + name
-		if isinstance(data,list):
-			xfil = open(name + '.csv', "wb")
-			writ = csv.writer(xfil, delimiter = '\t', quoting = csv.QUOTE_NONE)
-			for row in outdata:
-				writ.writerow(row)
-			xfil.close()
-		else:
-			np.save(name, data)
-	
-	#-------------------------------------------------------------------
-	def unrows(self, data):
-		"""
-		Description:
-			function that finds unique rows of a numpy array. created
-			by Joe Kington
-		Sintax:
-			unrows(data)
-		Parameters:
-			- data: A numpy array. 
-		Example:
-			unrows(data)
-			
-			This function returns a numpy array with the unique rows.
-		"""
-		uniq = np.unique(data.view(data.dtype.descr * data.shape[1]))
-		return uniq.view(data.dtype).reshape(-1,data.shape[1])
-			
-		
-		
-		
+					   
