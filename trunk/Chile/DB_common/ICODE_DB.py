@@ -16,7 +16,6 @@ import mysql.connector as msq
 from mysql.connector import errorcode
 
 # Definitions
-# Field type for mySQL
 field_type = {
 	 0: '%f',				#DECIMAL
 	 1: '%d',				#TINY
@@ -47,7 +46,6 @@ field_type = {
 	 255: 'GEOMETRY' 			#GEOMETRY
 }
 
-# Navigation status dictionary
 nav_stat = {
 	-1: 'Not sending',
 	0: 'Under way using engine',
@@ -68,7 +66,6 @@ nav_stat = {
 	15: 'Nod defined (default for test)'
 }
 
-# Initialization for vessel history table
 init_vhtable = {
 	0:	"vessel_history",
 	1:	"""(MMSI int(11) NOT NULL DEFAULT '0',TimeOfFix int(11) NOT NULL DEFAULT '0',Latitude double NOT NULL,Longitude double NOT NULL,SOG double DEFAULT NULL,Heading double DEFAULT NULL,RxStnID varchar(32) DEFAULT NULL,PRIMARY KEY (MMSI,TimeOfFix),KEY lat_lon (Latitude,Longitude),KEY MMSI (MMSI),KEY RxStnID_2 (RxStnID),KEY TimeOfFix (TimeOfFix)) ENGINE=MyISAM DEFAULT CHARSET=latin1"""
@@ -265,12 +262,11 @@ class ICODE_DB:
 					out += [aux]
 			except:
 				out = [self.columnNames(tablename, 0, 0),self.columnNames(tablename, 1, 0)]
+				
 			#----------------------------------------------do the upload 	
 			sql = "insert into "+tablename+"("+out[0]+") values("+out[1]+")"
 			if not(isinstance(data,list)):
 				data = data.tolist()
-				self.cursor.close()
-				self.cursor = self.dbcon.cursor()
 			for line in data:
 				try:
 					msql = sql % tuple(line)
