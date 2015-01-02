@@ -96,12 +96,14 @@ class ICODE_RP:
 		return uniq.view(data.dtype).reshape(-1,data.shape[1])
 	
 	#-------------------------------------------------------------------
-	def AIS2list(self, xfiles, formdate = '%Y-%m-%d %H:%M:%S.0'):
+	def AIS2list(self, xfiles, formdate = '%Y-%m-%d %H:%M:%S.0', coi = np.array(['mmsi','recvtime','latitude','longitude','sog','rot','rxstnid'])):
 		"""
 		Descripcion: Para archivos con info AIS (xls o texto) extrae las
-		columnas MMSI, RecvTime, Latitude, Longitude, SOG, ROT y RxStnID. 
-		Para que el programa funcione los archivos deben tener en la 
-		primera fila los nombres de las columnas (igual a las indicadas).
+		columnas indicadas por coi. Por defecto coi esta definido como 
+		MMSI, RecvTime, Latitude, Longitude, SOG, ROT y RxStnID. 
+		Para que el programa funcione los archivos AIS deben tener en la 
+		primera fila los nombres de las columnas, coi debe coincidir con
+		estos nombres (o aglgunos de ellos).
 		Si alguna de las columnas a extraer no existe sera rellenada con
 		0. 
 
@@ -135,9 +137,7 @@ class ICODE_RP:
 				data.append(row)
 			data = np.array(data)
 		
-		#Prepare the data of interest
-		coi = np.array(['mmsi','recvtime','latitude','longitude','sog','rot','rxstnid'])
-		
+		#Prepare the data of interest		
 		final_data = np.empty((len(data),len(coi)), dtype=object)
 		
 		for i in range(len(coi)):
