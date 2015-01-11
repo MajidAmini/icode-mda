@@ -121,7 +121,7 @@ class ICODE_RP:
 		return folder
 	
 	#-------------------------------------------------------------------
-	def AIS2list(self, xfiles, formdate = '%Y-%m-%d %H:%M:%S.0', coi = np.array(['mmsi','recvtime','latitude','longitude','sog','rot','rxstnid'])):
+	def AIS2list(self, filename, formdate = '%Y-%m-%d %H:%M:%S.0', coi = np.array(['mmsi','recvtime','latitude','longitude','sog','rot','rxstnid'])):
 		"""
 		Descripcion: Para archivos con info AIS (xls o texto) extrae las
 		columnas indicadas por coi. Por defecto coi esta definido como 
@@ -140,58 +140,60 @@ class ICODE_RP:
 		Ejemplo:
 			-> AIS2list('xls_files/test1.xls', '%Y-%m-%d %H:%M:%S.0')
 		"""
-		
-		#Extract the data from the file---------------------------------
-		#in case of an xls file...
-		try:
-			xfile = xlrd.open_workbook(xfiles)			
-			count = 0 				
-			for i in range(len(xfile.sheet_names())):	
-				aux = xfile.sheet_by_index(i)			
-				if not(count):
-					data = np.array(aux._cell_values[:][:])			
-					count = 1
-				else:
-					data = np.vstack((data, np.array(aux._cell_values[:][:])))
-		#in case of a text file
-		except:
-			#open the file and extract the data
-			xfile = open(xfiles, 'r')
-			xfile = csv.reader(xfile, delimiter = ',')
-			data = []
-			for row in xfile:
-				data.append(row)
-			data = np.array(data)
-		
-		#Prepare the data of interest-----------------------------------
-		head = data[0,:]
-		data = data[1:,:]
-		for i in range(len(data)):
-			data[i,1:3] = [self.time2unix(data[i,1], formdate), self.time2unix(data[i,2], formdate)]
-		data = np.array(data, dtype = float)
-		
-		#Filter the data------------------------------------------------
-		nst = pl.find((data[:,4]<-1)|(data[:,4]>15))
-		trh = pl.find((data[:,8]<0)|(data[:,8]>359)&(data[:,8]!=511))
-		lon = pl.find(abs(data[:,11])>=180)
-		lat = pl.find(abs(data[:,10])>=90)
-		tot = np.unique(np.hstack((nst, trh, lon, lat)))
-		data = np.delete(data, tot, axis = 0)
-		
-		#Extract the data of interest-----------------------------------
-		fdata = np.empty((len(data),len(coi)), dtype=object)
-		
-		for i in range(len(coi)):
-			for j in range(len(head)):
-				if normalize(head[j]) == normalize(coi[i]):
-					fdata[:,i] = data[:,j]
-		
-		#In case of Nones, replace by 0---------------------------------
-		for i in range(len(coi)):
-			if fdata[0,i] == None:
-				fdata[:,i] = 0
+		if os.path.isfile(filename):
+			#Extract the data from the file---------------------------------
+			#in case of an xls file...
+			try:
+				xfile = xlrd.open_workbook(filename)			
+				count = 0 				
+				for i in range(len(xfile.sheet_names())):	
+					aux = xfile.sheet_by_index(i)			
+					if not(count):
+						data = np.array(aux._cell_values[:][:])			
+						count = 1
+					else:
+						data = np.vstack((data, np.array(aux._cell_values[:][:])))
+			#in case of a text file
+			except:
+				#open the file and extract the data
+				xfile = open(filename, 'r')
+				xfile = csv.reader(xfile, delimiter = ',')
+				data = []
+				for row in xfile:
+					data.append(row)
+				data = np.array(data)
+			
+			#Prepare the data of interest-----------------------------------
+			head = data[0,:]
+			data = data[1:,:]
+			for i in range(len(data)):
+				data[i,1:3] = [self.time2unix(data[i,1], formdate), self.time2unix(data[i,2], formdate)]
+			data = np.array(data, dtype = float)
+			
+			#Filter the data------------------------------------------------
+			nst = pl.find((data[:,4]<-1)|(data[:,4]>15))
+			trh = pl.find((data[:,8]<0)|(data[:,8]>359)&(data[:,8]!=511))
+			lon = pl.find(abs(data[:,11])>=180)
+			lat = pl.find(abs(data[:,10])>=90)
+			tot = np.unique(np.hstack((nst, trh, lon, lat)))
+			data = np.delete(data, tot, axis = 0)
+			
+			#Extract the data of interest-----------------------------------
+			fdata = np.empty((len(data),len(coi)), dtype=object)
+			
+			for i in range(len(coi)):
+				for j in range(len(head)):
+					if normalize(head[j]) == normalize(coi[i]):
+						fdata[:,i] = data[:,j]
+			
+			#In case of Nones, replace by 0---------------------------------
+			for i in range(len(coi)):
+				if fdata[0,i] == None:
+					fdata[:,i] = 0
 
-		return fdata
+			return fdata
+		else:
+			print "*** ERROR: File does't exists ***"
 	
 
 					   
