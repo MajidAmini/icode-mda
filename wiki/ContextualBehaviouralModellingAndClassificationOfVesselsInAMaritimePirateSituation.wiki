@@ -14,6 +14,8 @@ In the efforts of maintaining maritime security, maritime surveillance is essent
 
 A simulation environment is developed. The simulation results may be used in evaluating maritime situation awareness systems. A tool for classifying maritime vessels in a pirate situation is developed.
 
+A context based behavior modelling and classification method is developed for classifying vessels in a maritime piracy application. By classifying vessels according to their behavior, maritime pirates may be detected. This method may be used for law enforcement agents to deter pirate vessels or for civilian vessels to avoid potential pirate attacks.
+
 = Applications =
 
 Applications for the tool include:
@@ -21,21 +23,20 @@ Applications for the tool include:
  * Smuggling
  * Illegal immigration.
 
+
+
+= Context-based behavior modelling and classification =
+
+The context-based behavior modelling and classification model is a DBN. The model consists of a switching linear dynamical system for modelling kinematic behavior. A set of contextual element nodes are included for fusing contextual information. Such information includes location with respect to the environment, weather and ocean conditions. Finally a class variable is provided for identifying the vessel class. The Gaussian sum filter (GSF) algorithm is used for inference in the model. At each time step, the location of the vessel and the contextual information are presented to the model. The GSF algorithm is applied to infer the behavior of the vessel and given the behavior, the class is inferred. The manuscript describing this work may be obtained at the following location:
+
+[http://www.sciencedirect.com/science/article/pii/S0957417415003036 J. J. Dabrowski, J. P. de Villiers, A unified model for context-based behavioural modelling and classification, Expert Systems with Applications.]
+
+
 = Simulation Environment =
 
 The tool shall be developed using an agent based simulation environment. The simulation environment is developed using a novel dynamic Bayesian network (DBN). The simulation environment may be configured over a particular region with a set of vessels that operate within the region. The DBN is applied to model vessel behaviour. The manuscript describing this work may be obtained at the following location:
 
 [http://www.sciencedirect.com/science/article/pii/S1566253514000840 J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, Information Fusion 23 (2015) 116 – 130.]
-
-= Maritime Vessel Classification =
-
-A method of classifying vessels in a maritime pirate situation is proposed. The method uses a novel DBN that models vessel behaviour. The DBN provides a means to include contextual information that may influence behaviour.
-
-= Current Status = 
-
-The simulation environment has been developed in MATLAB. A manuscript has been submitted to Elsevier's Information Fusion Journal on the work. 
-
-The maritime vessel classification application has been developed in MATLAB. A manuscript has been submitted to Elsevier's Information Fusion Journal on the work. This paper will be made available as soon as possible.
 
 
 = Simulation Environment Example =
@@ -54,6 +55,8 @@ The following google gadget provides an example of a simulation where a pirate v
 =References=
 
  # J. J. Dabrowski, J. P. de Villiers, Maritime piracy situation modelling with dynamic bayesian networks, Information Fusion 23 (2015) 116 – 130. [http://www.sciencedirect.com/science/article/pii/S1566253514000840 (link)]
+ # J. J. Dabrowski, J. P. de Villiers, A unified model for context-based behavioural modelling and classification, Expert Systems with Applications. [http://www.sciencedirect.com/science/article/pii/S0957417415003036 (link)]
+
 <wiki:comment>
 [https://icode-mda.googlecode.com/svn/wiki/scripts/JJD/Dab13MaritimePreprint.pdf (link to an old preprint)]
 </wiki:comment>
