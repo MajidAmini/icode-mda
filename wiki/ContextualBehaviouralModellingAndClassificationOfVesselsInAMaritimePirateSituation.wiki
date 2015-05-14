@@ -29,7 +29,7 @@ Applications for the tool include:
 
 The context-based behavior modelling and classification model is a DBN. The model consists of a switching linear dynamical system for modelling kinematic behavior. A set of contextual element nodes are included for fusing contextual information. Such information includes location with respect to the environment, weather and ocean conditions. Finally a class variable is provided for identifying the vessel class. The Gaussian sum filter (GSF) algorithm is used for inference in the model. At each time step, the location of the vessel and the contextual information are presented to the model. The GSF algorithm is applied to infer the behavior of the vessel and given the behavior, the class is inferred. The manuscript describing this work may be obtained at the following location:
 
-[http://www.sciencedirect.com/science/article/pii/S0957417415003036 J. J. Dabrowski, J. P. de Villiers, "A unified model for context-based behavioural modelling and classification," Expert Systems with Applications.]
+[http://www.sciencedirect.com/science/article/pii/S0957417415003036 J. J. Dabrowski, J. P. de Villiers, "A unified model for context-based behavioural modelling and classification," Expert Systems with Applications, 2015.]
 
 
 = Simulation Environment =
@@ -54,7 +54,7 @@ The following google gadget provides an example of a simulation where a pirate v
 
 =References=
 
- # J. J. Dabrowski, J. P. de Villiers, "A unified model for context-based behavioural modelling and classification," Expert Systems with Applications. [http://www.sciencedirect.com/science/article/pii/S0957417415003036 (link)]
+ # J. J. Dabrowski, J. P. de Villiers, "A unified model for context-based behavioural modelling and classification," Expert Systems with Applications, 2015. [http://www.sciencedirect.com/science/article/pii/S0957417415003036 (link)]
  # J. J. Dabrowski, J. P. de Villiers, "Maritime piracy situation modelling with dynamic bayesian networks," Information Fusion 23 (2015) 116 – 130. [http://www.sciencedirect.com/science/article/pii/S1566253514000840 (link)]
 
 <wiki:comment>
