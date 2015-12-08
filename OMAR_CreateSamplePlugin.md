@@ -1,0 +1,196 @@
+# Introduction #
+
+OMAR is a web based system for archival, retrieval, processing, and distribution of geospatial assets. Satellite and aerial images, vector sets, unmanned aerial vehicle (UAV) video sets, as well as user generated tags and reference items can be easily searched and manipulated with the system. Searching can be performed on the basis of location, time, or any combination of the stored metadata. OMAR is unique in its ability to dynamically process raw materials and create value added products on the fly. Imagery is orthorectified (geometrically corrected), precision terrain corrected, and histogram stretched on demand. OMAR combines, fuses, or chips areas of interest according to the users needs. Geospatial assets can then be manipulated, viewed, and processed to provide a wide range of value added products.
+
+The following will get you started on developing your own plugins for OMAR.
+In this example, we will place dots for states on a map.
+
+
+# Details #
+
+  1. Create a plugin. Doesn't have to be in `$OMAR_HOME/plugins`. In fact, it is better if it isn't.  Let's create it in `$HOME/projects` and call it geodata
+```
+mkdir -p $HOME/projects
+cd $HOME/projects
+grails create-plugin geodata
+cd geodata
+```
+  1. Add some OMAR dependencies to your plugin. Edit your plugins `grails-app/conf/BuildConfig.groovy` and add the following to use GeoScript,  PostGIS, and OpenLayers plugins at the end of the config file.
+```
+grails.plugin.location.postgis = "${System.env['OMAR_DEV_HOME']}/plugins/postgis"
+grails.plugin.location.geoscript = "${System.env['OMAR_DEV_HOME']}/plugins/geoscript"
+grails.plugin.location.openlayers = "${System.env['OMAR_DEV_HOME']}/plugins/openlayers"
+```
+  1. Verify plugins installed correctly by doing the following at the plugin home directory.
+```
+grails list-plugins
+```
+> > You should see something like the following with postgis, geoscript and openlayers listed.
+```
+Plug-ins you currently have installed are listed below:
+-------------------------------------------------------------
+
+geodata             0.1              --  Plugin summary/headline
+geoscript           0.4              --  Adds Groovy Geoscript 0.95 support
+hibernate           1.3.7            --  Hibernate for Grails
+openlayers          0.12             --  OpenLayers
+postgis             0.15             --  PostGIS
+tomcat              1.3.7            --  Apache Tomcat plugin for Grails
+
+```
+  1. Add Domain class.  Domain is the "M" in MVC (Model View Control).
+```
+grails create-domain-class geodata.City
+```
+  1. Modify Domain Class. Open up the domain class at `$PLUGIN_HOME/grails-app/domain/geodata` and copy the following contents into it
+```
+
+package geodata
+
+
+import com.vividsolutions.jts.geom.Point
+
+
+class City
+{
+// CITY_NAME,COUNTRY,POP,CAP,LONGITUDE,LATITUDE
+
+
+  String name
+  String country
+  Integer population
+  Boolean capital
+  Double longitude
+  Double latitude
+
+
+  Point groundGeom
+
+
+  static constraints = {
+    name()
+    country()
+    population()
+    capital()
+    longitude()
+    latitude()
+  }
+
+
+  static mapping = {
+    columns {
+      groundGeom type: org.hibernatespatial.GeometryUserType
+    }
+  }
+}
+```
+  1. Create a Controller class
+```
+   grails create-controller geodata.City
+```
+  1. Add the following to the new Controller class
+```
+   	package geodata
+
+	import grails.converters.JSON
+	import grails.converters.XML
+
+	class CityController
+	{
+	  def scaffold = true
+
+	  def export = {
+		params.max = Math.min(params.max ? params.int('max') : 10, 100)
+
+		 withFormat {
+			//html { redirect action: "list", params: params }
+		        html { render view: "list", params: params }
+			json {
+			     def cityInstanceList = City.list(params)
+				        render cityInstanceList as JSON
+			}
+			xml {
+			     def cityInstanceList = City.list(params)
+				        render cityInstanceList as XML
+			}
+		}
+	}
+      }
+
+```
+  1. Create  a loader for the CSV data. Create the file `$PLUGIN_HOME/src/groovy/geodata/CityData.groovy` and add the following to it.
+```
+package geodata
+
+
+import com.vividsolutions.jts.geom.Coordinate
+import com.vividsolutions.jts.geom.GeometryFactory
+import com.vividsolutions.jts.geom.PrecisionModel
+
+
+class CityData
+{
+  static def load(def filename)
+  {
+    def geometryFactory = new GeometryFactory(new PrecisionModel(), 4326)
+
+
+    City.withTransaction {
+      new File(filename).toCsvReader([skipLines: 1]).eachLine {  tokens ->
+
+
+        def city = new City()
+
+
+        // CITY_NAME,COUNTRY,POP,CAP,LONGITUDE,LATITUDE
+
+
+        city.with {
+          name = tokens[0]
+          country = tokens[1]
+          population = tokens[2] as Integer
+          capital = tokens[3] == 'Y' ? true : false
+          longitude = tokens[4] as Double
+          latitude = tokens[5] as Double
+          groundGeom = geometryFactory.createPoint(new Coordinate(longitude, latitude))
+        }
+
+
+        city.save()
+      }
+    }
+  }
+}
+```
+  1. Copy the [cities.csv](https://icode-mda.googlecode.com/svn/wiki/scripts/cities.csv) file to your machine. I will copy it to `$OMAR_DEV_HOME/data`.
+  1. Make OMAR aware of your plugin. Add the following to `$OMAR_HOME/grails-app/conf/BuildConfig.groovy`
+```
+grails.plugin.location.geodata = "${System.env['HOME']}/projects/geodata"
+```
+  1. Verify your plugin is found. From `$OMAR_HOME`, use the following command
+```
+grails list-plugins
+```
+> > You should see geodata 0.1 listed.
+  1. Add the following to OMAR's  `grails-app/conf/BootStrap.groovy`.  This will be executed every time OMAR is started.
+    * At the top of the file
+```
+import geodata.City
+import geodata.CityData
+```
+    * Inside of the def init = {} block
+```
+if ( City.count() == 0 )
+{
+    CityData.load('/opt/radiantblue/omar/data/cities.csv')  //!!!!! Don't forget to update this to your actual path.
+}
+```
+  1. Add the [main.gsp](https://icode-mda.googlecode.com/svn/wiki/scripts/main.gsp) file to both the OMAR and Plugin grails-app/views/layouts folder.
+  1. Test it! Run your application from `$OMAR_HOME`
+```
+./run.sh dev app true
+```
+  1. View the data by going to
+```
+http://localhost:8080/omar/city/list
+```

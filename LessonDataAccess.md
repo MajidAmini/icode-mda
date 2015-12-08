@@ -1,0 +1,72 @@
+This page provides a number of sources of satellite imagery, both free and for purchase.
+
+# Sources of Free Satellite Imagery #
+
+| **Data Source** | **Company** | **Weblink** |
+|:----------------|:------------|:------------|
+| TerraSAR-X, Tandem-X, SPOT-4/5, DEMs | Astrium-Geo | http://www.astrium-geo.com/en/23-sample-imagery |
+| Radarsat-1 and Radarsat-2 | MDA         | http://gs.mdacorporation.com/SatelliteData/Radarsat2/SampleDataset.aspx |
+| Radarsat-1 from Hawaii supersite | MDA         | http://supersites.earthobservations.org/cdn_HawaiiRSAT.html |
+| ENVISAT Products (ASAR, MERIS, etc) | European Space Agency | http://envisat.esa.int/services/sample_products/ |
+| Landsat-7, Radarsat-1, ALOS | ACRES       | [ftp://acres.ga.gov.au/acres/samples](ftp://acres.ga.gov.au/acres/samples) |
+| Level-1 MODIS   | NASA        | http://ladsweb.nascom.nasa.gov/ |
+| Landsat         | NASA/USGS   | http://earthexplorer.usgs.gov/ |
+| COSMO-Skymed    | e-GEOS      | [ftp://ftp.e-geos.it/](ftp://ftp.e-geos.it/) |
+| GeoEye-1 and IKONOS | GeoEye      | http://www.geoeye.com/CorpSite/resource/sample_imagery.aspx |
+| Landsat         | Global Land Cover Facility | http://landcover.org |
+| CBERS/Landsat   | National Institute for Space Research | http://www.inpe.br |
+
+Some data requires applying online.  In particular, both ESA and DLR (TerraSAR-X) provide data at reduced costs for research.
+
+[How to Apply for ESA Datasets](https://earth.esa.int/web/guest/data-access/content?p_r_p_564233524_assetIdentifier=how-to-apply-1375)
+
+[How to Apply for TerraSAR-X and Tandem-X Datasets](http://sss.terrasar-x.dlr.de/)
+
+[Vector shoreline data provided by NOAA](http://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html)
+
+# Commercial Satellite Imagery #
+
+The following are sources for commercial imagery, both Synthetic Aperture Radar and Electro-Optical.  Depending on your geographical location, you may purchase data from an authorized reseller for your region.
+
+
+| **Data** | **Company** | **Weblink** |
+|:---------|:------------|:------------|
+| Radarsat-1 and Radarsat-2| MDA         | http://gs.mdacorporation.com/CustomerSupport/CustomerSupport.aspx |
+| Worldview-1, Worldview-2, and Quickbird| Digital Globe| http://www.digitalglobe.com/products |
+| GeoEye-1 and Geoeye-2 | GeoEye      | http://www.geoeye.com/CorpSite/products-and-services/channel-partners/Default.aspx |
+| TerraSAR-X/Tandem-X and SPOT-4/5 and Pleides | Astrium Geo | http://www.astrium-geo.com/en/23-sample-imagery |
+
+
+
+
+
+
+
+
+
+
+
+# Sources of Other Maritime Data #
+
+Sources of Automated Identification System (AIS) data are provided in the table below.  For an overview of AIS, see [Introduction to AIS](LessonAIS.md)
+
+  * http://www.shippingexplorer.net/ - Live Vessel Tracking
+  * http://www.marinetraffic.com/ais/default.aspx?language=_EN – Marine Traffic
+  * http://www.digital-seas.com/ - Worldwide real time vessel tracking
+  * http://Vesseltracker.com  - Worldwide AIS tracking Website
+  * http://www.vtexplorer.com/ - AIS vessel tracking based on standalone VT Explorer application
+  * http://www.ios-hellas.gr/ais - Vessels from around the world update
+  * http://www.mariweb.gr/ecs - On-Line tracking of vessels from around the world
+  * http://www.shipspotting.com/modules/myalbum/ais.php - Vessels in Northern Europe
+  * http://www.vesseltrax.com/ -  Vessels in the Gulf of Mexico and Texas Ports
+  * http://www.shipais.com/ - Vessels in the Irish Sea, Great Britain, United Kingdom, and Ireland
+  * http://www.lrfairplay.com/ - Loyds register of ship information
+  * http://www.atlanticsource.es/sat/ - Vessels around the world
+  * http://www.shipplotter.dk/dk-kort.html - Vessels around Denmark
+  * http://www.northernbaltic.se/ais/ - Live AIS Vessels in Northern Baltic Sea
+  * http://www.trackaship.com - Ship and vessel tracking worldwide.
+
+
+Most of these sources only allow users to view the vessel information via web-display.  To recieve the raw AIS messages for storage, processing, and display, there are a number of options.
+
+Also provided is a table with a few of the many available AIS receivers which can be purchased.

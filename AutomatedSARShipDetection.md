@@ -1,0 +1,102 @@
+# Introduction #
+
+This page describes current development of the Automated SAR Ship Detection tool for ICODE-MDA, including who is developing the tool, it's status, and technical details with examples.
+
+# Background #
+
+Illegal, unreported and unregulated (IUU) fishing is locally as well as internationally of serious concern. IUU fishing occurs both on the high seas and in the areas under national sovereignty and threatens the conservation and management of world wide fish stocks leading to adverse effects on food security and environmental protection.
+
+There has been a lot of progress made in fight against IUU fishing. Many governments have been actively involved in negotiation on the text of the United Nations Food and Agriculture Organization Agreement on Port State Measures to Prevent, Deter and Eliminate Illegal, Unreported and Unregulated Fishing and is continuing its efforts to mitigate IUU fishing together with other concerned members of the international community [[1](http://www.daff.gov.au/fisheries/iuu/illegal-fishing/)].
+
+Despite efforts to reduce IUU fishing, it still poses a very real threat to all fisheries stakeholders. IUU activities are by nature done covertly making monitoring very difficult. Due to lack of monitoring, control and surveillance (MCS) there is a very real threat that industrial fishing vessels could encroach unnoticed in fishing zones which, for example, is reserved for small-scale fisheries [[2](ftp://ftp.fao.org/docrep/fao/meeting/011/j8989e.pdf)].
+
+A relevant example is the Southern Ocean that surrounds the continent of Antarctica. In 1982 the Convention on the Conservation of Antarctic Marine Living Resources (CCAMLR) was established to conserve marine life of the Southern Ocean. An alarming increase in IUU fishing activity in the area has been noticed [[3](http://www.ccamlr.org/pu/E/sc/fish-monit/iuu-intro.htm)]. Due to a lack of MCS, the conservation measures of the CCAMLR is severely compromised. The large size of the Southern Ocean makes it very difficult for Member States to mitigate IUU fishing in the area.
+
+There is no single tool that is able to provide all the necessary information for location, tracking and eventually apprehending IUU fishers and MCS authorities subsequently have to make use of a series of tools. One of the most promising tools are satellite-based monitoring systems (such as VMS or AIS) which is able to transmit information about the vessels, such as name and location to authorities in real time. It should however be stressed that these satellite information systems should be used in conjunction with other tools and are not to be regarded as the single solution to vessel tracking.
+
+SAR has the ability to penetrate clouds and provide interferometric and polarimetry information on ground targets making detection of ships using SAR a very attractive solution. SAR imagery can potentially be used to detect a range of maritime activity, including small vessels, large ocean-going ships and even oil spills. Another advantage of using SAR is the large swath widths that these satellite based sensors can cover (thousands of square kilometres can be covered in a single pass) which reduces the monitoring cost per square kilometre significantly when compared to manual monitoring systems.
+
+SAR technology has recently been applied to fisheries monitoring with promising results. There is however a need to further develop image processing and interpretation ability before a widespread application of SAR in the fisheries monitoring domain can be expected [[4](http://www.fao.org/fishery/topic/18107/en)].
+
+# Related news articles #
+
+[Got a pirate problem](http://www.maritime-executive.com/article/got-a-pirate-problem-there-s-even-an-app-for-that/)
+
+[Navy to establish Maritime Awareness Centres](http://www.defenceweb.co.za/index.php?option=com_content&view=article&id=24437:navy-to-establish-maritime-awareness-centres&catid=51:Sea&Itemid=106/)
+
+[Ghana’s navy receives four new patrol vessels](http://www.defenceweb.co.za/index.php?option=com_content&view=article&id=20466:ghanas-navy-receives-four-new-patrol-vessels&catid=51:Sea&Itemid=106/)
+
+# Tool Developers #
+  * Michael Agbo Tettey Soli
+  * Kwame Agyekum
+  * Brian Salmon ([Remote Sensing Research Unit, Meraka, CSIR, Pretoria, South Africa](http://www.csir.co.za/meraka/rsru/))
+  * Waldo Kleynhans ([Remote Sensing Research Unit, Meraka, CSIR, Pretoria, South Africa](http://www.csir.co.za/meraka/rsru/))
+  * Colin Schwegmann ([Remote Sensing Research Unit, Meraka, CSIR, Pretoria, South Africa](http://www.csir.co.za/meraka/rsru/))
+
+# Current Status of Tool #
+
+Michael has developed OSSIM C++ code to read in satellite images and
+tile it according to the user specific dimensions and convert it to an
+IPL image for Kwame’s ship detection algorithm to be applied on the IPL
+images. He has packaged this into a header file that can be used easily.
+He is currently working on modularizing Kwame’s ship detection code into
+functions that can be called at various stages for defined purposes.
+
+Brian and Waldo are developing OSSIM C++ code that can be used to detect ships. The source code is currently being packaged into functions that can easily be accessed by including the header file. They are also in the process of creating a scholarship program dedicated to this project that will be funded by  [Armscor](http://www.armscor.co.za/) and [CSIR](http://www.csir.co.za/).
+
+# Technical Details and Examples #
+
+![https://icode-mda.googlecode.com/svn/wiki/images/footprints.jpg](https://icode-mda.googlecode.com/svn/wiki/images/footprints.jpg)<br>
+Figure1 : Acquisition profile of ASAR images over the Africa continent.<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/Ship01.png' /><br>
+Figure 2: Ships detected using SAR images shown in figure 1.<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/Ship02.png' /><br>
+Figure 3: Ships detected in the Gulf of Guinea.<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/Ship03.png' /><br>
+Figure 4: Ships detected of the east coast of South Africa.<br>
+<br>
+<h1>Synthetic Aperture Radar Imagery</h1>
+
+Synthetic Aperture Radar (SAR) is an active remote sensing method which transmits and receives electromagnetic (EM) waves in order to observe an environment. The EM waves are transmitted as pules and objects within an environment scatter these pulses. The returned pulses (echoes) are recorded and used to place objects relative to one another and the sensor. SAR can be implemented using either an airborne or spaceborne platform.<br>
+<br>
+SAR allows for high-resolution imagine of broad areas of the Earth’s surface and can do so at any time during all weather conditions. SAR is able to do this because it is a self-illuminating (active) sensor and therefore can be designed to transmit EM waves at specific frequencies that do not interact with obstacles such as clouds.<br>
+There have been a number of SAR satellites since the first one, SEASAT, was launched in 1978. In the time since then a number of countries have become involved in SAR satellites missions including most of Europe, Canada, USA and Japan.<br>
+<br>
+One of the major recent SAR satellites launched is the Environmental Satellite (ENVISAT). The satellite operated from March 2002 until April 2012 operating 5 years longer than its planned lifetime. The satellite had a number of onboard instruments and one of them was the Advanced SAR (ASAR) sensor which was used to observe the entire globe with a revisit time of 35 days.<br>
+<br>
+An example of a typical ENVISAT ASAR image can be seen below. The image shows a Wide Swath Medium (WSM) resolution ENVISAT ASAR image. It has a horizontal resolution of 150m x 150m and covers the coast of South Africa from before Mossel Bay (Lat:-34.456, Long: 21.044) to Port Elizabeth (Lat:-33.8213, Long: 25.6901).<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/ASARWSMImage.png' /><br>
+
+The following image shows two ENVISAT ASAR WSM with an outline of South Africa’s coast superimposed. It shows the extent of how much of the Earth’s surface can be observed by SAR satellite images. The cost of monitoring this vast area would be prohibitive for any other monitoring method.<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/SARExtent.png' /><br>
+
+<h1>Constant False Alarm Rate</h1>
+
+Due to their high backscatter compared to the ocean, ships appear as bright spots within a SAR image. Two examples of ships (circled in red) within a SAR image can be seen in the following image:<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/Vessels.png' /><br>
+
+Constant False Alarm Rate is an algorithm that can be used to highlight bright pixels within a SAR image.  This allows the detection of bright ship pixels against the dark sea within a SAR image.  The basic principle of CFAR is that it uses a single pixel and a neighbourhood around that pixel to determine if it is significantly brighter than its neighbours. The CFAR algorithm calculates the mean value of a target pixel’s neighbours and then checks whether the pixel is t times brighter than its neighbours.<br>
+<br>
+A target pixel is marked as a bright pixel when<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/CFARText.png' /><br>
+
+The pixels directly adjacent to the target pixel are called the guard pixels and form a guard window around the target. These pixels are not used to determine the mean of the background because they are pixels most similar to the target pixel. The next window of pixels is referred to as the background window which contains the background pixels. These pixels are used to determine the mean background value against which the target pixel is compared.  An example of each of the windows is given in the following figure<br>
+<br>
+<img src='https://icode-mda.googlecode.com/svn/wiki/images/automaticshipdetection/CFAR.png' /><br>
+
+<h2>CFAR in Code</h2>
+
+The CFAR algorithm can be implemented in OSSIM by starting an OSSIM image processing chain and then attaching the CFAR algorithm (as a filter). The filter uses OpenCV to process each pixel within the SAR image to determine where the bright (ship) pixels are. OpenCV is an advanced computer vision library that affords additional flexibility so that more advanced image processing techniques can be also be used if necessary for the detection of ships at sea within SAR images. For the sake of completeness the CFAR algorithm can be tested using either the above discussed OSSIM filtering method or a MATLAB script. Both are included in the source (which can be checked out from <a href='http://code.google.com/p/icode-mda/source/checkout'>this page</a>
+
+<h1>Page information</h1>
+
+Last updated: Monday, 26 August 2013<br>
+<br>
+Proposed date for next update of website: Monday, 26 September 2013
